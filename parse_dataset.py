@@ -1,47 +1,30 @@
+# parse_dataset.py
 from pathlib import Path
-import json
+import ijson
 import sys
 
-# Construir ruta relativa (funciona en script y en notebooks)
-try:
-    base_dir = Path(__file__).parent
-except NameError:
-    base_dir = Path.cwd()  # si estás en REPL/notebook
+def procesar_archivo(ruta_json):
+    """
+    Lee un JSON muy grande (array de objetos) usando streaming con ijson.
+    Devuelve un generador que produce [titulo, resumen, transcripcion] por registro.
+    """
+    ruta = Path(ruta_json)
+    if not ruta.exists():
+        print(f"❌ Archivo no encontrado: {ruta}")
+        sys.exit(1)
 
-ruta = base_dir / "Documentos" / "Dataset_entrevistas" / "news_dialogue.json"
+    print(f"📂 Procesando dataset: {ruta} ...")
 
-if not ruta.exists():
-    print(f"Archivo no encontrado: {ruta}")
-    sys.exit(1)
-
-def procesar_json_array(path):
-    """Lee un archivo que contiene un array JSON grande y muestra las primeras n entradas sin cargar todo si es posible."""
-    with path.open("r", encoding="utf-8") as f:
-        texto = f.read().lstrip()
-        if not texto:
-            print("Archivo vacío")
-            return
-        if texto[0] != "[":
-            print("No parece ser un array JSON. Intenta JSONL (1 JSON por línea).")
-            return
-        try:
-            arr = json.loads(texto)
-            data = []
-            for i, registro in enumerate(arr):
-                title = registro.get("title", "<sin title>")
-                summary = registro.get("summary", "<sin descripción>")
-                transcript = str(registro.get("utt", "<sin transcripcion>"))
-                data.append([title, summary, transcript])
-        except MemoryError:
-            print("El archivo es demasiado grande para cargarlo entero en memoria.")
-        except Exception as e:
-            print("Error al parsear JSON array:", e)
-        return data
-        
-def procesar_archivo(ruta):
     with ruta.open("r", encoding="utf-8") as f:
-        start = f.read(1024).lstrip()
-        if not start:
-            print("Archivo vacío")
-            sys.exit(1)
-        return procesar_json_array(ruta)
+        # 'item' recorre los elementos del array JSON raíz
+        for i, registro in enumerate(ijson.items(f, "item"), start=1):
+            title = registro.get("title", "")
+            summary = registro.get("summary", "")
+            # Algunos datasets usan 'utt' o 'transcript'
+            transcript = registro.get("utt") or registro.get("transcript") or ""
+            yield [title, summary, transcript]
+
+            if i % 10000 == 0:
+                print(f"🧩 Procesadas {i:,} entrevistas...")
+
+    print("✅ Lectura del dataset completada.")
