@@ -18,7 +18,7 @@ DB_CONFIG = {
 }
 
 embeddings = OllamaEmbeddings(model=os.getenv("MODEL"))
-llm = ChatOllama(model="llama3.1", temperature=0)
+llm = ChatOllama(model="llama3.2", temperature=0)
 
 if not os.path.exists("./chroma_rules_db"):
     print("Primero ejecuta ingest_rules.py")

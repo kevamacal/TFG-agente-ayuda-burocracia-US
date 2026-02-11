@@ -9,7 +9,7 @@ from langchain_core.output_parsers import StrOutputParser
 load_dotenv()
 
 embedding_model_name = os.getenv("MODEL")
-chat_model_name = "llama3.1"
+chat_model_name = "llama3.2"
 
 embeddings = OllamaEmbeddings(model=embedding_model_name)
 llm = ChatOllama(model=chat_model_name, temperature=0)

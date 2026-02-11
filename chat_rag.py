@@ -11,7 +11,7 @@ load_dotenv()
 embedding_model_name = os.getenv("MODEL") 
 print(f"🔍 Cargando buscador con: {embedding_model_name}")
 embeddings = OllamaEmbeddings(model=embedding_model_name)
-chat_model_name = "llama3.1"
+chat_model_name = "llama3.2"
 print(f"🧠 Cargando cerebro con: {chat_model_name}")
 llm = ChatOllama(model=chat_model_name)
 
