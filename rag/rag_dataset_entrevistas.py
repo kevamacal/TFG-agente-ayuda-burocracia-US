@@ -1,52 +1,61 @@
-from langchain_ollama import OllamaEmbeddings
-
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.documents import Document
+import os
 from langchain_chroma import Chroma
-import psycopg2, os
+from langchain_ollama import OllamaEmbeddings, ChatOllama
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
 
-load_dotenv(encoding='utf-8')
-DB_CONFIG = {
-    "dbname": os.getenv("DB_NAME"),
-    "user": os.getenv("DB_USER"),
-    "password": os.getenv("DB_PASSWORD"),  
-    "host": os.getenv("DB_HOST"),
-    "port": os.getenv("DB_PORT"),
-}
+load_dotenv()
 
-def get_documents_from_postgres():
-    print("=== DB_CONFIG ===")
-    for k, v in DB_CONFIG.items():
-        print(k, repr(v))
+MODEL_NAME = os.getenv("MODEL")
+DB_PATH = "./chroma_documentos_us_db"
 
-    conn = psycopg2.connect(**DB_CONFIG)
-    cursor = conn.cursor()
-    cursor.execute('''SELECT id, titulo, resumen, transcripcion FROM entrevistas ORDER BY id ASC;''') 
-    raw_data = cursor.fetchall()
-    cursor.close()
-    conn.close()
+embeddings = OllamaEmbeddings(model=MODEL_NAME)
+if os.path.exists(DB_PATH):
+    vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embeddings)
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
+else:
+    raise FileNotFoundError(f"No se encuentra la DB en {DB_PATH}. ¿Ejecutaste el ingest?")
+
+llm = ChatOllama(model="llama3.2", temperature=0)
+
+template = """
+Eres un Asistente Administrativo Experto de la Universidad de Sevilla.
+Tu trabajo es resolver dudas sobre normativas, matrículas y procedimientos basándote EXCLUSIVAMENTE en el contexto proporcionado.
+
+INSTRUCCIONES:
+1. Responde de forma clara, directa y educada.
+2. Si la respuesta aparece en el contexto, CITA el documento o artículo (ej: "Según la Normativa de Matrícula...").
+3. Si la información no está en el contexto, di: "Lo siento, no encuentro esa información en la normativa disponible." NO inventes nada.
+
+CONTEXTO DE LA NORMATIVA:
+{context}
+
+PREGUNTA DEL USUARIO:
+{question}
+"""
+
+prompt = ChatPromptTemplate.from_template(template)
+
+def format_docs(docs):
+    return "\n\n".join([d.page_content for d in docs])
+
+rag_chain = (
+    {"context": retriever | format_docs, "question": RunnablePassthrough()}
+    | prompt
+    | llm
+    | StrOutputParser()
+)
+
+def consultar_asistente(pregunta):
+    docs = retriever.invoke(pregunta)
+    respuesta = rag_chain.invoke(pregunta)
     
-    documents = []
-    for row in raw_data:
-        doc = Document(
-            page_content=row[3],  
-            metadata={
-                "id": row[0],
-                "titulo": row[1],
-                "resumen": row[2]
-            }
-        )
-        documents.append(doc)
-    return documents
-
-model = os.getenv("MODEL")
-embeddings = OllamaEmbeddings(model=model)
-splitter = RecursiveCharacterTextSplitter(chunk_size = 1000, chunk_overlap = 200)
-raw_data = get_documents_from_postgres()
-batch_size = 10
-vectorstore = Chroma(persist_directory="./chroma.db", embedding_function=embeddings)
-splits = splitter.split_documents(raw_data)
-for i in range(0, len(splits), batch_size):
-    batch = splits[i:i+batch_size]
-    vectorstore.add_documents(batch)
+    fuentes = []
+    for doc in docs:
+        fuentes.append(f"{doc.metadata.get('source', 'Desconocido')} (Pág. {doc.metadata.get('page', '?')})")
+    
+    fuentes = list(set(fuentes))
+    
+    return respuesta, fuentes

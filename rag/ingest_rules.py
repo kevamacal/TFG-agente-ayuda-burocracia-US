@@ -1,26 +1,32 @@
 import os
+from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import TextLoader
 from dotenv import load_dotenv
 
 load_dotenv()
 
-loader = TextLoader("./Documentos/Dataset_buenas_practicas/guia_buenas_practicas.txt", encoding="utf-8")
-documents = loader.load()
+base_dir = os.path.dirname(os.path.abspath(__file__))
 
-splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-splits = splitter.split_documents(documents)
+ruta_pdfs = os.path.join(base_dir,"..","Documentos","Documentos_US")
 
-model_name = os.getenv("MODEL")
-embeddings = OllamaEmbeddings(model=model_name)
+loader = DirectoryLoader(ruta_pdfs, glob="*.pdf", loader_cls=PyPDFLoader)
+docs = loader.load()
 
-print("⏳ Creando base de datos de reglas...")
-vectorstore = Chroma(
-    persist_directory="./chroma_rules_db", 
-    embedding_function=embeddings
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=800,
+    chunk_overlap=200,
+    separators=["\nArtículo", "\n\n", "\n", ". "]
 )
-vectorstore.add_documents(splits)
+splits = text_splitter.split_documents(docs)
 
-print("✅ ¡Listo! Reglas guardadas en './chroma_rules_db'.")
+embeddings = OllamaEmbeddings(model=os.getenv("MODEL"))
+
+vectorstore = Chroma.from_documents(
+    documents=splits,
+    embedding=embeddings,
+    persist_directory="./chroma_documentos_us_db"
+)
+
+print("Base de datos de Documentos US creada correctamente.")
