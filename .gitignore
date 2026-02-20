@@ -1,1 +1,8 @@
 .env
+__pycache__/
+.venv/
+*.db
+*.sqlite
+
+# Bases de datos vectoriales (Chroma)
+chroma*/

@@ -1,5 +1,5 @@
 import streamlit as st
-from rag.rag_dataset_entrevistas import consultar_asistente
+from rag_asistente_us import consultar_asistente
 
 st.set_page_config(page_title="Asistente US", page_icon="🎓")
 
