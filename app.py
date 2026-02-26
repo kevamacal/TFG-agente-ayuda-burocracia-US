@@ -23,11 +23,11 @@ if prompt:
     st.chat_message("user").markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    with st.spinner("Consultando la normativa vigente..."):
-        respuesta_texto, fuentes = consultar_asistente(prompt)
-
     with st.chat_message("assistant"):
-        st.markdown(respuesta_texto)
+        with st.status("Consultando la normativa vigente...", expanded=False) as status:
+            stream, fuentes = consultar_asistente(prompt, st.session_state.messages)
+        
+        respuesta_texto = st.write_stream(stream)
         
         with st.expander("📚 Fuentes consultadas (Transparencia)"):
             for fuente in fuentes:

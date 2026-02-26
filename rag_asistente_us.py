@@ -1,9 +1,8 @@
 import os
 from langchain_chroma import Chroma
 from langchain_ollama import ChatOllama
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
 
@@ -23,15 +22,30 @@ else:
 
 llm = ChatOllama(model=MODEL_CHAT, temperature=0)
 
-template = """
+template_reformulacion = """
+Dada la siguiente conversación y la pregunta final del usuario, reformula la pregunta final 
+para que sea independiente y contenga todo el contexto (sujetos, trámites, etc.).
+NO respondas a la pregunta, SOLO devuelve la pregunta reformulada. Si ya es clara por sí sola, devuélvela tal cual.
+
+Historial de conversación:
+{historial}
+
+Pregunta del usuario: {question}
+
+Pregunta reformulada:
+"""
+prompt_reformulacion = ChatPromptTemplate.from_template(template_reformulacion)
+rephrase_chain = prompt_reformulacion | llm | StrOutputParser()
+
+template_respuesta = """
 Eres un Asistente de Atención al Estudiante y Soporte de la Universidad de Sevilla.
 Tu objetivo principal es "salvar" a estudiantes y profesores de la burocracia, resolviendo sus dudas de la forma más práctica, clara y sencilla posible, basándote EXCLUSIVAMENTE en el contexto proporcionado.
 
 INSTRUCCIONES CLAVE:
-1. TRÁMITES Y PROCEDIMIENTOS ("¿Cómo hago...?", "¿Cómo me matriculo?"): Si el usuario pregunta por los pasos para hacer algo, PRIORIZA buscar en el contexto guías de usuario o manuales (como el de Automatrícula MATRUX). Devuelve la respuesta como una LISTA NUMERADA paso a paso (dónde entrar, qué botones pulsar, qué seleccionar).
-2. DUDAS LEGALES O NORMATIVAS: Si la pregunta es teórica (ej. requisitos, derechos, competencias), responde citando la normativa correspondiente de forma resumida y comprensible.
-3. NO INVENTES NADA: Si la información exacta no está en el contexto proporcionado, responde exactamente: "Lo siento, no encuentro los pasos o la información exacta en la documentación disponible. Te sugiero contactar con la Secretaría de tu centro o revisar la web principal de la US."
-4. TONO: Debe ser educado, directo y resolutivo. Evita lenguaje legal excesivamente denso a menos que sea estrictamente necesario.
+1. TRÁMITES Y PROCEDIMIENTOS: PRIORIZA buscar en el contexto guías de usuario o manuales. Devuelve la respuesta como una LISTA NUMERADA paso a paso.
+2. DUDAS LEGALES O NORMATIVAS: Responde citando la normativa correspondiente de forma resumida.
+3. NO INVENTES NADA: Si la información exacta no está, responde: "Lo siento, no encuentro la información exacta..."
+4. TONO: Educado, directo y resolutivo.
 
 CONTEXTO RECUPERADO DE LA BASE DE DATOS:
 {context}
@@ -41,24 +55,36 @@ PREGUNTA DEL USUARIO:
 
 RESPUESTA DEL ASISTENTE:
 """
-
-prompt = ChatPromptTemplate.from_template(template)
+prompt_respuesta = ChatPromptTemplate.from_template(template_respuesta)
+generation_chain = prompt_respuesta | llm | StrOutputParser()
 
 def format_docs(docs):
     return "\n\n".join([d.page_content for d in docs])
 
-rag_chain = (
-    {"context": retriever | format_docs, "question": RunnablePassthrough()}
-    | prompt
-    | llm
-    | StrOutputParser()
-)
-
-def consultar_asistente(pregunta):
-    docs = retriever.invoke(pregunta)
-    respuesta = rag_chain.invoke(pregunta)
+def consultar_asistente(pregunta, historial_mensajes):
+    historial_formateado = "\n".join([f"{msg['role']}: {msg['content']}" for msg in historial_mensajes[:-1]])
     
+    if historial_formateado.strip():
+        pregunta_busqueda = rephrase_chain.invoke({
+            "historial": historial_formateado,
+            "question": pregunta
+        })
+        # Imprimimos en consola para que veas la magia en acción
+        print(f"Pregunta original: {pregunta}")
+        print(f"Pregunta reformulada para la BD: {pregunta_busqueda}")
+    else:
+        pregunta_busqueda = pregunta
+
+    docs = retriever.invoke(pregunta_busqueda)
+    contexto_texto = format_docs(docs)
+    
+    stream = generation_chain.stream({
+        "context": contexto_texto,
+        "question": pregunta_busqueda 
+    })
+    
+    # 5. Formatear fuentes
     fuentes_raw = [f"{doc.metadata.get('source', 'Desconocido')} (Pág {doc.metadata.get('page', '?')})" for doc in docs]
     fuentes = list(sorted(set(fuentes_raw)))
     
-    return respuesta, fuentes
+    return stream, fuentes
