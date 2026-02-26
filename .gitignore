@@ -3,6 +3,4 @@ __pycache__/
 .venv/
 *.db
 *.sqlite
-
-# Bases de datos vectoriales (Chroma)
-chroma*/
+chroma_documentos_us_db/
