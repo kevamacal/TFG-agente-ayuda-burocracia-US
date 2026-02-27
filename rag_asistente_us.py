@@ -1,18 +1,17 @@
 import os
 from langchain_chroma import Chroma
 from langchain_ollama import ChatOllama
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_ollama import OllamaEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
 
 load_dotenv()
 
-DB_PATH = "./chroma_documentos_us_db"
-MODEL_EMBEDDINGS = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2" 
-MODEL_CHAT = "llama3.1"     
+DB_PATH = os.getenv("DB_PATH")
+MODEL_CHAT = os.getenv("MODEL_CHAT")
 
-embeddings = HuggingFaceEmbeddings(model_name=MODEL_EMBEDDINGS)
+embeddings = OllamaEmbeddings(model=os.getenv("MODEL_EMBEDDINGS"))
 
 if os.path.exists(DB_PATH):
     vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embeddings)
