@@ -10,9 +10,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-RUTA_PDFS = os.getenv("RUTA_PDFS")
-DB_PATH = os.getenv("DB_PATH")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+RUTA_PDFS = BASE_DIR + os.getenv("RUTA_PDFS")
+DB_PATH = BASE_DIR + os.getenv("DB_PATH")
 MODEL_NAME = os.getenv("MODEL_EMBEDDINGS")
 
 if not os.path.exists(RUTA_PDFS):

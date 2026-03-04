@@ -3,4 +3,4 @@ __pycache__/
 .venv/
 *.db
 *.sqlite
-chroma_documentos_us_db/
+chroma_db/

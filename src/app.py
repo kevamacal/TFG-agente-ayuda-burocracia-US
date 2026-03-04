@@ -1,10 +1,10 @@
 import streamlit as st
-from rag_asistente_us import consultar_asistente
+from agente.resuelve_consultas import resuelve_consulta
 
 st.set_page_config(page_title="Asistente US", page_icon="🎓")
 
 st.image("https://www.uco.es/investigacion/proyectos/SEBASENet/images/thumb/Logo_US.png/655px-Logo_US.png", width=100)
-st.title("🎓 Asistente de Burocracia US")
+st.title("Asistente de Burocracia US")
 st.markdown("""
 Bienvenido. Soy tu asistente virtual especializado en normativas de la Universidad de Sevilla.
 Pregúntame sobre **matrículas, exámenes, convalidaciones o plazos**.
@@ -25,12 +25,12 @@ if prompt:
 
     with st.chat_message("assistant"):
         with st.status("Consultando la normativa vigente...", expanded=False) as status:
-            stream, fuentes = consultar_asistente(prompt, st.session_state.messages)
+            stream, fuentes = resuelve_consulta(prompt, st.session_state.messages)
         
         respuesta_texto = st.write_stream(stream)
         
-        with st.expander("📚 Fuentes consultadas (Transparencia)"):
+        with st.expander("Fuentes consultadas (Transparencia)"):
             for fuente in fuentes:
-                st.caption(f"📄 {fuente}")
+                st.caption(f"{fuente}")
     
     st.session_state.messages.append({"role": "assistant", "content": respuesta_texto})
