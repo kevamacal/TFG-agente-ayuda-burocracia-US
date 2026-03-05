@@ -65,7 +65,7 @@ def template_consulta():
         INSTRUCCIONES CLAVE:
         1. ANÁLISIS: Has revisado la normativa (en el contexto) y la regla aplicable depende de ciertos detalles que el usuario no ha mencionado en su pregunta (por ejemplo: si es estudiante de nuevo ingreso o de continuación, si es de Grado o Máster, fechas específicas, motivos de la solicitud, etc.).
         2. ACCIÓN: Haz una (o máximo dos) preguntas directas, amables y claras al usuario para obtener el dato exacto que te falta.
-        3. JUSTIFICACIÓN: Explica muy brevemente por qué necesitas ese dato (ejemplo: "Para poder indicarte el plazo exacto de anulación, necesito saber si eres alumno de nuevo ingreso...").
+        3. ENFOQUE SOCRÁTICO: En lugar de solo pedir el dato, guía ligeramente al estudiante. Por ejemplo, en lugar de decir '¿Eres de máster o grado?', puedes decir 'La normativa varía dependiendo de los créditos de tu titulación. Para guiarte a la normativa correcta, ¿podrías indicarme si estás cursando un grado o un máster?
         4. LÍMITES: NO inventes normativas ni intentes dar la solución final todavía. Limítate a preguntar para acotar su caso.
         5. TONO: Educado, empático, directo y resolutivo.
 
