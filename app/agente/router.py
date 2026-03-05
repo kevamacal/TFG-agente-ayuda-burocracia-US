@@ -2,7 +2,7 @@ from langgraph.graph import END, StateGraph
 from agente.resuelve_consultas import resuelve_consulta
 from agente.consulta_usuario import consulta_usuario
 from agente.rechazo_amable import rechazo_amable
-from utils.rag_asistente_us import insertar_contexto, contiene_duda_burocratica
+from app.utils.rag import insertar_contexto, contiene_duda_burocratica
 from classes.StateSchema import StateSchema
 
     
@@ -13,7 +13,8 @@ def decide_agente(state: StateSchema):
     pregunta = state["pregunta"]
     historial = state["historial"]
     contexto = state["contexto"]
-    decision = contiene_duda_burocratica(pregunta, historial, contexto)
+    pregunta_reformulada = state["pregunta_reformulada"]
+    decision = contiene_duda_burocratica(pregunta, historial, contexto, pregunta_reformulada)
     return decision
 
 graph.add_node("recuperador", insertar_contexto)

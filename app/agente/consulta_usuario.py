@@ -1,7 +1,7 @@
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from utils.config import config_llm, format_docs
-from utils.rag_asistente_us import insertar_contexto
+from app.utils.rag import insertar_contexto
 from templates.templates import template_reformulacion, template_consulta
 from classes.StateSchema import StateSchema
 

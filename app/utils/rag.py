@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from templates.templates import *
 from classes.StateSchema import StateSchema 
 from utils.config import format_docs, config_llm
+from templates.templates import template_reformulacion
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,30 +21,43 @@ API_KEY = os.getenv("HUGGINGFACEHUB_API_KEY")
 
 embeddings = HuggingFaceEndpointEmbeddings(model=os.getenv("MODEL_EMBEDDINGS"), huggingfacehub_api_token=API_KEY)
 vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embeddings)
-retriever = vectorstore.as_retriever(search_kwargs={"k": 6})
+retriever = vectorstore.as_retriever(search_type="mmr",search_kwargs={"k": 6})
 
 def insertar_contexto(state: StateSchema):
-    docs = retriever.invoke(state["pregunta"])
-    logger.info(f"Documentos recuperados: {len(docs)}")
-    for i, doc in enumerate(docs):
-        fuente = doc.metadata.get('source', 'Desconocida')
-        logger.info(f"Doc {i+1} | Fuente: {fuente} | Contenido (preview): {doc.page_content[:100]}...")
-    return {"contexto": format_docs(docs)}
+    pregunta = state["pregunta"]
+    historial = state["historial"]
+    
+    if historial:
+        historial_formateado = "\n".join([f"{msg['role']}: {msg['content']}" for msg in historial[:-1]])
+        prompt_reformulacion = ChatPromptTemplate.from_template(template_reformulacion())
+        rephrase_chain = prompt_reformulacion | llm | StrOutputParser()
+        pregunta_busqueda = rephrase_chain.invoke({
+            "historial": historial_formateado,
+            "question": pregunta
+        })
+    else:
+        pregunta_busqueda = pregunta
 
-def contiene_duda_burocratica(pregunta, historial, contexto):
+    docs = retriever.invoke(pregunta_busqueda)
+    logger.info(f"Documentos recuperados: {len(docs)}")
+    
+    return {
+        "contexto": format_docs(docs),
+        "pregunta_reformulada": pregunta_busqueda
+    }
+
+def contiene_duda_burocratica(pregunta, historial, contexto, pregunta_reformulada):
     historial_formateado = ""
     if historial:
         historial_formateado = "\n".join([f"{msg['role']}: {msg['content']}" for msg in historial[:-1]])
+    
     template = template_deteccion()
     prompt = ChatPromptTemplate.from_template(template)
     chain = prompt | llm | StrOutputParser()
     
     respuesta = chain.invoke({
-        "question": pregunta,
+        "question": pregunta_reformulada, 
         "historial": historial_formateado,
         "context": contexto
     })
-    
-    respuesta_limpia = respuesta.strip().lower()
-    
-    return respuesta_limpia
+    return respuesta.strip().lower()
