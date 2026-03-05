@@ -1,10 +1,11 @@
-from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from classes.StateSchema import StateSchema
 from utils.config import config_llm
-from templates.templates import template_reformulacion, template_respuesta
+from templates.templates import template_reformulacion, template_rechazo
 from classes.StateSchema import StateSchema
 
-def resuelve_consulta(state: StateSchema):
+def rechazo_amable(state: StateSchema):
     pregunta = state["pregunta"]
     historial = state["historial"]
     contexto = state["contexto"]
@@ -14,7 +15,7 @@ def resuelve_consulta(state: StateSchema):
     prompt_reformulacion = ChatPromptTemplate.from_template(template_reformulacion())
     rephrase_chain = prompt_reformulacion | llm | StrOutputParser()
     
-    prompt_respuesta = ChatPromptTemplate.from_template(template_respuesta())
+    prompt_respuesta = ChatPromptTemplate.from_template(template_rechazo())
     generation_chain = prompt_respuesta | llm | StrOutputParser()
     
     if historial_formateado.strip():

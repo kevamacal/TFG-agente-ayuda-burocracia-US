@@ -37,4 +37,4 @@ def contiene_duda_burocratica(pregunta, historial, contexto):
     
     respuesta_limpia = respuesta.strip().lower()
     
-    return "sí" in respuesta_limpia or "si" in respuesta_limpia
+    return respuesta_limpia
