@@ -1,5 +1,5 @@
 import streamlit as st
-from agente.resuelve_consultas import resuelve_consulta
+from agente.router import app
 
 st.set_page_config(page_title="Asistente US", page_icon="🎓")
 
@@ -25,12 +25,15 @@ if prompt:
 
     with st.chat_message("assistant"):
         with st.status("Consultando la normativa vigente...", expanded=False) as status:
-            stream, fuentes = resuelve_consulta(prompt, st.session_state.messages)
-        
+            estado_inicial = {
+                "pregunta": prompt, 
+                "historial": st.session_state.messages, 
+                "contexto": "", 
+                "stream": None
+            }
+            estado_final = app.invoke(estado_inicial)
+            stream = estado_final["stream"]
+            
         respuesta_texto = st.write_stream(stream)
-        
-        with st.expander("Fuentes consultadas (Transparencia)"):
-            for fuente in fuentes:
-                st.caption(f"{fuente}")
     
     st.session_state.messages.append({"role": "assistant", "content": respuesta_texto})
