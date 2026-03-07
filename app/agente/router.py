@@ -2,7 +2,7 @@ from langgraph.graph import END, StateGraph
 from agente.resuelve_consultas import resuelve_consulta
 from agente.consulta_usuario import consulta_usuario
 from agente.rechazo_amable import rechazo_amable
-from utils.rag import insertar_contexto, contiene_duda_burocratica
+from utils.rag import asistente_rag
 from classes.StateSchema import StateSchema
 
 graph = StateGraph(state_schema=StateSchema)
@@ -12,10 +12,10 @@ def decide_agente(state: StateSchema):
     historial = state["historial"]
     contexto = state["contexto"]
     pregunta_reformulada = state["pregunta_reformulada"]
-    decision = contiene_duda_burocratica(pregunta, historial, contexto, pregunta_reformulada)
+    decision = asistente_rag.contiene_duda_burocratica(pregunta, historial, contexto, pregunta_reformulada)
     return decision
 
-graph.add_node("recuperador", insertar_contexto)
+graph.add_node("recuperador", asistente_rag.insertar_contexto)
 graph.add_node("entrevistador", consulta_usuario)
 graph.add_node("resultor", resuelve_consulta)
 graph.add_node("rechazo_amable", rechazo_amable)
@@ -37,4 +37,3 @@ graph.add_edge("resultor", END)
 graph.add_edge("rechazo_amable", END)
 
 app = graph.compile()
-print(app.get_graph().draw_mermaid())

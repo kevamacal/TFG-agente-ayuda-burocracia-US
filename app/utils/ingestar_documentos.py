@@ -5,23 +5,18 @@ from langchain_community.vectorstores.utils import filter_complex_metadata
 from dotenv import load_dotenv
 from pinecone import Pinecone
 from langchain_pinecone import PineconeVectorStore
-from config import extraer_texto_pdf
-load_dotenv()
+from config import extraer_texto_pdf, settings
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-RUTA_PDFS = BASE_DIR + os.getenv("RUTA_PDFS")
-MODEL_NAME = os.getenv("MODEL_EMBEDDINGS")
-API_KEY = os.getenv("HUGGINGFACEHUB_API_KEY")
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-pc = Pinecone(api_key=PINECONE_API_KEY)
+
+pc = Pinecone(api_key=settings.PINECONE_API_KEY)
 index = pc.Index("index-tfg")
 
-if not os.path.exists(RUTA_PDFS):
-    print(f"ERROR: No existe la carpeta {RUTA_PDFS}")
+if not os.path.exists(settings.RUTA_PDFS):
+    print(f"ERROR: No existe la carpeta {settings.RUTA_PDFS}")
     sys.exit(1)
 
 print("Cargando PDFs...")
-docs = extraer_texto_pdf(RUTA_PDFS)
+docs = extraer_texto_pdf(settings.RUTA_PDFS)
 
 splitter = MarkdownTextSplitter(
     chunk_size=1200, 
@@ -32,7 +27,7 @@ splits_limpios = filter_complex_metadata(splits)
 print(f"Procesados {len(splits_limpios)} fragmentos.")
 
 print("Generando Embeddings")
-embeddings = HuggingFaceEndpointEmbeddings(model=MODEL_NAME, huggingfacehub_api_token=API_KEY)
+embeddings = HuggingFaceEndpointEmbeddings(model=settings.MODEL_EMBEDDINGS, huggingfacehub_api_token=settings.HUGGINGFACEHUB_API_KEY)
 
 vectorstore = PineconeVectorStore(index_name="index-tfg", embedding=embeddings)
 

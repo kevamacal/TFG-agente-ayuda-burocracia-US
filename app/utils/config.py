@@ -6,7 +6,17 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
-load_dotenv()
+class Settings:
+    def __init__(self):
+        load_dotenv()
+        self.BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.HUGGINGFACEHUB_API_KEY = os.getenv("HUGGINGFACEHUB_API_KEY")
+        self.HUGGINGFACEHUB_MODEL = os.getenv("HUGGINGFACEHUB_MODEL")
+        self.PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+        self.MODEL_EMBEDDINGS = os.getenv("MODEL_EMBEDDINGS")
+        self.RUTA_PDFS = self.BASE_DIR + os.getenv("RUTA_PDFS")
+
+settings = Settings()
 
 def config_llm():
     HUGGINGFACEHUB_API_KEY = os.getenv("HUGGINGFACEHUB_API_KEY")
