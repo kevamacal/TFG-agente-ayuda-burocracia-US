@@ -3,4 +3,4 @@ __pycache__/
 .venv/
 *.db
 *.sqlite
-chroma_db/
+poppler-25.12.0/
