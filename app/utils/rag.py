@@ -7,13 +7,14 @@ from utils.config import format_docs, config_llm
 from templates.templates import template_reformulacion
 from langchain_pinecone import PineconeVectorStore
 from utils.config import settings
+from langchain_classic.retrievers.contextual_compression import ContextualCompressionRetriever
+from langchain_cohere import CohereRerank
 
 class AsistenteRAG:
     def __init__(self):
         self.llm = config_llm()
         self.embeddings = HuggingFaceEndpointEmbeddings(model=settings.MODEL_EMBEDDINGS, huggingfacehub_api_token=settings.HUGGINGFACEHUB_API_KEY)
-        self.vectorstore = PineconeVectorStore(index_name="index-tfg", embedding=self.embeddings)
-        self.retriever = self.vectorstore.as_retriever(search_type="mmr",search_kwargs={"k": 6})
+        self.vectorstore = PineconeVectorStore(index_name="index-tfg", embedding=self.embeddings)        
         self.prompt_reformulacion = ChatPromptTemplate.from_template(template_reformulacion())
         self.chain_reformulacion = self.prompt_reformulacion | self.llm | StrOutputParser()
         self.prompt_deteccion = ChatPromptTemplate.from_template(template_deteccion())
@@ -24,6 +25,12 @@ class AsistenteRAG:
         self.chain_consulta = self.prompt_consulta | self.llm | StrOutputParser()
         self.prompt_rechazo = ChatPromptTemplate.from_template(template_rechazo())
         self.chain_rechazo = self.prompt_rechazo | self.llm | StrOutputParser()
+        retriever_base = self.vectorstore.as_retriever(search_type="mmr",search_kwargs={"k": 20})
+        cohere_reranker = CohereRerank(model="rerank-v4.0-pro" ,top_n=5)
+        self.retriever = ContextualCompressionRetriever(
+            base_compressor=cohere_reranker,
+            base_retriever=retriever_base
+        )
         
     def insertar_contexto(self, state:StateSchema):
         pregunta = state["pregunta"]
@@ -66,7 +73,7 @@ class AsistenteRAG:
     def responder_consulta(self, state: StateSchema, tipo_respuesta):
         inputs = {
                 "context": state["contexto"],
-                "historial": state["historial_formateado"],
+                "historial": state["historial"],
                 "question": state["pregunta_reformulada"] 
             }
         cadena_activa = None

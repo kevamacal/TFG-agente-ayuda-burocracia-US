@@ -15,6 +15,8 @@ class Settings:
         self.PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
         self.MODEL_EMBEDDINGS = os.getenv("MODEL_EMBEDDINGS")
         self.RUTA_PDFS = self.BASE_DIR + os.getenv("RUTA_PDFS")
+        self.COHERE_API_KEY = os.getenv("COHERE_API_KEY")
+
 
 settings = Settings()
 
