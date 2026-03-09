@@ -45,18 +45,20 @@ class AsistenteRAG:
         else:
             pregunta_busqueda = pregunta
         
-        docs = self.buscar_contexto(pregunta_busqueda)
+        contexto, referencias = self.buscar_contexto(pregunta_busqueda)
         
         return {
             "historial_formateado": historial_formateado,
             "pregunta": pregunta,
-            "contexto": docs,
-            "pregunta_reformulada": pregunta_busqueda
+            "contexto": contexto,
+            "pregunta_reformulada": pregunta_busqueda,
+            "referencias": referencias
         }
         
     def buscar_contexto(self, pregunta_reformulada):
         docs = self.retriever.invoke(pregunta_reformulada)
-        return format_docs(docs)
+        referencias = list(set([doc.metadata.get("source","Documento desconocido") for doc in docs]))
+        return format_docs(docs), referencias
     
     def contiene_duda_burocratica(self, pregunta, historial, contexto, pregunta_reformulada):
         historial_formateado = ""

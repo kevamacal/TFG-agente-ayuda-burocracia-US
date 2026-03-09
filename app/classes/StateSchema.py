@@ -8,3 +8,4 @@ class StateSchema(TypedDict):
     historial: list
     contexto: str
     stream: str
+    referencias: list

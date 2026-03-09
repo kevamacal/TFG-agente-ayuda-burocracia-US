@@ -29,11 +29,22 @@ if prompt:
                 "pregunta": prompt, 
                 "historial": st.session_state.messages, 
                 "contexto": "", 
-                "stream": None
+                "stream": None,
+                "referencias":[]
             }
             estado_final = app.invoke(estado_inicial)
             stream = estado_final["stream"]
+            referencias = estado_final.get("referencias", [])
+            status.update(label="Normativa consultada",state="complete",expanded=False)
             
         respuesta_texto = st.write_stream(stream)
+        
+        if referencias:
+            st.markdown("**Fuentes consultadas**")
+            referencias_md="\n".join([f"- {ref}" for ref in referencias])
+            st.markdown(referencias_md)
+            
+            respuesta_texto += f"\n\n**Fuentes consultadas**\n\n{referencias_md}"
+            
     
     st.session_state.messages.append({"role": "assistant", "content": respuesta_texto})
