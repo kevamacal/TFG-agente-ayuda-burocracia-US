@@ -12,6 +12,7 @@ class Settings:
         self.BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         self.HUGGINGFACEHUB_API_KEY = os.getenv("HUGGINGFACEHUB_API_KEY")
         self.HUGGINGFACEHUB_MODEL = os.getenv("HUGGINGFACEHUB_MODEL")
+        self.HUGGINGFACEHUB_LIGHT_MODEL = os.getenv("HUGGINGFACEHUB_LIGHT_MODEL")
         self.PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
         self.MODEL_EMBEDDINGS = os.getenv("MODEL_EMBEDDINGS")
         self.RUTA_PDFS = self.BASE_DIR + os.getenv("RUTA_PDFS")
@@ -20,14 +21,15 @@ class Settings:
 
 settings = Settings()
 
-def config_llm():
-    HUGGINGFACEHUB_API_KEY = os.getenv("HUGGINGFACEHUB_API_KEY")
-    HUGGINGFACEHUB_MODEL = os.getenv("HUGGINGFACEHUB_MODEL")
-
-    endpoint = HuggingFaceEndpoint(repo_id=HUGGINGFACEHUB_MODEL, temperature=0.1, huggingfacehub_api_token=HUGGINGFACEHUB_API_KEY, max_new_tokens=1024)
+def config_light_llm():
+    endpoint = HuggingFaceEndpoint(repo_id=settings.HUGGINGFACEHUB_MODEL, temperature=0.1, huggingfacehub_api_token=settings.HUGGINGFACEHUB_API_KEY, max_new_tokens=1024)
     llm = ChatHuggingFace(llm=endpoint)
     return llm
 
+def config_llm():
+    endpoint = HuggingFaceEndpoint(repo_id=settings.HUGGINGFACEHUB_MODEL, temperature=0.1, huggingfacehub_api_token=settings.HUGGINGFACEHUB_API_KEY, max_new_tokens=1024)
+    llm = ChatHuggingFace(llm=endpoint)
+    return llm
 
 def format_docs(docs):
     return "\n\n".join([d.page_content for d in docs])

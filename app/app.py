@@ -1,5 +1,6 @@
 import streamlit as st
 from agente.router import app
+import datetime
 
 st.set_page_config(page_title="Asistente US", page_icon="🎓")
 
@@ -33,6 +34,7 @@ if prompt:
                 "referencias":[]
             }
             estado_final = app.invoke(estado_inicial)
+            print("Finalizada consulta", datetime.datetime.now(),"\n\n")
             stream = estado_final["stream"]
             referencias = estado_final.get("referencias", [])
             status.update(label="Normativa consultada",state="complete",expanded=False)

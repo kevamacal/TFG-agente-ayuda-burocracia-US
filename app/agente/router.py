@@ -4,15 +4,18 @@ from agente.consulta_usuario import consulta_usuario
 from agente.rechazo_amable import rechazo_amable
 from utils.rag import asistente_rag
 from classes.StateSchema import StateSchema
+import datetime
 
 graph = StateGraph(state_schema=StateSchema)
 
 def decide_agente(state: StateSchema):
+    print("Decidiendo agente...", datetime.datetime.now())
     pregunta = state["pregunta"]
     historial = state["historial"]
     contexto = state["contexto"]
     pregunta_reformulada = state["pregunta_reformulada"]
     decision = asistente_rag.contiene_duda_burocratica(pregunta, historial, contexto, pregunta_reformulada)
+    print("Agente decidido exitosamente", datetime.datetime.now())
     return decision
 
 graph.add_node("recuperador", asistente_rag.insertar_contexto)

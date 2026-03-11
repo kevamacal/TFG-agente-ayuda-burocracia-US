@@ -3,22 +3,24 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from templates.templates import *
 from classes.StateSchema import StateSchema 
-from utils.config import format_docs, config_llm
+from utils.config import format_docs, config_llm, config_light_llm
 from templates.templates import template_reformulacion
 from langchain_pinecone import PineconeVectorStore
 from utils.config import settings
 from langchain_classic.retrievers.contextual_compression import ContextualCompressionRetriever
 from langchain_cohere import CohereRerank
+import datetime
 
 class AsistenteRAG:
     def __init__(self):
         self.llm = config_llm()
+        self.light_llm = config_light_llm()
         self.embeddings = HuggingFaceEndpointEmbeddings(model=settings.MODEL_EMBEDDINGS, huggingfacehub_api_token=settings.HUGGINGFACEHUB_API_KEY)
         self.vectorstore = PineconeVectorStore(index_name="index-tfg", embedding=self.embeddings)        
         self.prompt_reformulacion = ChatPromptTemplate.from_template(template_reformulacion())
-        self.chain_reformulacion = self.prompt_reformulacion | self.llm | StrOutputParser()
+        self.chain_reformulacion = self.prompt_reformulacion | self.light_llm | StrOutputParser()
         self.prompt_deteccion = ChatPromptTemplate.from_template(template_deteccion())
-        self.chain_deteccion = self.prompt_deteccion | self.llm | StrOutputParser()
+        self.chain_deteccion = self.prompt_deteccion | self.light_llm | StrOutputParser()
         self.prompt_respuesta = ChatPromptTemplate.from_template(template_respuesta())
         self.chain_respuesta = self.prompt_respuesta | self.llm | StrOutputParser()
         self.prompt_consulta = ChatPromptTemplate.from_template(template_consulta())
@@ -33,6 +35,7 @@ class AsistenteRAG:
         )
         
     def insertar_contexto(self, state:StateSchema):
+        print("\n\nInsertando contexto...", datetime.datetime.now())
         pregunta = state["pregunta"]
         historial = state["historial"]
         historial_formateado = self._formatear_historial(historial)
@@ -45,8 +48,9 @@ class AsistenteRAG:
         else:
             pregunta_busqueda = pregunta
         
+        print("Buscando contexto...", datetime.datetime.now())
         contexto, referencias = self.buscar_contexto(pregunta_busqueda)
-        
+        print("Contexto insertado exitosamente", datetime.datetime.now())
         return {
             "historial_formateado": historial_formateado,
             "pregunta": pregunta,
