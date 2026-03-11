@@ -27,7 +27,7 @@ class AsistenteRAG:
         self.chain_consulta = self.prompt_consulta | self.llm | StrOutputParser()
         self.prompt_rechazo = ChatPromptTemplate.from_template(template_rechazo())
         self.chain_rechazo = self.prompt_rechazo | self.llm | StrOutputParser()
-        retriever_base = self.vectorstore.as_retriever(search_type="mmr",search_kwargs={"k": 20})
+        retriever_base = self.vectorstore.as_retriever(search_type="similarity",search_kwargs={"k": 12})
         cohere_reranker = CohereRerank(model="rerank-v4.0-pro" ,top_n=5)
         self.retriever = ContextualCompressionRetriever(
             base_compressor=cohere_reranker,

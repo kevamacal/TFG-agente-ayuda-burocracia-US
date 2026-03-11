@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 import os
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
+from langchain_groq import ChatGroq
 from langchain_core.documents import Document
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
@@ -17,18 +18,26 @@ class Settings:
         self.MODEL_EMBEDDINGS = os.getenv("MODEL_EMBEDDINGS")
         self.RUTA_PDFS = self.BASE_DIR + os.getenv("RUTA_PDFS")
         self.COHERE_API_KEY = os.getenv("COHERE_API_KEY")
+        self.GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 
 settings = Settings()
 
 def config_light_llm():
-    endpoint = HuggingFaceEndpoint(repo_id=settings.HUGGINGFACEHUB_MODEL, temperature=0.1, huggingfacehub_api_token=settings.HUGGINGFACEHUB_API_KEY, max_new_tokens=1024)
-    llm = ChatHuggingFace(llm=endpoint)
+    llm = ChatGroq(
+        temperature=0.1, 
+        model_name="llama-3.1-8b-instant", 
+        api_key=settings.GROQ_API_KEY,
+        max_tokens=150 
+    )
     return llm
 
 def config_llm():
-    endpoint = HuggingFaceEndpoint(repo_id=settings.HUGGINGFACEHUB_MODEL, temperature=0.1, huggingfacehub_api_token=settings.HUGGINGFACEHUB_API_KEY, max_new_tokens=1024)
-    llm = ChatHuggingFace(llm=endpoint)
+    llm = ChatGroq(
+        temperature=0.1, 
+        model_name="llama-3.3-70b-versatile",
+        api_key=settings.GROQ_API_KEY
+    )
     return llm
 
 def format_docs(docs):
