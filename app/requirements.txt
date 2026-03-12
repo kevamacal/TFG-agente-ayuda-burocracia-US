@@ -9,4 +9,4 @@ langchain-pinecone
 langchain-classic
 langchain-cohere
 pinecone
-docling
+langchain-groq

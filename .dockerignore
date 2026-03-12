@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+.vscode/
+.git/
+.devcontainer/
+app/utils/ingestar_documentos.py
+Documentos_US/

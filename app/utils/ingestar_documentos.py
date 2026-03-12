@@ -2,11 +2,38 @@ import os, sys
 from langchain_text_splitters import MarkdownTextSplitter
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_community.vectorstores.utils import filter_complex_metadata
-from dotenv import load_dotenv
 from pinecone import Pinecone
 from langchain_pinecone import PineconeVectorStore
-from config import extraer_texto_pdf, settings
+from config import settings
+from langchain_core.documents import Document
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
 
+def extraer_texto_pdf(directorio): 
+    docs = []
+    opciones = PdfPipelineOptions()
+    opciones.do_ocr = True   
+    opciones.ocr_batch_size = 1
+    opciones.layout_batch_size = 1
+    opciones.table_batch_size = 1
+    opciones.images_scale = 0.7
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.PDF],
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=opciones
+            )
+        },
+    )
+    for pdf in os.listdir(directorio):
+        if pdf.endswith(".pdf"):
+            print(f"Procesando documento: {pdf} (esto puede tardar...)")
+            docling_document = converter.convert(os.path.join(directorio, pdf)).document
+            markdown = docling_document.export_to_markdown()
+            doc = Document(page_content=markdown, metadata={"source": pdf})
+            docs.append(doc)
+    return docs
 
 pc = Pinecone(api_key=settings.PINECONE_API_KEY)
 index = pc.Index("index-tfg")

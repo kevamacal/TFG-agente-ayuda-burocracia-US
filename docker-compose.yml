@@ -1,0 +1,9 @@
+services:
+  asistente-us:
+    build: .
+    container_name: asistente_us_container
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    restart: always
