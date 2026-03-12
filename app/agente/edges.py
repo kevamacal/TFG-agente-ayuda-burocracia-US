@@ -4,7 +4,7 @@ from services.rag import AsistenteRAG
 
 rag = AsistenteRAG()
 
-def decide_intencion(state: StateSchema) -> str:
+def decide_ruta_inicial(state: StateSchema) -> str:
     print("\n--- EDGE: DECIDIENDO INTENCIÓN ---", datetime.datetime.now())
     
     pregunta = state.get("pregunta", "")

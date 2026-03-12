@@ -1,18 +1,7 @@
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from templates.templates import (
-    template_reformulacion,
-    template_deteccion,
-    template_respuesta,
-    template_consulta,
-    template_rechazo,
-    template_procedimental,
-    template_calendario,
-    template_normativo,
-    template_baremo,
-    template_cuestiona_agente
-)
+from templates.templates import *
 
 from utils.config import format_docs, config_light_llm, config_llm
 from langchain_pinecone import PineconeVectorStore
@@ -35,22 +24,22 @@ class AsistenteRAG:
             base_retriever=retriever_base
         )
         
-        self.chain_reformulacion = self._crear_cadena(template_reformulacion, self.light_llm)
-        self.chain_deteccion = self._crear_cadena(template_deteccion, self.light_llm)
-        self.chain_clasificacion = self._crear_cadena(template_respuesta, self.light_llm)
-        self.chain_cuestiona_agente = self._crear_cadena(template_cuestiona_agente, self.light_llm)
+        self.chain_reformulacion = self._crear_cadena(PROMPT_REFORMULACION, self.light_llm)
+        self.chain_deteccion = self._crear_cadena(PROMPT_DETECCION, self.light_llm)
+        self.chain_clasificacion = self._crear_cadena(PROMPT_CLASIFICADOR, self.light_llm)
+        self.chain_cuestiona_agente = self._crear_cadena(PROMPT_CUESTIONA_AGENTE, self.light_llm)
         
         self.cadenas_respuesta = {
-            "procedimental": self._crear_cadena(template_procedimental, self.llm),
-            "calendario": self._crear_cadena(template_calendario, self.llm),
-            "normativo": self._crear_cadena(template_normativo, self.llm),
-            "baremo": self._crear_cadena(template_baremo, self.llm),
-            "consulta": self._crear_cadena(template_consulta, self.light_llm),
-            "rechazo": self._crear_cadena(template_rechazo, self.light_llm)
+            "procedimental": self._crear_cadena(PROMPT_RESULTOR_PROCEDIMENTAL, self.llm),
+            "calendario": self._crear_cadena(PROMPT_RESULTOR_CALENDARIO, self.llm),
+            "normativo": self._crear_cadena(PROMPT_RESULTOR_NORMATIVO, self.llm),
+            "baremo": self._crear_cadena(PROMPT_RESULTOR_BAREMO, self.llm),
+            "consulta": self._crear_cadena(PROMPT_CONSULTA_USUARIO, self.light_llm),
+            "rechazo": self._crear_cadena(PROMPT_RECHAZO_AMABLE, self.light_llm)
         }
 
-    def _crear_cadena(self, funcion_template, llm_elegido):
-        prompt = ChatPromptTemplate.from_template(funcion_template())
+    def _crear_cadena(self, prompt, llm_elegido):
+        prompt = ChatPromptTemplate.from_template(prompt)
         return prompt | llm_elegido | StrOutputParser()
 
     def insertar_contexto(self, pregunta: str, historial_formateado: str):

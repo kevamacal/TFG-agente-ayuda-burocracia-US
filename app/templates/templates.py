@@ -1,5 +1,4 @@
-def template_deteccion():
-    return """
+PROMPT_DETECCION = """
         Dada la siguiente pregunta de un usuario y el contexto normativo, determina si la pregunta se encuentra dentro de los documentos que se te han proporcionado.
         Debes tener en cuenta que los usuarios en ocasiones se dirigen a la universidad de sevilla como la us.
         
@@ -18,8 +17,7 @@ def template_deteccion():
         RESPUESTA DEL ASISTENTE:
         """
         
-def template_cuestiona_agente():
-    return """
+PROMPT_CUESTIONA_AGENTE = """
         Eres un experto consultor de la universidad de Sevilla. 
         Tu ojetivo es devolver los siguientes valores estrictamente en función de las condiciones que se te presentan:
         1. POSIBLES RESPUESTAS: Únicamente podrás responder con "entrevistador" o "resultor".
@@ -40,8 +38,7 @@ def template_cuestiona_agente():
         
         """
         
-def template_reformulacion():
-    return """
+PROMPT_REFORMULACION = """
         Dada la siguiente conversación y la pregunta final del usuario, reformula la pregunta final 
         para que sea independiente y contenga todo el contexto (sujetos, trámites, etc.).
         NO respondas a la pregunta, SOLO devuelve la pregunta reformulada. Si ya es clara por sí sola, devuélvela tal cual.
@@ -54,8 +51,7 @@ def template_reformulacion():
         Pregunta reformulada:
         """
         
-def template_consulta():
-    return """
+PROMPT_CONSULTA_USUARIO = """
         Eres un Asistente de Atención al Estudiante y Soporte de la Universidad de Sevilla.
         Tu objetivo en este momento NO es dar la respuesta final a la duda del usuario, sino hacerle una pregunta aclaratoria.
 
@@ -79,8 +75,7 @@ def template_consulta():
         """
         
         
-def template_rechazo():
-    return """
+PROMPT_RECHAZO_AMABLE = """
         Eres un Asistente de Atención al Estudiante y Soporte de la Universidad de Sevilla.
         Tu objetivo en este momento es indicar amablemente al usuario que no puedes ayudarle con su consulta, porque no es una duda burocrática o no se puede resolver con la información del contexto.
         INSTRUCCIONES CLAVE:
@@ -101,8 +96,7 @@ def template_rechazo():
         RESPUESTA DEL ASISTENTE:
         """
         
-def template_respuesta():
-    return """
+PROMPT_CLASIFICADOR =  """
         Eres un enrutador experto de la Universidad de Sevilla.
         Tu trabajo es clasificar la consulta del usuario en una de estas 4 categorías:
         - 'procedimental': Trámites paso a paso, cómo hacer matrículas o justificar viajes por ejemplo.
@@ -123,8 +117,7 @@ def template_respuesta():
         Categoría:
         """
         
-def template_procedimental():
-    return """
+PROMPT_RESULTOR_PROCEDIMENTAL =  """
         Eres un asistente de la Universidad de Sevilla (US) especializado en guiar a los usuarios a través de trámites y procedimientos administrativos (como matrículas, liquidación de viajes, etc.).
 
         Basándote en el contexto proporcionado, explica de forma CLARA, ESTRUCTURADA y PASO A PASO cómo realizar el trámite que solicita el usuario. 
@@ -143,8 +136,7 @@ def template_procedimental():
         """
 
 
-def template_calendario():
-    return """
+PROMPT_RESULTOR_CALENDARIO = """
         Eres un asistente de la Universidad de Sevilla (US) especializado en el calendario académico y administrativo.
 
         Basándote en el contexto proporcionado, responde a la pregunta del usuario prestando especial atención a las FECHAS, PLAZOS y PERIODOS. 
@@ -163,8 +155,7 @@ def template_calendario():
         """
 
 
-def template_normativo():
-    return """
+PROMPT_RESULTOR_NORMATIVO = """
         Eres un asistente legal y normativo de la Universidad de Sevilla (US).
 
         Basándote en el contexto proporcionado, explica la normativa aplicable a la duda del usuario de forma comprensible, pero manteniendo el rigor formal.
@@ -183,8 +174,7 @@ def template_normativo():
         """
 
 
-def template_baremo():
-    return """
+PROMPT_RESULTOR_BAREMO = """
         Eres un asistente de la Universidad de Sevilla (US) experto en procesos de evaluación, baremación de méritos y contratación.
 
         Basándote en el contexto proporcionado, detalla cómo se calculan los puntos, cuáles son los criterios de evaluación o cuáles son los requisitos mínimos para la solicitud por la que pregunta el usuario.
