@@ -1,7 +1,7 @@
 from langgraph.graph import END, StateGraph, START
 from app.services.rag import asistente_rag
 from classes.StateSchema import StateSchema
-from agente.edges import decide_agente, decide_respuesta
+from agente.edges import decide_agente, decide_respuesta, decide_intencion
 from agente.consulta_usuario import consulta_usuario
 from agente.rechazo_amable import rechazo_amable
 from agente.resultor_procedimental import resultor_procedimental
@@ -14,16 +14,24 @@ from agente.estado_inicial import estado_inicial
 graph = StateGraph(state_schema=StateSchema)
 
 graph.add_node("estado_inicial", estado_inicial)
+graph.add_node("evalua_intencion", lambda state: state)
 graph.add_node("recuperador", recuperador)
 graph.add_node("entrevistador", consulta_usuario)
 graph.add_node("rechazo_amable", rechazo_amable)
-
 graph.add_node("clasificador", lambda state: state) 
-
 graph.add_node("procedimental", resultor_procedimental)
 graph.add_node("calendario", resultor_calendario)
 graph.add_node("normativo", resultor_normativo)
 graph.add_node("baremo", resultor_baremo)
+
+graph.add_conditional_edges(
+    "evalua_intencion",
+    decide_intencion,
+    {
+        "recuperador":"recuperador",
+        "rechazo_amable":"rechazo_amable"
+    }
+)
 
 graph.add_conditional_edges(
     "recuperador", 
@@ -31,7 +39,6 @@ graph.add_conditional_edges(
     {
         "entrevistador": "entrevistador",
         "resultor": "clasificador",
-        "rechazo_amable": "rechazo_amable"
     }
 )
 

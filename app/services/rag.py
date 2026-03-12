@@ -11,6 +11,7 @@ from templates.templates import (
     template_calendario,
     template_normativo,
     template_baremo,
+    template_cuestiona_agente
 )
 
 from utils.config import format_docs, config_light_llm, config_llm
@@ -37,6 +38,7 @@ class AsistenteRAG:
         self.chain_reformulacion = self._crear_cadena(template_reformulacion, self.light_llm)
         self.chain_deteccion = self._crear_cadena(template_deteccion, self.light_llm)
         self.chain_clasificacion = self._crear_cadena(template_respuesta, self.light_llm)
+        self.chain_cuestiona_agente = self._crear_cadena(template_cuestiona_agente, self.light_llm)
         
         self.cadenas_respuesta = {
             "procedimental": self._crear_cadena(template_procedimental, self.llm),
@@ -71,8 +73,14 @@ class AsistenteRAG:
         referencias = list(set([doc.metadata.get("source","Documento desconocido") for doc in docs]))
         return format_docs(docs), referencias
     
-    def contiene_duda_burocratica(self, pregunta_reformulada: str, historial_formateado: str, contexto: str):
+    def contiene_duda_burocratica(self, pregunta_reformulada: str, historial_formateado: str):
         return self.chain_deteccion.invoke({
+            "question": pregunta_reformulada, 
+            "historial": historial_formateado,
+        }).strip().lower()
+    
+    def contiene_suficiente_informacion(self, pregunta_reformulada: str, historial_formateado: str, contexto: str):
+        return self.chain_cuestiona_agente.invoke({
             "question": pregunta_reformulada, 
             "historial": historial_formateado,
             "context": contexto

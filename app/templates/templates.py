@@ -4,11 +4,28 @@ def template_deteccion():
         Debes tener en cuenta que los usuarios en ocasiones se dirigen a la universidad de sevilla como la us.
         
         INSTRUCCIONES CLAVE:
-        1. POSIBLES RESPUESTAS: Únicamente podrás responder con "resultor", "entrevistador" o "rechazo_amable".
-        2. CRITERIOS PARA "resultor": Si la pregunta del usuario se puede responder directamente con la información contenida en el contexto, o si la pregunta es una duda burocrática común que suele tener una respuesta clara basada en normativas (ejemplo: plazos de matrícula, requisitos para solicitar becas, etc.).
-        3. CRITERIOS PARA "entrevistador": Si la pregunta del usuario es ambigua, incompleta o si la respuesta depende de detalles específicos que no se han proporcionado en la pregunta NI EN EL HISTORIAL (ejemplo: "¿Cuándo puedo matricularme?" sin especificar en el historial si es nuevo ingreso). En este caso, se necesita hacer una pregunta aclaratoria. Si el historial ya contiene los datos necesarios, devuelve "resultor".
-        4. CRITERIOS PARA "rechazo_amable": Si la pregunta del usuario no tiene relación con temas burocráticos universitarios, o si claramente no se puede responder con la información del contexto (ejemplo: preguntas sobre eventos culturales, vida en el campus, etc.).
-        5. RECORDATORIO: UNICAMENTE RESPONDER CON UNA DE LAS TRES PALABRAS CLAVE ("resultor", "entrevistador" o "rechazo_amable") según los criterios anteriores. NO EXPLICAR TU DECISIÓN, SOLO DEVOLVER LA PALABRA CLAVE CORRESPONDIENTE.
+        1. POSIBLES RESPUESTAS: Únicamente podrás responder con "recuperador" o "rechazo_amable".
+        2. CRITERIOS PARA "recuperador": Si la pregunta del usuario tiene relación con temas burocráticos universitarios relacionados con la universidad de sevilla (ejemplo: plazos de matrícula, requisitos para solicitar becas, etc.).
+        3. CRITERIOS PARA "rechazo_amable": Si la pregunta del usuario no tiene relación con temas burocráticos universitarios, o si claramente no se puede responder con la información del contexto (ejemplo: preguntas sobre eventos culturales, vida en el campus, etc.).
+        4. RECORDATORIO: UNICAMENTE RESPONDER CON UNA DE LAS TRES PALABRAS CLAVE ("recuperador" o "rechazo_amable") según los criterios anteriores. NO EXPLICAR TU DECISIÓN, SOLO DEVOLVER LA PALABRA CLAVE CORRESPONDIENTE.
+        
+        HISTORIAL DE CONVERSACIÓN:
+        {historial}
+        
+        PREGUNTA DEL USUARIO:
+        {question}
+        
+        RESPUESTA DEL ASISTENTE:
+        """
+        
+def template_cuestiona_agente():
+    return """
+        Eres un experto consultor de la universidad de Sevilla. 
+        Tu ojetivo es devolver los siguientes valores estrictamente en función de las condiciones que se te presentan:
+        1. POSIBLES RESPUESTAS: Únicamente podrás responder con "entrevistador" o "resultor".
+        2. CRITERIOS PARA "entrevistador": Si con la pregunta otorgada por el usuario y el contexto otorgado por el recuperador no eres capaz de resolver claramente la consulta. 
+        3. CRITERIOS PARA "resultor": Si con la pregunta otorgada por el usuario y el contexto que ofrecen los documentos, eres capaz de resolver la consulta.
+        4. RECORDATORIO: UNICAMENTE RESPONDER CON UNA DE LAS DOS PALABRAS CLAVE ("entrevistador" o "resultor") según los criterios anteriores.
         
         HISTORIAL DE CONVERSACIÓN:
         {historial}
@@ -20,6 +37,7 @@ def template_deteccion():
         {question}
         
         RESPUESTA DEL ASISTENTE:
+        
         """
         
 def template_reformulacion():
