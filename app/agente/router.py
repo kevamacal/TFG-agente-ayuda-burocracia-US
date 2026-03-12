@@ -1,27 +1,29 @@
 from langgraph.graph import END, StateGraph
-from agente.resuelve_consultas import resuelve_consulta
+from app.services.rag import asistente_rag
+from classes.StateSchema import StateSchema
+from agente.edges import decide_agente, decide_respuesta
+
+# Importamos los nodos (fíjate que ya NO importo resuelve_consulta)
 from agente.consulta_usuario import consulta_usuario
 from agente.rechazo_amable import rechazo_amable
-from utils.rag import asistente_rag
-from classes.StateSchema import StateSchema
-import datetime
+from agente.resultor_procedimental import resultor_procedimental
+from agente.resultor_calendario import resultor_calendario
+from agente.resultor_normativo import resultor_normativo
+from agente.resultor_baremo import resultor_baremo
 
 graph = StateGraph(state_schema=StateSchema)
 
-def decide_agente(state: StateSchema):
-    print("Decidiendo agente...", datetime.datetime.now())
-    pregunta = state["pregunta"]
-    historial = state["historial"]
-    contexto = state["contexto"]
-    pregunta_reformulada = state["pregunta_reformulada"]
-    decision = asistente_rag.contiene_duda_burocratica(pregunta, historial, contexto, pregunta_reformulada)
-    print("Agente decidido exitosamente", datetime.datetime.now())
-    return decision
-
+# Nodos iniciales y finales
 graph.add_node("recuperador", asistente_rag.insertar_contexto)
 graph.add_node("entrevistador", consulta_usuario)
-graph.add_node("resultor", resuelve_consulta)
 graph.add_node("rechazo_amable", rechazo_amable)
+
+graph.add_node("clasificador", lambda state: state) 
+
+graph.add_node("procedimental", resultor_procedimental)
+graph.add_node("calendario", resultor_calendario)
+graph.add_node("normativo", resultor_normativo)
+graph.add_node("baremo", resultor_baremo)
 
 graph.set_entry_point("recuperador")
 
@@ -30,13 +32,28 @@ graph.add_conditional_edges(
     decide_agente,
     {
         "entrevistador": "entrevistador",
-        "resultor": "resultor",
+        "resultor": "clasificador",
         "rechazo_amable": "rechazo_amable"
     }
 )
 
+graph.add_conditional_edges(
+    "clasificador",
+    decide_respuesta,
+    {
+        "procedimental": "procedimental",
+        "calendario": "calendario",
+        "normativo": "normativo",
+        "baremo": "baremo"
+    }
+)
+
+# Todos los que generan respuesta final van al END
 graph.add_edge("entrevistador", END)
-graph.add_edge("resultor", END)
 graph.add_edge("rechazo_amable", END)
+graph.add_edge("procedimental", END)
+graph.add_edge("calendario", END)
+graph.add_edge("normativo", END)
+graph.add_edge("baremo", END)
 
 app = graph.compile()

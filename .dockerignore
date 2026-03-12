@@ -8,5 +8,5 @@ venv/
 .vscode/
 .git/
 .devcontainer/
-app/utils/ingestar_documentos.py
+scripts/
 Documentos_US/
