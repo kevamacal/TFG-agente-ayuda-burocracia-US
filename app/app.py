@@ -1,5 +1,5 @@
 import streamlit as st
-from agente.router import app
+from agente.router import router
 import datetime
 import time 
 
@@ -47,7 +47,7 @@ if prompt:
             }
             
             try:
-                estado_final = app.invoke(estado_inicial)
+                estado_final = router.invoke(estado_inicial)
                 print("Finalizada consulta", datetime.datetime.now(), "\n\n")
                 
                 stream = estado_final["stream"]

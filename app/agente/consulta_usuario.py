@@ -1,5 +1,5 @@
 from classes.StateSchema import StateSchema
-from app.services.rag import asistente_rag
+from services.rag import asistente_rag
 
 def consulta_usuario(state: StateSchema):
     contexto = state.get("contexto", "")

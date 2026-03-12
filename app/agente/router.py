@@ -1,7 +1,6 @@
 from langgraph.graph import END, StateGraph, START
-from app.services.rag import asistente_rag
 from classes.StateSchema import StateSchema
-from agente.edges import decide_agente, decide_respuesta, decide_intencion
+from agente.edges import decide_suficiente_informacion, decide_respuesta, decide_intencion
 from agente.consulta_usuario import consulta_usuario
 from agente.rechazo_amable import rechazo_amable
 from agente.resultor_procedimental import resultor_procedimental
@@ -35,7 +34,7 @@ graph.add_conditional_edges(
 
 graph.add_conditional_edges(
     "recuperador", 
-    decide_agente,
+    decide_suficiente_informacion,
     {
         "entrevistador": "entrevistador",
         "resultor": "clasificador",
@@ -54,7 +53,7 @@ graph.add_conditional_edges(
 )
 
 graph.add_edge(START, "estado_inicial")
-graph.add_edge("estado_inicial", "recuperador")
+graph.add_edge("estado_inicial", "evalua_intencion")
 graph.add_edge("entrevistador", END)
 graph.add_edge("rechazo_amable", END)
 graph.add_edge("procedimental", END)
@@ -62,4 +61,5 @@ graph.add_edge("calendario", END)
 graph.add_edge("normativo", END)
 graph.add_edge("baremo", END)
 
-app = graph.compile()
+router = graph.compile()
+print(router.get_graph().draw_mermaid(), "\n\n")
