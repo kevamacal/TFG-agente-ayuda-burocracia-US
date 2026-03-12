@@ -13,7 +13,6 @@ from templates.templates import (
     template_baremo,
 )
 
-# ¡Fuera StateSchema!
 from utils.config import format_docs, config_light_llm, config_llm
 from langchain_pinecone import PineconeVectorStore
 from utils.config import settings
@@ -95,3 +94,5 @@ class AsistenteRAG:
         cadena_activa = self.cadenas_respuesta.get(tipo_respuesta, self.cadenas_respuesta["normativo"])
         
         return cadena_activa.stream(inputs)
+    
+asistenteRAG = AsistenteRAG()

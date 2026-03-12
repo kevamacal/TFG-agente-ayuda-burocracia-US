@@ -1,7 +1,7 @@
 from classes.StateSchema import StateSchema
 from app.services.rag import asistente_rag
 
-def consulta_usuario(state: StateSchema):
+def rechazo_amable(state: StateSchema):
     contexto = state.get("contexto", "")
     pregunta = state.get("pregunta_reformulada", "")
     historial = state.get("historial_formateado", [])

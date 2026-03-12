@@ -2,7 +2,6 @@ import datetime
 from classes.StateSchema import StateSchema
 from services.rag import AsistenteRAG
 
-# Instanciamos nuestro servicio "puro" de IA
 rag = AsistenteRAG()
 
 def recuperador(state: StateSchema):
