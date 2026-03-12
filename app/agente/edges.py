@@ -9,9 +9,8 @@ def decide_ruta_inicial(state: StateSchema) -> str:
     
     pregunta = state.get("pregunta", "")
     historial = state.get("historial_formateado", [])
-    contexto = state.get("contexto", "")
     
-    decision = rag.contiene_duda_burocratica(pregunta, historial, contexto)
+    decision = rag.decide_ruta_inicial(pregunta, historial)
     
     return decision
 

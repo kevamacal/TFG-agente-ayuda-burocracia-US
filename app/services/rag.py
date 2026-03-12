@@ -62,7 +62,7 @@ class AsistenteRAG:
         referencias = list(set([doc.metadata.get("source","Documento desconocido") for doc in docs]))
         return format_docs(docs), referencias
     
-    def contiene_duda_burocratica(self, pregunta_reformulada: str, historial_formateado: str):
+    def decide_ruta_inicial(self, pregunta_reformulada: str, historial_formateado: str):
         return self.chain_deteccion.invoke({
             "question": pregunta_reformulada, 
             "historial": historial_formateado,
