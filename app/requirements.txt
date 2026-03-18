@@ -10,3 +10,10 @@ langchain-classic
 langchain-cohere
 pinecone
 langchain-groq
+psycopg2-binary
+uvicorn
+sqlalchemy
+alembic
+passlib[bcrypt]
+python-jose[cryptography]
+python-multipart

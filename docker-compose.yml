@@ -1,9 +1,42 @@
 services:
-  asistente-us:
-    build: .
-    container_name: asistente_us_container
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secretpassword 
+      POSTGRES_DB: asistente_us_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: 
+      context: ./backend 
+    container_name: asistente_us_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://admin:secretpassword@db:5432/asistente_us_db
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  frontend:
+    build: 
+      context: . 
+    container_name: asistente_us_frontend
     ports:
       - "8501:8501"
     env_file:
       - .env
     restart: always
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
