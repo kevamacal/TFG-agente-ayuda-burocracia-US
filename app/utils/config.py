@@ -38,3 +38,10 @@ def config_llm():
 def format_docs(docs):
     return "\n\n".join([d.page_content for d in docs])
 
+def get_eval_llm(model_name: str, temperature: float):
+    """Genera una instancia de LLM dinámica para pruebas."""
+    return ChatGroq(
+        temperature=temperature, 
+        model_name=model_name, 
+        api_key=settings.GROQ_API_KEY
+    )

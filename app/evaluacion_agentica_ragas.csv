@@ -1,0 +1,17 @@
+Modelo,Temp,Pregunta,Ruta_Esperada,Ruta_Tomada,Acierto_Router,Faithfulness,Answer_Relevancy
+llama-3.1-8b-instant,0.0,¿Qué día empiezan las clases en septiembre de 2025?,calendario,calendario,1,,0.5679921041446251
+llama-3.1-8b-instant,0.0,¿Cuáles son los pasos exactos para anular mi matrícula?,procedimental,procedimental,1,,0.6506713132155884
+llama-3.1-8b-instant,0.0,¿Puedo matricularme de 90 créditos en un solo curso?,consulta,procedimental,0,,
+llama-3.1-8b-instant,0.0,¿Cuál es la capital de Francia?,rechazo,rechazo,1,0.2857142857142857,0.0
+llama-3.1-8b-instant,0.5,¿Qué día empiezan las clases en septiembre de 2025?,calendario,calendario,1,,0.7987377350913685
+llama-3.1-8b-instant,0.5,¿Cuáles son los pasos exactos para anular mi matrícula?,procedimental,consulta,0,0.0,
+llama-3.1-8b-instant,0.5,¿Puedo matricularme de 90 créditos en un solo curso?,consulta,procedimental,0,,
+llama-3.1-8b-instant,0.5,¿Cuál es la capital de Francia?,rechazo,rechazo,1,0.2727272727272727,0.0
+llama-3.3-70b-versatile,0.0,¿Qué día empiezan las clases en septiembre de 2025?,calendario,calendario,1,,0.9805180440665754
+llama-3.3-70b-versatile,0.0,¿Cuáles son los pasos exactos para anular mi matrícula?,procedimental,consulta,0,0.3333333333333333,0.0
+llama-3.3-70b-versatile,0.0,¿Puedo matricularme de 90 créditos en un solo curso?,consulta,normativo,0,,0.7660604576462549
+llama-3.3-70b-versatile,0.0,¿Cuál es la capital de Francia?,rechazo,rechazo,1,0.16666666666666666,
+llama-3.3-70b-versatile,0.5,¿Qué día empiezan las clases en septiembre de 2025?,calendario,calendario,1,,
+llama-3.3-70b-versatile,0.5,¿Cuáles son los pasos exactos para anular mi matrícula?,procedimental,consulta,0,0.8571428571428571,
+llama-3.3-70b-versatile,0.5,¿Puedo matricularme de 90 créditos en un solo curso?,consulta,normativo,0,,
+llama-3.3-70b-versatile,0.5,¿Cuál es la capital de Francia?,rechazo,rechazo,1,0.0,
