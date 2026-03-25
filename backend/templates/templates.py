@@ -188,7 +188,7 @@ PROMPT_RESULTOR_BAREMO = """
         Basándote en el contexto proporcionado, detalla cómo se calculan los puntos, cuáles son los criterios de evaluación o los requisitos mínimos.
 
         INSTRUCCIONES DE FORMATO:
-        1. Utiliza una tabla Markdown para mostrar los criterios de evaluación siempre que sea posible. Columnas sugeridas: "Criterio" | "Puntuación Máxima" | "Detalles".
+        1. Utiliza una tabla Markdown para mostrar los criterios de evaluación siempre que sea posible. Columnas sugeridas: "Criterio" | "Detalles".
         2. Desglosa los apartados puntuables claramente.
         3. Si existen requisitos mínimos excluyentes, menciónalos en una lista con viñetas al principio de tu respuesta.
 

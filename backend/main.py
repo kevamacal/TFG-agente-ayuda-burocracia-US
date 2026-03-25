@@ -1,10 +1,12 @@
-from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 import models, schemas, security
 from database import engine, get_db
 from agente.router import router as agente_router
+from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks 
+from utils.config import config_light_llm 
+from database import SessionLocal
 
 # Crea las tablas si no existen
 models.Base.metadata.create_all(bind=engine)
@@ -93,11 +95,20 @@ def obtener_mensajes(conversacion_id: int, db: Session = Depends(get_db), usuari
 
 
 @app.post("/conversaciones/{conversacion_id}/chat")
-def enviar_mensaje(conversacion_id: int, chat_req: schemas.PreguntaChat, db: Session = Depends(get_db), usuario_actual: models.Usuario = Depends(get_usuario_actual)):
+def enviar_mensaje(
+    conversacion_id: int, 
+    chat_req: schemas.PreguntaChat, 
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db), 
+    usuario_actual: models.Usuario = Depends(get_usuario_actual)
+):
     """Guarda el mensaje del usuario, consulta a LangGraph y guarda la respuesta"""
     conv = db.query(models.Conversacion).filter(models.Conversacion.id == conversacion_id, models.Conversacion.usuario_id == usuario_actual.id).first()
     if not conv:
         raise HTTPException(status_code=404, detail="Conversación no encontrada")
+    
+    if conv.titulo == "Nueva conversación":
+        background_tasks.add_task(generar_y_guardar_titulo, conv.id, chat_req.pregunta)
     
     msg_usuario = models.Mensaje(conversacion_id=conv.id, rol="user", contenido=chat_req.pregunta)
     db.add(msg_usuario)
@@ -135,3 +146,55 @@ def enviar_mensaje(conversacion_id: int, chat_req: schemas.PreguntaChat, db: Ses
     db.commit()
 
     return {"respuesta": respuesta_texto, "referencias": referencias}
+
+def generar_y_guardar_titulo(conversacion_id: int, mensaje_usuario: str):
+    """Genera un título corto usando Groq y lo guarda en la base de datos."""
+    db = next(get_db()) 
+    
+    try:
+        llm = config_light_llm()
+        
+        prompt = (
+            "Eres un generador de títulos automáticos. "
+            "Resume el siguiente mensaje en un título de máximo 4 a 5 palabras. "
+            "Devuelve ÚNICAMENTE el texto del título, sin comillas, sin puntos finales "
+            "y sin introducciones. "
+            f"Mensaje: '{mensaje_usuario}'"
+        )
+        
+        respuesta = llm.invoke(prompt)
+        nuevo_titulo = respuesta.content.strip().replace('"', '').replace("'", "")
+        
+        conv = db.query(models.Conversacion).filter(models.Conversacion.id == conversacion_id).first()
+        if conv:
+            conv.titulo = nuevo_titulo
+            db.commit()
+            print(f"✅ Título generado para conv {conversacion_id}: {nuevo_titulo}")
+            
+    except Exception as e:
+        print(f"Error al generar el título en segundo plano: {e}")
+    finally:
+        db.close()
+        
+@app.delete("/conversaciones/{conversacion_id}")
+def eliminar_conversacion(conversacion_id: int, db: Session = Depends(get_db), usuario_actual: models.Usuario = Depends(get_usuario_actual)):
+    """Elimina una conversación y todos sus mensajes (gracias al cascade delete)"""
+    conv = db.query(models.Conversacion).filter(models.Conversacion.id == conversacion_id, models.Conversacion.usuario_id == usuario_actual.id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversación no encontrada")
+    
+    db.delete(conv)
+    db.commit()
+    return {"mensaje": "Conversación eliminada correctamente"}
+
+@app.put("/conversaciones/{conversacion_id}", response_model=schemas.ConversacionResponse)
+def renombrar_conversacion(conversacion_id: int, conversacion: schemas.ConversacionCreate, db: Session = Depends(get_db), usuario_actual: models.Usuario = Depends(get_usuario_actual)):
+    """Actualiza el título de una conversación"""
+    conv = db.query(models.Conversacion).filter(models.Conversacion.id == conversacion_id, models.Conversacion.usuario_id == usuario_actual.id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversación no encontrada")
+    
+    conv.titulo = conversacion.titulo
+    db.commit()
+    db.refresh(conv)
+    return conv
