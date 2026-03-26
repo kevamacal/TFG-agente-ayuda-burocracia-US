@@ -5,7 +5,6 @@ import os
 
 st.set_page_config(page_title="Asistente US", page_icon="🎓")
 
-# Si usas Docker, cambia esto a "http://backend:8000" o pásalo como variable de entorno
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 if "token" not in st.session_state:
@@ -37,7 +36,6 @@ def api_request(method, endpoint, data=None):
         st.error(f"Error de conexión: Asegúrate de que FastAPI está corriendo en {API_URL}")
         st.stop()
 
-# --- PANTALLA DE LOGIN / REGISTRO ---
 if not st.session_state.token:
     st.image("https://www.uco.es/investigacion/proyectos/SEBASENet/images/thumb/Logo_US.png/655px-Logo_US.png", width=100)
     st.title("Asistente de Burocracia US")
@@ -67,7 +65,6 @@ if not st.session_state.token:
             else:
                 st.error("Error al registrar el usuario")
 
-# --- PANTALLA PRINCIPAL DEL CHAT ---
 else:
     with st.sidebar:
         st.title("Mis Conversaciones")
@@ -78,13 +75,11 @@ else:
                 st.session_state.messages = []
                 st.rerun()
                 
-        # Cargar historial de conversaciones
         res = api_request("GET", "/conversaciones")
-        conversaciones = [] # Guardamos esto para buscar el título actual luego
+        conversaciones = [] 
         if res and res.status_code == 200:
             conversaciones = res.json()
             for conv in conversaciones:
-                # Usamos una distinción visual si el chat es el actual
                 prefix = "🟢" if st.session_state.conversacion_id == conv['id'] else "💬"
                 if st.button(f"{prefix} {conv['titulo']}", key=f"conv_{conv['id']}", use_container_width=True):
                     st.session_state.conversacion_id = conv['id']
@@ -93,15 +88,12 @@ else:
                         st.session_state.messages = [{"role": m["rol"], "content": m["contenido"]} for m in res_msg.json()]
                     st.rerun()
 
-        # --- NUEVO: CONTROLES DE LA CONVERSACIÓN ACTUAL ---
         if st.session_state.conversacion_id:
             st.divider()
             st.markdown("#### ⚙️ Opciones del chat actual")
             
-            # Buscar el título actual de la conversación seleccionada
             titulo_actual = next((c['titulo'] for c in conversaciones if c['id'] == st.session_state.conversacion_id), "Chat")
             
-            # Formulario para renombrar
             nuevo_titulo = st.text_input("Renombrar chat", value=titulo_actual, key="input_renombrar")
             col1, col2 = st.columns(2)
             
@@ -110,13 +102,12 @@ else:
                     if nuevo_titulo != titulo_actual:
                         res_rename = api_request("PUT", f"/conversaciones/{st.session_state.conversacion_id}", data={"titulo": nuevo_titulo})
                         if res_rename and res_rename.status_code == 200:
-                            st.rerun() # Recarga para mostrar el nuevo nombre
+                            st.rerun() 
             
             with col2:
                 if st.button("🗑️ Eliminar", use_container_width=True, type="primary"):
                     res_del = api_request("DELETE", f"/conversaciones/{st.session_state.conversacion_id}")
                     if res_del and res_del.status_code == 200:
-                        # Si borramos, limpiamos el estado y recargamos
                         st.session_state.conversacion_id = None
                         st.session_state.messages = []
                         st.rerun()

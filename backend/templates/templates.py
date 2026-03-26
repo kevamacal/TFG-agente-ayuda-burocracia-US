@@ -126,6 +126,9 @@ PROMPT_RESULTOR_PROCEDIMENTAL =  """
         1. Utiliza listas numeradas (1., 2., 3.) para los pasos secuenciales.
         2. Resalta en **negrita** los nombres de plataformas web (ej. SEVIUS, Secretaría Virtual), nombres de impresos y documentos requeridos.
         3. Si hay advertencias importantes o requisitos previos, ponlos al principio bajo un encabezado "⚠️ Requisitos Previos".
+        
+        INSTRUCCIÓN OBLIGATORIA DE CITACIÓN:
+        Siempre que aportes un dato, paso o explicación basada en el contexto, DEBES incluir al final la cita exacta de donde lo obtuviste utilizando estrictamente este formato: *(Fuente: [Nombre de la FUENTE], Página: [Número de PÁGINA])*. Extrae esta información de los encabezados FUENTE y PÁGINA proporcionados en el contexto.
 
         Historial de conversación:
         {historial}
@@ -149,6 +152,9 @@ PROMPT_RESULTOR_CALENDARIO = """
         1. Si la respuesta contiene MÚLTIPLES fechas o plazos, preséntalos SIEMPRE en una tabla Markdown con columnas claras (ej. "Trámite / Evento" | "Fecha de Inicio" | "Fecha de Fin" | "Observaciones").
         2. Si la respuesta es sobre una ÚNICA fecha, respóndela en un párrafo claro resaltando la fecha en **negrita**.
         3. Sé extremadamente preciso con los días, meses y años. No inventes ninguna fecha que no esté en el contexto. Si el contexto no especifica el año, indícalo.
+        
+        INSTRUCCIÓN OBLIGATORIA DE CITACIÓN:
+        Siempre que aportes un dato, paso o explicación basada en el contexto, DEBES incluir al final la cita exacta de donde lo obtuviste utilizando estrictamente este formato: *(Fuente: [Nombre de la FUENTE], Página: [Número de PÁGINA])*. Extrae esta información de los encabezados FUENTE y PÁGINA proporcionados en el contexto.
 
         Historial de conversación:
         {historial}
@@ -168,6 +174,9 @@ PROMPT_RESULTOR_NORMATIVO = """
 
         Basándote en el contexto proporcionado, explica la normativa aplicable a la duda del usuario de forma comprensible, pero manteniendo el rigor formal.
         Si el contexto menciona artículos específicos, normativas concretas o resoluciones rectorales, cítalos en tu respuesta para dar validez a la información.
+        
+        INSTRUCCIÓN OBLIGATORIA DE CITACIÓN:
+        Siempre que aportes un dato, paso o explicación basada en el contexto, DEBES incluir al final la cita exacta de donde lo obtuviste utilizando estrictamente este formato: *(Fuente: [Nombre de la FUENTE], Página: [Número de PÁGINA])*. Extrae esta información de los encabezados FUENTE y PÁGINA proporcionados en el contexto.
         
         Historial de conversación:
         {historial}
@@ -191,6 +200,9 @@ PROMPT_RESULTOR_BAREMO = """
         1. Utiliza una tabla Markdown para mostrar los criterios de evaluación siempre que sea posible. Columnas sugeridas: "Criterio" | "Detalles".
         2. Desglosa los apartados puntuables claramente.
         3. Si existen requisitos mínimos excluyentes, menciónalos en una lista con viñetas al principio de tu respuesta.
+        
+        INSTRUCCIÓN OBLIGATORIA DE CITACIÓN:
+        Siempre que aportes un dato, paso o explicación basada en el contexto, DEBES incluir al final la cita exacta de donde lo obtuviste utilizando estrictamente este formato: *(Fuente: [Nombre de la FUENTE], Página: [Número de PÁGINA])*. Extrae esta información de los encabezados FUENTE y PÁGINA proporcionados en el contexto.
 
         Historial de conversación:
         {historial}

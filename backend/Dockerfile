@@ -1,4 +1,3 @@
-# Usamos una imagen ligera de Python 3.11
 FROM python:3.11-slim-bookworm
 
 WORKDIR /app

@@ -5,9 +5,8 @@ import os
 
 SECRET_KEY = os.getenv("SECRET_KEY", "una_clave_super_secreta_y_larga_para_desarrollo")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # El token dura 7 días
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 
 
-# Configuración de Passlib para encriptar usando bcrypt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def verify_password(plain_password, hashed_password):

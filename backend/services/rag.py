@@ -59,8 +59,22 @@ class AsistenteRAG:
         
     def _buscar_contexto(self, pregunta_reformulada: str):    
         docs = self.retriever.invoke(pregunta_reformulada)
-        referencias = list(set([doc.metadata.get("source","Documento desconocido") for doc in docs]))
-        return format_docs(docs), referencias
+        
+        referencias = list(set([
+            f"{doc.metadata.get('source', 'Documento desconocido')} (Página {int(doc.metadata.get('page', 0))})" 
+            for doc in docs
+        ]))
+        
+        contextos_formateados = []
+        for doc in docs:
+            fuente = doc.metadata.get('source', 'Desconocido')
+            pagina = int(doc.metadata.get('page', 0))
+            texto = doc.page_content
+            contextos_formateados.append(f"FUENTE: {fuente} | PÁGINA: {pagina}\n{texto}")
+            
+        contexto_final = "\n\n---\n\n".join(contextos_formateados)
+        
+        return contexto_final, referencias
     
     def decide_ruta_inicial(self, pregunta_reformulada: str, historial_formateado: str):
         return self.chain_deteccion.invoke({

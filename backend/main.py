@@ -8,12 +8,10 @@ from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
 from utils.config import config_light_llm 
 from database import SessionLocal
 
-# Crea las tablas si no existen
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="API Asistente US")
 
-# --- DEPENDENCIAS DE AUTENTICACIÓN ---
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 @app.get("/")
@@ -132,11 +130,7 @@ def enviar_mensaje(
         for chunk in estado_final["stream"]:
             respuesta_texto += chunk
             
-        # Añadir referencias si existen
         referencias = estado_final.get("referencias", [])
-        if referencias:
-            referencias_md = "\n".join([f"- {ref}" for ref in referencias])
-            respuesta_texto += f"\n\n**Fuentes consultadas**\n\n{referencias_md}"
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en el agente: {str(e)}")

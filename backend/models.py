@@ -21,7 +21,6 @@ class Conversacion(Base):
     titulo = Column(String, default="Nueva conversación")
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relaciones
     usuario = relationship("Usuario", back_populates="conversaciones")
     mensajes = relationship("Mensaje", back_populates="conversacion", cascade="all, delete-orphan")
 
