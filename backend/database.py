@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 
 SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://admin:secretpassword@localhost:5432/asistente_us_db"
+    "postgresql://usuario_local:pass_local@localhost:5432/db_local"
 )
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
