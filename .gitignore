@@ -1,6 +1,6 @@
 .env
 __pycache__/
-.venv/
+venv/
 *.db
 *.sqlite
 poppler-25.12.0/

@@ -18,5 +18,60 @@
     "question": "¿Cuál es la capital de Francia?",
     "expected_route": "rechazo",
     "ground_truth": "El asistente debe indicar que no puede responder a la pregunta, ya que su función exclusiva es proporcionar soporte sobre trámites, dudas y normativas relacionadas con la Universidad de Sevilla."
+  },
+  {
+    "question": "¿Cuándo es el periodo de exámenes de junio de 2026?",
+    "expected_route": "calendario",
+    "ground_truth": "El periodo de exámenes de la convocatoria ordinaria del segundo cuatrimestre se establece en el calendario académico 2025-2026 aprobado por Consejo de Gobierno."
+  },
+  {
+    "question": "¿Hasta cuándo puedo modificar mi matrícula en el primer cuatrimestre?",
+    "expected_route": "calendario",
+    "ground_truth": "El plazo de modificación de matrícula del primer cuatrimestre está establecido en las normas de matrícula para el curso 2025-2026."
+  },
+  {
+    "question": "¿Qué documentos necesito para liquidar un viaje como personal propio de la US?",
+    "expected_route": "procedimental",
+    "ground_truth": "Para la liquidación de viajes como personal propio se necesitan: la comisión de servicio aprobada, los billetes de transporte, las facturas de alojamiento, y el impreso de liquidación cumplimentado. Se debe presentar a través del sistema de gestión correspondiente."
+  },
+  {
+    "question": "¿Cómo solicito el reconocimiento de créditos por actividades universitarias?",
+    "expected_route": "procedimental",
+    "ground_truth": "El procedimiento de reconocimiento de créditos requiere presentar solicitud en el centro correspondiente acompañada de la documentación acreditativa de las actividades realizadas, según la normativa de reconocimiento y transferencia de créditos de la US."
+  },
+  {
+    "question": "¿Qué normativa regula la permanencia de los estudiantes en la US?",
+    "expected_route": "normativo",
+    "ground_truth": "La permanencia se regula por la normativa de permanencia de la Universidad de Sevilla, que establece el número mínimo de créditos que debe aprobar un estudiante para poder continuar sus estudios."
+  },
+  {
+    "question": "¿Qué requisitos hay para participar en un programa de movilidad internacional?",
+    "expected_route": "normativo",
+    "ground_truth": "Los requisitos para la movilidad internacional incluyen estar matriculado en la US, cumplir con los requisitos académicos mínimos y los requisitos lingüísticos del programa de destino, según la normativa de movilidad vigente."
+  },
+  {
+    "question": "¿Cómo se calcula la puntuación del apartado de experiencia docente en el baremo?",
+    "expected_route": "baremo",
+    "ground_truth": "La experiencia docente se puntúa según los criterios establecidos en el baremo de méritos, asignando puntos por año de servicio docente en distintos niveles educativos."
+  },
+  {
+    "question": "¿Cuáles son los requisitos mínimos para superar la fase de evaluación de méritos?",
+    "expected_route": "baremo",
+    "ground_truth": "Los requisitos mínimos de la fase de evaluación se establecen en las instrucciones de baremación, incluyendo umbrales mínimos por apartado según la especialidad."
+  },
+  {
+    "question": "¿Cómo se me aplica la beca si me matriculo a tiempo parcial?",
+    "expected_route": "consulta",
+    "ground_truth": "Para responder sobre becas y matrícula a tiempo parcial, es necesario conocer el tipo de beca solicitada y el tipo de estudios que cursa el usuario, ya que las condiciones varían."
+  },
+  {
+    "question": "¿Me recomiendas un buen restaurante cerca de la facultad?",
+    "expected_route": "rechazo",
+    "ground_truth": "El asistente debe indicar amablemente que su función es ayudar con trámites y normativas universitarias, no con recomendaciones gastronómicas o de ocio."
+  },
+  {
+    "question": "¿Cuántos créditos necesito aprobar como mínimo para no perder mi plaza?",
+    "expected_route": "normativo",
+    "ground_truth": "Según la normativa de permanencia de la US, los estudiantes de nuevo ingreso deben aprobar un mínimo de créditos en su primer año para poder continuar matriculados en la titulación."
   }
 ]

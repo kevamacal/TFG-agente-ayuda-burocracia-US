@@ -23,7 +23,8 @@ def config_light_llm():
         temperature=0.1, 
         model_name="llama-3.1-8b-instant", 
         api_key=settings.GROQ_API_KEY,
-        max_tokens=150 
+        max_tokens=300,
+        max_retries=10
     )
     return llm
 
@@ -31,7 +32,8 @@ def config_llm():
     llm = ChatGroq(
         temperature=0.1, 
         model_name="llama-3.3-70b-versatile",
-        api_key=settings.GROQ_API_KEY
+        api_key=settings.GROQ_API_KEY,
+        max_retries=10
     )
     return llm
 
@@ -43,5 +45,6 @@ def get_eval_llm(model_name: str, temperature: float):
     return ChatGroq(
         temperature=temperature, 
         model_name=model_name, 
-        api_key=settings.GROQ_API_KEY
+        api_key=settings.GROQ_API_KEY,
+        max_retries=10
     )

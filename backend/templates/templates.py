@@ -6,7 +6,7 @@ PROMPT_DETECCION = """
         1. POSIBLES RESPUESTAS: Únicamente podrás responder con "recuperador" o "rechazo_amable".
         2. CRITERIOS PARA "recuperador": Si la pregunta del usuario tiene relación con temas burocráticos universitarios relacionados con la universidad de sevilla (ejemplo: plazos de matrícula, requisitos para solicitar becas, etc.).
         3. CRITERIOS PARA "rechazo_amable": Si la pregunta del usuario no tiene relación con temas burocráticos universitarios, o si claramente no se puede responder con la información del contexto (ejemplo: preguntas sobre eventos culturales, vida en el campus, etc.).
-        4. RECORDATORIO: UNICAMENTE RESPONDER CON UNA DE LAS TRES PALABRAS CLAVE ("recuperador" o "rechazo_amable") según los criterios anteriores. NO EXPLICAR TU DECISIÓN, SOLO DEVOLVER LA PALABRA CLAVE CORRESPONDIENTE.
+        4. RECORDATORIO: UNICAMENTE RESPONDER CON UNA DE LAS DOS PALABRAS CLAVE ("recuperador" o "rechazo_amable") según los criterios anteriores. NO EXPLICAR TU DECISIÓN, SOLO DEVOLVER LA PALABRA CLAVE CORRESPONDIENTE.
         
         HISTORIAL DE CONVERSACIÓN:
         {historial}
@@ -18,12 +18,27 @@ PROMPT_DETECCION = """
         """
         
 PROMPT_CUESTIONA_AGENTE = """
-        Eres un experto consultor de la universidad de Sevilla. 
-        Tu oBjetivo es devolver los siguientes valores estrictamente en función de las condiciones que se te presentan:
-        1. POSIBLES RESPUESTAS: Únicamente podrás responder con "entrevistador" o "resultor".
-        2. CRITERIOS PARA "entrevistador": Si con la pregunta otorgada por el usuario y el contexto otorgado por el recuperador no eres capaz de resolver claramente la consulta. 
-        3. CRITERIOS PARA "resultor": Si con la pregunta otorgada por el usuario y el contexto que ofrecen los documentos, eres capaz de resolver la consulta.
-        4. RECORDATORIO: TU SALIDA DEBE SER EXACTAMENTE UNA DE ESTAS DOS PALABRAS Y NADA MÁS: "entrevistador" o "resultor". No incluyas puntos ni texto adicional.
+        Eres un experto consultor de la Universidad de Sevilla.
+        Tu objetivo es decidir si puedes responder directamente o si necesitas pedir más datos al usuario.
+        
+        POSIBLES RESPUESTAS: Únicamente "entrevistador" o "resultor".
+        
+        CRITERIOS PARA "entrevistador":
+        - La respuesta correcta DEPENDE de un dato personal del usuario que NO ha proporcionado (tipo de estudio, curso, situación de matrícula, titulación concreta, etc.).
+        - El contexto contiene VARIAS normativas diferentes según el caso del usuario y no se puede saber cuál aplicar sin preguntar.
+        
+        CRITERIOS PARA "resultor":
+        - El contexto contiene información suficiente para dar una respuesta directa y completa.
+        - La pregunta es lo bastante concreta como para que no haya ambigüedad sobre qué normativa aplicar.
+        - Aunque la respuesta tenga matices, se puede explicar sin necesitar datos adicionales del usuario.
+        
+        EJEMPLOS:
+        Pregunta: "¿Puedo matricularme de 90 créditos?" → entrevistador (depende de si es Grado o Máster, dato que falta)
+        Pregunta: "¿Cuándo empieza el plazo de matrícula?" → resultor (el contexto tiene las fechas concretas)
+        Pregunta: "¿Cómo anulo mi matrícula?" → resultor (el procedimiento es el mismo para todos)
+        Pregunta: "¿Me pueden convalidar una asignatura?" → entrevistador (depende de la titulación de origen y destino)
+        
+        RECORDATORIO: TU SALIDA DEBE SER EXACTAMENTE UNA DE ESTAS DOS PALABRAS Y NADA MÁS: "entrevistador" o "resultor". No incluyas puntos ni texto adicional.
         
         HISTORIAL DE CONVERSACIÓN:
         {historial}
@@ -98,11 +113,22 @@ PROMPT_RECHAZO_AMABLE = """
         
 PROMPT_CLASIFICADOR =  """
         Eres un enrutador experto de la Universidad de Sevilla.
-        Tu trabajo es clasificar la consulta del usuario en una de estas 4 categorías:
-        - 'procedimental': Trámites paso a paso, cómo hacer matrículas o justificar viajes por ejemplo.
-        - 'calendario': Preguntas sobre fechas, plazos, inicio y fin de clase.
-        - 'normativa': Dudas legales, convalidaciones de créditos o normativas de movilidad.
-        - 'baremo': Cálculo de puntos, evaluación de méritos, tribunales.
+        Tu trabajo es clasificar la consulta del usuario en una de estas 4 categorías según EL TIPO DE RESPUESTA QUE NECESITA:
+        
+        - 'procedimental': El usuario necesita instrucciones PASO A PASO para completar un trámite (matricularse, anular matrícula, liquidar un viaje, solicitar algo).
+        - 'calendario': El usuario pregunta por FECHAS, PLAZOS o PERIODOS concretos (cuándo empieza algo, hasta cuándo puede hacer algo).
+        - 'normativo': El usuario pregunta por REGLAS, REQUISITOS LEGALES o DERECHOS (qué dice la normativa, qué requisitos hay, qué artículo aplica).
+        - 'baremo': El usuario pregunta sobre PUNTUACIONES, MÉRITOS, CRITERIOS DE EVALUACIÓN o CÁLCULO DE NOTAS en procesos de selección.
+        
+        EJEMPLOS:
+        Pregunta: "¿Cuáles son los pasos para anular mi matrícula?" → procedimental
+        Pregunta: "¿Cuándo es el último día para matricularse?" → calendario
+        Pregunta: "¿Cuántos créditos puedo matricular como máximo?" → normativo
+        Pregunta: "¿Cómo se calculan los puntos de experiencia docente?" → baremo
+        Pregunta: "¿Qué documentos necesito para liquidar un viaje?" → procedimental
+        Pregunta: "¿Cuándo empiezan los exámenes de junio?" → calendario
+        Pregunta: "¿Qué requisitos hay para el reconocimiento de créditos?" → normativo
+        Pregunta: "¿Qué puntuación mínima se requiere para superar la fase de oposición?" → baremo
         
         Responde ÚNICAMENTE con la palabra clave exacta, sin puntos finales, comillas, ni explicaciones extra.
         

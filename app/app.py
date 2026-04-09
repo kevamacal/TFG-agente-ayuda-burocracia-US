@@ -111,7 +111,6 @@ else:
                         st.session_state.conversacion_id = None
                         st.session_state.messages = []
                         st.rerun()
-        # -------------------------------------------------
 
         st.divider()
         if st.button("🚪 Cerrar Sesión", use_container_width=True):
