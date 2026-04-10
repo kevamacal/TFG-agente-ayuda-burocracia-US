@@ -89,11 +89,10 @@ class AsistenteRAG:
             "context": contexto
         }).strip().lower()
 
-    def clasificar_categoria(self, pregunta_reformulada: str, historial_formateado: str, contexto: str):
+    def clasificar_categoria(self, pregunta_reformulada: str, historial_formateado: str):
         return self.chain_clasificacion.invoke({
             "question": pregunta_reformulada, 
-            "historial": historial_formateado,
-            "context": contexto
+            "historial": historial_formateado
         }).strip().lower()
     
     def responder_consulta(self, contexto: str, historial_formateado: str, pregunta_reformulada: str, tipo_respuesta: str):

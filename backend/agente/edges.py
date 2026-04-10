@@ -34,7 +34,7 @@ def decide_respuesta(state: StateSchema) -> str:
     historial = state.get("historial_formateado", [])
     contexto = state.get("contexto", "")
     
-    decision = rag.clasificar_categoria(pregunta_reformulada, historial,contexto)
+    decision = rag.clasificar_categoria(pregunta_reformulada, historial)
     
     decision_limpia = decision.strip().lower()
     

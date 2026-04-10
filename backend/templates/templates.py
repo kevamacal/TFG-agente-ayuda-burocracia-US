@@ -130,14 +130,11 @@ PROMPT_CLASIFICADOR =  """
         Pregunta: "¿Qué requisitos hay para el reconocimiento de créditos?" → normativo
         Pregunta: "¿Qué puntuación mínima se requiere para superar la fase de oposición?" → baremo
         
-        Responde ÚNICAMENTE con la palabra clave exacta, sin puntos finales, comillas, ni explicaciones extra.
+        Respuestas válidas: 'procedimental', 'calendario', 'normativo', 'baremo'. Responde ÚNICAMENTE con la palabra clave exacta, sin puntos finales, comillas, ni explicaciones extra.
         
         Historial de conversación:
         {historial}
         
-        Contexto recuperado:
-        {context}
-
         Pregunta del usuario: {question}
 
         Categoría:

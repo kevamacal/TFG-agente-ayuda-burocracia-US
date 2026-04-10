@@ -17,6 +17,95 @@ if "messages" not in st.session_state:
 if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 
+def inject_css():
+    # Modo Claro Limpio
+    bg_color = "#000000"
+    bg_sec = "#171A21"
+    text_color = "#FFFFFF"
+    expander_bg = "#1A1C24"
+
+    css = f"""
+    <style>
+        /* Tipografía y Variables de Base */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        
+        html, body, [class*="css"] {{
+            font-family: 'Inter', sans-serif;
+            background-color: {bg_color} !important;
+            color: {text_color} !important;
+        }}
+
+        h1, h2, h3, h4, h5, h6, p, span, div, label, li {{
+            color: {text_color} !important;
+        }}
+
+        .stApp {{
+            background-color: {bg_color};
+        }}
+
+        /* Sidebar */
+        [data-testid="stSidebar"] {{
+            background-color: {bg_sec} !important;
+            border-right: 1px solid rgba(128, 128, 128, 0.1);
+        }}
+
+        /* Burbujas de Chat Globales (Animación) */
+        [data-testid="stChatMessage"] {{
+            animation: fadeInUp 0.4s ease-out forwards;
+            background-color: transparent !important;
+            padding: 1rem 0;
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+        }}
+
+        @keyframes fadeInUp {{
+            from {{ opacity: 0; transform: translateY(10px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
+        }}
+
+        /* Burbuja del USUARIO - Alinear a la derecha y rojo corporativo */
+        [data-testid="stChatMessage"][data-baseweb="card"] {{ /* Reset base card */ }}
+        
+        [data-testid="stChatMessage"]:has([data-testid="stMarkdownContainer"] p) {{}} /* Trick to scope, but streamit limits this */
+        
+        /* Para simular interfaz SaaS ocultamos avatares por defecto y hacemos cards */
+        .stChatMessage:nth-child(even) {{
+            /* Assumes user is usually even or bot is even, we use Streamlit classes */
+        }}
+        
+        /* Botones generales más pulidos */
+        div.stButton > button {{
+            border-radius: 6px;
+            border: 1px solid rgba(128,128,128,0.2);
+            transition: all 0.2s;
+            font-weight: 500;
+        }}
+        div.stButton > button:hover {{
+            background-color: #9D1C34;
+            color: white !important;
+            border-color: #9D1C34;
+            transform: translateY(-1px);
+        }}
+
+        /* Caja del Input */
+        [data-testid="stChatInput"] {{
+            border-radius: 12px;
+            border: 1px solid rgba(128,128,128,0.2);
+            background-color: {bg_sec};
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }}
+        
+        /* Expanders (Fuentes) */
+        [data-testid="stExpander"] {{
+            background-color: {expander_bg};
+            border-radius: 8px;
+            border: 1px solid rgba(128,128,128,0.1);
+            margin-top: 10px;
+        }}
+    </style>
+    """
+    st.markdown(css, unsafe_allow_html=True)
+
 def api_request(method, endpoint, data=None):
     headers = {}
     if st.session_state.token:
@@ -40,8 +129,9 @@ def api_request(method, endpoint, data=None):
         st.stop()
 
 if not st.session_state.token:
+    inject_css()
     st.image("https://www.uco.es/investigacion/proyectos/SEBASENet/images/thumb/Logo_US.png/655px-Logo_US.png", width=100)
-    st.title("Asistente de Burocracia US")
+    st.title("Asistente Académico")
     
     tab1, tab2 = st.tabs(["Iniciar Sesión", "Registrarse"])
     
@@ -70,9 +160,10 @@ if not st.session_state.token:
                 st.error("Error al registrar el usuario")
 
 else:
+    inject_css()
     with st.sidebar:
-        st.title("Mis Conversaciones")
-        if st.button("➕ Nuevo Chat", use_container_width=True):
+        st.title("Conversaciones")
+        if st.button("Nuevo Chat", use_container_width=True, type="primary"):
             res = api_request("POST", "/conversaciones", data={"titulo": "Nueva conversación"})
             if res and res.status_code == 200:
                 st.session_state.conversacion_id = res.json()["id"]
@@ -84,7 +175,7 @@ else:
         if res and res.status_code == 200:
             conversaciones = res.json()
             for conv in conversaciones:
-                prefix = "🟢" if st.session_state.conversacion_id == conv['id'] else "💬"
+                prefix = "•" if st.session_state.conversacion_id == conv['id'] else ""
                 if st.button(f"{prefix} {conv['titulo']}", key=f"conv_{conv['id']}", use_container_width=True):
                     st.session_state.conversacion_id = conv['id']
                     res_msg = api_request("GET", f"/conversaciones/{conv['id']}/mensajes")
@@ -103,7 +194,7 @@ else:
 
         if st.session_state.conversacion_id:
             st.divider()
-            st.markdown("#### ⚙️ Opciones del chat actual")
+            st.markdown("#### Configuración de chat")
             
             titulo_actual = next((c['titulo'] for c in conversaciones if c['id'] == st.session_state.conversacion_id), "Chat")
             
@@ -111,14 +202,14 @@ else:
             col1, col2 = st.columns(2)
             
             with col1:
-                if st.button("💾 Guardar", use_container_width=True):
+                if st.button("Aplicar cambios", use_container_width=True):
                     if nuevo_titulo != titulo_actual:
                         res_rename = api_request("PUT", f"/conversaciones/{st.session_state.conversacion_id}", data={"titulo": nuevo_titulo})
                         if res_rename and res_rename.status_code == 200:
                             st.rerun() 
             
             with col2:
-                if st.button("🗑️ Eliminar", use_container_width=True, type="primary"):
+                if st.button("Eliminar", use_container_width=True, type="primary"):
                     res_del = api_request("DELETE", f"/conversaciones/{st.session_state.conversacion_id}")
                     if res_del and res_del.status_code == 200:
                         st.session_state.conversacion_id = None
@@ -127,24 +218,25 @@ else:
 
         if st.session_state.get("is_admin", False):
             st.divider()
-            with st.expander("⚙️ Inyectar Conocimiento", expanded=False):
-                st.info("Añade un PDF a la mente del agente. El proceso es asíncrono y se ejecuta en background.")
+            with st.expander("Gestión de conocimiento", expanded=False):
+                st.info("Añade un documento PDF nuevo al repositorio del agente.")
                 pdf_file = st.file_uploader("Documento PDF", type=["pdf"])
-                if st.button("🚀 Inyectar al Agente") and pdf_file:
-                    with st.spinner("Procesando en el servidor..."):
+                if st.button("Procesar documento") and pdf_file:
+                    with st.spinner("Integrando..."):
                         files = {"file": (pdf_file.name, pdf_file.getvalue(), "application/pdf")}
                         headers = {"Authorization": f"Bearer {st.session_state.token}"}
                         try:
                             resp = requests.post(f"{API_URL}/admin/ingestar", headers=headers, files=files)
                             if resp.status_code == 202:
-                                st.toast(f"✅ Documento enviado. Procesando e inyectando en segundo plano.", icon="🚀")
+                                st.toast(f"Documento encolado para procesado.", icon="✅")
                             else:
-                                st.error("Error al inyectar documento.")
+                                st.error("Error al añadir documento.")
                         except Exception as e:
-                            st.error(f"Error de conexión: {e}")
+                            st.error(f"Error de red: {e}")
 
         st.divider()
-        if st.button("🚪 Cerrar Sesión", use_container_width=True):
+            
+        if st.button("Cerrar Sesión", use_container_width=True):
             st.session_state.token = None
             st.session_state.conversacion_id = None
             st.session_state.messages = []
@@ -152,10 +244,10 @@ else:
             st.rerun()  
 
     st.image("https://www.uco.es/investigacion/proyectos/SEBASENet/images/thumb/Logo_US.png/655px-Logo_US.png", width=100)
-    st.title("Asistente de Burocracia US")
+    st.title("Asistente Académico")
     
     if not st.session_state.conversacion_id:
-        st.info("👈 Selecciona o crea una conversación en el menú lateral para empezar.")
+        st.info("Selecciona o crea una conversación en el menú lateral para empezar.")
     else:
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
@@ -163,7 +255,7 @@ else:
                 
                 refs = message.get("referencias", [])
                 if refs:
-                    with st.expander("📚 Fuentes Consultadas"):
+                    with st.expander("Fuentes y referencias consultadas"):
                         for r in refs:
                             st.markdown(f"- {r}")
                 
@@ -174,7 +266,7 @@ else:
             st.session_state.messages.append({"role": "user", "content": prompt})
             
             with st.chat_message("assistant"):
-                with st.spinner("Consultando la normativa vigente..."):
+                with st.spinner("Consultando normativas..."):
                     res = api_request("POST", f"/conversaciones/{st.session_state.conversacion_id}/chat", data={"pregunta": prompt})
                     
                     if res and res.status_code == 200:
@@ -190,7 +282,7 @@ else:
                         st.write_stream(stream_text)
                         
                         if refs_nuevas:
-                            with st.expander("📚 Fuentes Consultadas"):
+                            with st.expander("Fuentes y referencias consultadas"):
                                 for r in refs_nuevas:
                                     st.markdown(f"- {r}")
                                     
@@ -198,4 +290,4 @@ else:
                         st.rerun()
                         
                     else:
-                        st.error("Error al comunicarse con el servidor FastAPI.")
+                        st.error("Error al comunicarse con el servidor.")
