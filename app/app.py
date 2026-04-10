@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import time
 import os
+import json
 
 st.set_page_config(page_title="Asistente US", page_icon="🎓")
 
@@ -13,6 +14,8 @@ if "conversacion_id" not in st.session_state:
     st.session_state.conversacion_id = None
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "is_admin" not in st.session_state:
+    st.session_state.is_admin = False
 
 def api_request(method, endpoint, data=None):
     headers = {}
@@ -49,6 +52,7 @@ if not st.session_state.token:
             res = api_request("POST_FORM", "/login", data={"username": email_login, "password": password_login})
             if res and res.status_code == 200:
                 st.session_state.token = res.json()["access_token"]
+                st.session_state.is_admin = res.json().get("is_admin", False)
                 st.rerun()
             else:
                 st.error("Credenciales incorrectas")
@@ -85,7 +89,16 @@ else:
                     st.session_state.conversacion_id = conv['id']
                     res_msg = api_request("GET", f"/conversaciones/{conv['id']}/mensajes")
                     if res_msg and res_msg.status_code == 200:
-                        st.session_state.messages = [{"role": m["rol"], "content": m["contenido"]} for m in res_msg.json()]
+                        mensajes_parseados = []
+                        for m in res_msg.json():
+                            refs = []
+                            if m.get("referencias"):
+                                try:
+                                    refs = json.loads(m["referencias"])
+                                except:
+                                    pass
+                            mensajes_parseados.append({"role": m["rol"], "content": m["contenido"], "referencias": refs})
+                        st.session_state.messages = mensajes_parseados
                     st.rerun()
 
         if st.session_state.conversacion_id:
@@ -112,11 +125,30 @@ else:
                         st.session_state.messages = []
                         st.rerun()
 
+        if st.session_state.get("is_admin", False):
+            st.divider()
+            with st.expander("⚙️ Inyectar Conocimiento", expanded=False):
+                st.info("Añade un PDF a la mente del agente. El proceso es asíncrono y se ejecuta en background.")
+                pdf_file = st.file_uploader("Documento PDF", type=["pdf"])
+                if st.button("🚀 Inyectar al Agente") and pdf_file:
+                    with st.spinner("Procesando en el servidor..."):
+                        files = {"file": (pdf_file.name, pdf_file.getvalue(), "application/pdf")}
+                        headers = {"Authorization": f"Bearer {st.session_state.token}"}
+                        try:
+                            resp = requests.post(f"{API_URL}/admin/ingestar", headers=headers, files=files)
+                            if resp.status_code == 202:
+                                st.toast(f"✅ Documento enviado. Procesando e inyectando en segundo plano.", icon="🚀")
+                            else:
+                                st.error("Error al inyectar documento.")
+                        except Exception as e:
+                            st.error(f"Error de conexión: {e}")
+
         st.divider()
         if st.button("🚪 Cerrar Sesión", use_container_width=True):
             st.session_state.token = None
             st.session_state.conversacion_id = None
             st.session_state.messages = []
+            st.session_state.is_admin = False
             st.rerun()  
 
     st.image("https://www.uco.es/investigacion/proyectos/SEBASENet/images/thumb/Logo_US.png/655px-Logo_US.png", width=100)
@@ -128,6 +160,12 @@ else:
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
+                
+                refs = message.get("referencias", [])
+                if refs:
+                    with st.expander("📚 Fuentes Consultadas"):
+                        for r in refs:
+                            st.markdown(f"- {r}")
                 
         prompt = st.chat_input("Escribe tu duda aquí (ej: ¿Cómo anulo la matrícula?)")
         
@@ -142,14 +180,21 @@ else:
                     if res and res.status_code == 200:
                         data = res.json()
                         respuesta_completa = data["respuesta"]
+                        refs_nuevas = data.get("referencias", [])
                         
                         def stream_text():
                             for word in respuesta_completa.split(" "):
                                 yield word + " "
-                                time.sleep(0.04)
+                                time.sleep(0.015)
                                 
                         st.write_stream(stream_text)
-                        st.session_state.messages.append({"role": "assistant", "content": respuesta_completa})
+                        
+                        if refs_nuevas:
+                            with st.expander("📚 Fuentes Consultadas"):
+                                for r in refs_nuevas:
+                                    st.markdown(f"- {r}")
+                                    
+                        st.session_state.messages.append({"role": "assistant", "content": respuesta_completa, "referencias": refs_nuevas})
                         st.rerun()
                         
                     else:

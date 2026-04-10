@@ -24,7 +24,7 @@ def config_light_llm():
         model_name="llama-3.1-8b-instant", 
         api_key=settings.GROQ_API_KEY,
         max_tokens=300,
-        max_retries=10
+        max_retries=3
     )
     return llm
 

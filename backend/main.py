@@ -4,9 +4,13 @@ from jose import JWTError, jwt
 import models, schemas, security
 from database import engine, get_db
 from agente.router import router as agente_router
-from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks 
+from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks, UploadFile, File
 from utils.config import config_light_llm 
 from database import SessionLocal
+import os
+import shutil
+import json
+from services.ingestion import procesar_un_pdf
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -46,7 +50,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     
     access_token = security.create_access_token(data={"sub": str(usuario.id)})
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "is_admin": usuario.is_admin}
 
 
 def get_usuario_actual(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -68,6 +72,11 @@ def get_usuario_actual(token: str = Depends(oauth2_scheme), db: Session = Depend
     if usuario is None:
         raise credentials_exception
     return usuario
+
+@app.get("/me", response_model=schemas.UsuarioResponse)
+def leer_usuario_actual(usuario_actual: models.Usuario = Depends(get_usuario_actual)):
+    """Devuelve la info del usuario conectado actualmente (incluyendo si es is_admin)"""
+    return usuario_actual
 
 @app.get("/conversaciones", response_model=list[schemas.ConversacionResponse])
 def listar_conversaciones(usuario_actual: models.Usuario = Depends(get_usuario_actual)):
@@ -113,7 +122,14 @@ def enviar_mensaje(
     db.commit()
 
     historial_db = db.query(models.Mensaje).filter(models.Mensaje.conversacion_id == conv.id).order_by(models.Mensaje.fecha_creacion).all()
-    historial_langgraph = [{"role": m.rol, "content": m.contenido} for m in historial_db]
+    
+    mensajes_recientes = historial_db[-5:] if len(historial_db) > 5 else historial_db
+    
+    historial_langgraph = []
+    if conv.resumen_memoria and len(historial_db) > 5:
+        historial_langgraph.append({"role": "system", "content": f"Resumen de conversación antigua: {conv.resumen_memoria}"})
+        
+    historial_langgraph.extend([{"role": m.rol, "content": m.contenido} for m in mensajes_recientes])
 
     estado_inicial = {
         "pregunta": chat_req.pregunta, 
@@ -135,11 +151,46 @@ def enviar_mensaje(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en el agente: {str(e)}")
 
-    msg_asistente = models.Mensaje(conversacion_id=conv.id, rol="assistant", contenido=respuesta_texto)
+    referencias_str = json.dumps(referencias)
+    msg_asistente = models.Mensaje(conversacion_id=conv.id, rol="assistant", contenido=respuesta_texto, referencias=referencias_str)
     db.add(msg_asistente)
     db.commit()
 
+    # Disparamos poda de contexto asíncrona
+    background_tasks.add_task(actualizar_resumen_memoria, conv.id)
+
     return {"respuesta": respuesta_texto, "referencias": referencias}
+
+def actualizar_resumen_memoria(conversacion_id: int):
+    """Actualiza el resumen de memoria para proteger la ventana de contexto de Groq"""
+    db = next(get_db())
+    try:
+        conv = db.query(models.Conversacion).filter(models.Conversacion.id == conversacion_id).first()
+        if not conv: return
+        
+        historial = db.query(models.Mensaje).filter(models.Mensaje.conversacion_id == conv.id).order_by(models.Mensaje.fecha_creacion).all()
+        if len(historial) <= 5: return
+        
+        mensajes_viejos = historial[:-4] # Excluimos los 4 últimos para que no se duplique la info en contexto
+        texto = "\n".join([f"{'Usuario' if m.rol == 'user' else 'Asistente'}: {m.contenido}" for m in mensajes_viejos])
+        
+        llm = config_light_llm()
+        prompt = (
+            "Resume MUY brevemente la siguiente conversación (el inicio de una conversación larga). "
+            "Conserva solo los metadatos relevantes (si el usuario es de grado o máster, si va sobre becas, "
+            "alguna fecha específica nombrada o problema principal cerrado) para que el asistente siga recordando "
+            "de qué va sin tener todo el texto literal. NO inventes nada.\n"
+            f"HISTORIAL ANTIGUO:\n{texto}"
+        )
+        
+        res = llm.invoke(prompt)
+        conv.resumen_memoria = res.content.strip()
+        db.commit()
+        print(f"🧠 Memoria comprimida para conversacion {conversacion_id}.")
+    except Exception as e:
+        print(f"Error comprimiendo memoria: {e}")
+    finally:
+        db.close()
 
 def generar_y_guardar_titulo(conversacion_id: int, mensaje_usuario: str):
     """Genera un título corto usando Groq y lo guarda en la base de datos."""
@@ -192,3 +243,26 @@ def renombrar_conversacion(conversacion_id: int, conversacion: schemas.Conversac
     db.commit()
     db.refresh(conv)
     return conv
+
+# --- ADMINISTRACIÓN ---
+
+def get_usuario_admin(usuario_actual: models.Usuario = Depends(get_usuario_actual)):
+    if not usuario_actual.is_admin:
+        raise HTTPException(status_code=403, detail="No autorizado. Solo administradores.")
+    return usuario_actual
+
+@app.post("/admin/ingestar", status_code=202)
+def ingestar_pdf(background_tasks: BackgroundTasks, file: UploadFile = File(...), admin: models.Usuario = Depends(get_usuario_admin)):
+    """Sube un archivo PDF de manera temporal y lo ingesta en Pinecone usando LlamaParse"""
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Solo se permiten archivos .pdf")
+        
+    temp_dir = os.path.join(os.path.dirname(__file__), "temp_uploads")
+    os.makedirs(temp_dir, exist_ok=True)
+    temp_path = os.path.join(temp_dir, file.filename)
+    
+    with open(temp_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    background_tasks.add_task(procesar_un_pdf, temp_path, file.filename)
+    return {"mensaje": f"El archivo '{file.filename}' se está procesando en segundo plano."}

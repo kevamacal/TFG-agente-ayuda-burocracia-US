@@ -9,6 +9,7 @@ class UsuarioCreate(BaseModel):
 class UsuarioResponse(BaseModel):
     id: int
     email: EmailStr
+    is_admin: bool = False
     fecha_creacion: datetime
 
     class Config:
@@ -17,6 +18,7 @@ class UsuarioResponse(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    is_admin: bool = False
 
 class MensajeBase(BaseModel):
     rol: str
@@ -25,6 +27,7 @@ class MensajeBase(BaseModel):
 class MensajeResponse(MensajeBase):
     id: int
     fecha_creacion: datetime
+    referencias: str | None = None
 
     class Config:
         from_attributes = True

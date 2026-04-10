@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -9,6 +9,7 @@ class Usuario(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
+    is_admin = Column(Boolean, default=False)
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
 
     conversaciones = relationship("Conversacion", back_populates="usuario", cascade="all, delete-orphan")
@@ -19,6 +20,7 @@ class Conversacion(Base):
     id = Column(Integer, primary_key=True, index=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     titulo = Column(String, default="Nueva conversación")
+    resumen_memoria = Column(Text, nullable=True)
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
 
     usuario = relationship("Usuario", back_populates="conversaciones")
@@ -31,6 +33,7 @@ class Mensaje(Base):
     conversacion_id = Column(Integer, ForeignKey("conversaciones.id"), nullable=False)
     rol = Column(String, nullable=False) 
     contenido = Column(Text, nullable=False)
+    referencias = Column(Text, nullable=True, default='[]')
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
 
     conversacion = relationship("Conversacion", back_populates="mensajes")

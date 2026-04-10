@@ -16,3 +16,5 @@ langchain-pinecone
 langchain-cohere
 pinecone
 langchain-groq
+llama-parse
+nest-asyncio
