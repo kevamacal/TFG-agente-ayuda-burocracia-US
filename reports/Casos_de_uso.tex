@@ -1,0 +1,372 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\begin{document}
+
+\newpage
+\section{Batería de Preguntas para Validación del Agente}
+
+Este apartado contiene 50 preguntas diseñadas para evaluar los diferentes nodos del agente (rechazo amable, entrevistador, baremo, calendario, normativo, procedimental) en base a los documentos de la Universidad de Sevilla proporcionados. Las respuestas han sido generadas por el modelo Llama 3.1 ejecutado en local con contexto real recuperado de Pinecone (RAG).
+
+\subsection{Categoría 1: Rechazo Amable (Fuera de dominio) (1-8)}
+\textit{Evalúa la capacidad del agente para detectar consultas fuera del dominio de la US y generar una respuesta cordial de rechazo.}
+\begin{itemize}
+      \item \textbf{P1.} ¿Cuál es la receta tradicional de la paella valenciana? \\
+            \textbf{Nodo activado:} rechazo \\
+            \textbf{Respuesta del agente:} Lo siento, pero como asistente de atención al estudiante de la Universidad de Sevilla, no puedo ayudarte con consultas sobre recetas culinarias. Mi función es proporcionar información y resolver dudas relacionadas con trámites administrativos, normativas universitarias o cualquier otra cuestión que se refiera a la vida académica en nuestra institución.
+
+            Si estás buscando la receta tradicional de la paella valenciana, te recomiendo consultar un libro de cocina especializado en gastronomía española o buscar fuentes en línea de reputados chefs y blogs de comida. También podrías considerar visitar el Museo de Gastronomía Valenciana, que ofrece información detallada sobre la historia y las técnicas detrás de esta deliciosa receta.
+
+            Si necesitas ayuda con algo relacionado con tu matrícula, calificaciones o cualquier otro tema universitario, estaré encantado de asistirte. ¿Hay algo más en lo que pueda ayudarte?
+
+      \item \textbf{P2.} ¿Me puedes recomendar una buena serie de Netflix para ver este fin de semana? \\
+            \textbf{Nodo activado:} rechazo \\
+            \textbf{Respuesta del agente:} Lo siento, pero como asistente de Atención al Estudiante, mi función es ayudarte con cuestiones relacionadas con trámites y normativas universitarias. No puedo ofrecerte recomendaciones sobre series de Netflix.
+
+            Si necesitas ayuda para algo específico relacionado con la Universidad de Sevilla, como tramitar un título, solicitar una beca o consultar horarios de clase, estaré encantado de ayudarte.
+
+            Sin embargo, si deseas encontrar recomendaciones de series de Netflix, te sugiero que visites el sitio web oficial de Netflix o consultes las páginas de críticas y reseñas de películas y series en línea. También puedes preguntar a tus amigos o familiares por sus recomendaciones.
+
+            ¿Hay algo más con lo que pueda ayudarte relacionado con la Universidad de Sevilla?
+
+      \item \textbf{P3.} ¿Cómo puedo configurar el Bluetooth de mi coche para conectar el móvil? \\
+            \textbf{Nodo activado:} rechazo \\
+            \textbf{Respuesta del agente:} Lo siento, pero como asistente de atención al estudiante, no puedo ayudarte con consultas relacionadas con la configuración de dispositivos electrónicos en vehículos. Sin embargo, te recomendaría contactar con el servicio técnico del fabricante de tu coche o buscar ayuda en línea a través de recursos como YouTube, foros de usuarios o el sitio web oficial del fabricante.
+
+            Si necesitas ayuda con algo relacionado con la Universidad de Sevilla, como trámites académicos, normativas universitarias o servicios disponibles para estudiantes, estaré encantado de ayudarte. ¿Hay algo más en lo que pueda asistirte?
+
+      \item \textbf{P4.} ¿Qué equipo ganó la última Champions League? \\
+            \textbf{Nodo activado:} rechazo \\
+            \textbf{Respuesta del agente:} Lo siento, pero como asistente de Atención al Estudiante de la Universidad de Sevilla, no puedo ayudarte con información sobre competiciones deportivas. Si necesitas ayuda con trámites o normativas universitarias, estaré encantado de asistirte.
+
+            Si deseas saber quién ganó la última Champions League, te recomiendo consultar fuentes especializadas en noticias deportivas como UEFA.com, ESPN Deportes o Marca.com. También puedes buscar en redes sociales o aplicaciones de noticias deportivas para obtener la información más actualizada. ¿Necesitas ayuda con algo más relacionado con la Universidad de Sevilla?
+
+      \item \textbf{P5.} Necesito consejos para cuidar un gato recién adoptado, ¿me ayudas? \\
+            \textbf{Nodo activado:} rechazo \\
+            \textbf{Respuesta del agente:} Lo siento mucho, pero como Asistente de Atención al Estudiante de la Universidad de Sevilla, mi función es ayudarte con trámites y normativas relacionadas con la universidad. Desafortunadamente, no puedo asesorarte sobre el cuidado de un gato recién adoptado.
+
+            Si necesitas consejos o información sobre cómo cuidar a tu nuevo amigo felino, te recomiendo que contactes con la Asociación Protectora de Animales de Sevilla (APAS) o con un veterinario local. También puedes buscar en línea recursos confiables y recomendaciones de expertos en el cuidado de mascotas.
+
+            Si tienes alguna otra pregunta relacionada con la universidad, estaré encantado de ayudarte. ¡Buena suerte con tu nuevo gato!
+
+      \item \textbf{P6.} ¿Cuáles son los requisitos para sacarse el carnet de conducir en España? \\
+            \textbf{Nodo activado:} rechazo \\
+            \textbf{Respuesta del agente:} Lo siento, pero como Asistente de Atención al Estudiante de la Universidad de Sevilla, no puedo ayudarte con cuestiones relacionadas con trámites o normativas fuera del ámbito universitario. Sin embargo, puedo sugerirte dónde podrías encontrar ayuda.
+
+            Si necesitas información sobre los requisitos para sacar el carnet de conducir en España, te recomiendo que consultes la página web del Ministerio de Transporte, Movilidad y Agenda Urbana o la Dirección General de Tráfico. También puedes acudir a un centro de examen de conducción o a una oficina de tráfico para obtener más información.
+
+            Si tienes alguna otra pregunta relacionada con la Universidad de Sevilla o sus servicios, estaré encantado de ayudarte.
+
+      \item \textbf{P7.} Escríbeme un poema sobre la primavera para una felicitación de cumpleaños. \\
+            \textbf{Nodo activado:} rechazo \\
+            \textbf{Respuesta del agente:} Lo siento, pero no puedo ayudarte con eso. Como Asistente de Atención al Estudiante, mi función es asistir a los estudiantes en cuestiones relacionadas con trámites y normativas de la Universidad de Sevilla. Si necesitas ayuda con algo específico como matrículas, becas o cualquier otra cuestión académica o administrativa, estaré encantado de ayudarte.
+
+            Si lo que buscas es un poema para una felicitación de cumpleaños, te recomendaría visitar la biblioteca universitaria. Allí encontrarás libros y recursos en línea con poemas y textos inspiradores que podrían ser perfectos para tu ocasión. También puedes buscar en Internet o en aplicaciones de creación de contenido creativo donde podrías encontrar ideas y sugerencias para escribir un poema personalizado.
+
+            ¿Hay algo más en lo que pueda ayudarte relacionado con la Universidad?
+
+      \item \textbf{P8.} ¿Qué diferencias hay entre un iPhone 15 y un Samsung Galaxy S24? \\
+            \textbf{Nodo activado:} rechazo \\
+            \textbf{Respuesta del agente:} Lo siento, pero como asistente de atención al estudiante de la Universidad de Sevilla, no puedo ayudarte con consultas sobre productos tecnológicos específicos. Mi función es proporcionar información y resolver dudas relacionadas con trámites académicos, normativas universitarias o servicios ofrecidos por la institución.
+
+            Si necesitas ayuda para elegir un teléfono móvil o comparar características entre diferentes modelos, te recomendaría visitar una tienda especializada en electrónica o buscar información en línea a través de fuentes confiables como foros de tecnología o sitios web de análisis de productos. También podrías consultar con amigos o familiares que tengan experiencia con estos dispositivos.
+
+            Si tienes alguna otra pregunta relacionada con la Universidad de Sevilla, estaré encantado de ayudarte.
+
+\end{itemize}
+
+\subsection{Categoría 2: Entrevistador (9-16)}
+\textit{Analiza el desempeño del agente cuando la consulta es ambigua y necesita pedir más datos al usuario.}
+\begin{itemize}
+      \item \textbf{P9.} Voy a ir a un congreso y quiero que me liquiden los gastos del viaje, ¿qué tengo que entregar documentalmente? \\
+            \textbf{Nodo activado:} procedimental \\
+            \textbf{Respuesta del agente:} Para realizar el trámite de liquidación de gastos de viaje por asistencia a un congreso, sigue estos pasos:
+
+            \begin{enumerate}
+                \item \textbf{Descarga y completa el formulario de liquidación de gastos de viaje}: Accede al enlace proporcionado para descargar la versión vigente del formulario de liquidación de gastos de viaje. Una vez descargado, asegúrate de que es la versión actualizada.
+                \item \textbf{Completa los datos necesarios}:
+                \begin{itemize}
+                    \item Titular beneficiario y datos de la actividad motivo del viaje
+                    \item Datos necesarios para el cálculo de dietas de alojamiento y manutención
+                    \item Datos de locomoción
+                    \item Datos de inscripción u otros gastos relacionados con la actividad
+                    \item Datos sobre anticipo de viajes (en su caso)
+                    \item Datos de la cuenta bancaria donde abonarle los gastos
+                    \item Datos de la orgánica y proyecto que financia la liquidación
+                \end{itemize}
+                \item \textbf{Adjunta la documentación justificativa}:
+                \begin{itemize}
+                    \item Comisión de servicio o autorización de desplazamiento
+                    \item Memoria justificativa (describa las actividades realizadas, relación con los objetivos del proyecto, vínculo con el proyecto y situación laboral)
+                    \item Evidencia de la realización de la actividad (motivo del viaje): certificado de asistencia o documento firmado por responsable del centro donde haya tenido lugar la estancia
+                    \item Facturas abonadas por el interesado, así como justificantes de los pagos efectuados
+                \end{itemize}
+                \item \textbf{Presenta la solicitud de abono}: Una vez cumplimentada y firmada la liquidación, presenta la solicitud de abono junto con la documentación obligatoria justificativa en el lugar y forma indicados.
+            \end{enumerate}
+
+            Recuerda que es importante verificar que las facturas incluyan los datos fiscales de la persona que realiza el viaje y no los de la Universidad de Sevilla.
+
+      \item \textbf{P10.} Quiero que me reconozcan los créditos que hice en mis anteriores estudios, ¿cómo funciona exactamente el proceso? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} ¿Podrías decirme qué tipo de título o programa académico estás cursando actualmente en la Universidad de Sevilla? Esto me ayudará a entender mejor tu situación y a proporcionarte información más precisa sobre el proceso de reconocimiento de créditos.
+
+      \item \textbf{P11.} Tengo un par de artículos científicos clave, ¿cómo se valora esto puntualmente en el Baremo de Contratación? \\
+            \textbf{Nodo activado:} baremo \\
+            \textbf{Respuesta del agente:} Basándome exclusivamente en el contexto proporcionado, los artículos científicos de revista se valoran según el epígrafe 3.4 del baremo.
+
+            \textbf{Puntuación:} El baremo no establece distinción entre las fuentes de citas, valorando el mayor número de citas validadas por la comisión.
+
+            \textbf{Criterios de evaluación:}
+
+            \begin{enumerate}
+                \item Los datos de citas de un artículo científico deben ser introducidos por el candidato.
+                \item La aplicación Bareprof no comprueba tales datos de citas.
+                \item El baremo valora el mayor número de citas validadas por la comisión.
+            \end{enumerate}
+
+            \textbf{Puntuación específica:} No se proporciona una puntuación específica para los artículos científicos de revista en el contexto proporcionado. Sin embargo, se puede inferir que la puntuación dependerá del número de citas válidas y de la relevancia de las publicaciones en las que se han publicado los artículos.
+
+            \textbf{Recomendación:} Es importante que el candidato introduzca correctamente los datos de citas de sus artículos científicos y que acredite documentalmente su validez. La comisión evaluará el número de citas válidas para determinar la puntuación correspondiente.
+
+      \item \textbf{P12.} He leído que tengo derecho a una exención para no pagar los precios públicos de la matrícula, ¿me la pueden tramitar? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} ¿Cuál es el tipo de exención que crees que tienes derecho a obtener? ¿Es por ser beneficiario de la condición de familia numerosa, persona con discapacidad o víctima de actos de terrorismo, o alguna otra circunstancia?
+
+      \item \textbf{P13.} Llevo dando algunas clases universitarias durante varios cuatrimestres, ¿cómo se computa esto exactamente en el baremo? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Excelente, gracias por preguntar. Para poder ayudarte mejor, necesitaría saber si estas clases que estás dando son como PDI (Personal Investigador) o como docencia en asignaturas regladas universitarias. ¿Podrías decirme qué tipo de contrato tienes para impartir esas clases?
+
+      \item \textbf{P14.} Tengo una duda con mis exámenes, ¿cuántas convocatorias tengo en total para aprobar una asignatura matriculada? \\
+            \textbf{Nodo activado:} calendario \\
+            \textbf{Respuesta del agente:} Según lo establecido en el Reglamento General de Actividades Docentes y las normas de permanencia de la Universidad de Sevilla, un estudiante tiene derecho a examen y evaluación de las asignaturas matriculadas, siempre que no existan incompatibilidades académicas derivadas de los respectivos planes de estudios.
+
+            En cuanto al número de convocatorias para aprobar una asignatura, según lo establecido en el artículo 20.1 del Reglamento General de Actividades Docentes y las normas de permanencia de la Universidad de Sevilla, un estudiante de primer curso de nuevo ingreso debe superar, al menos, una asignatura reglada en cualquiera de las convocatorias oficiales del curso académico para poder continuar los mismos estudios.
+
+            Sin embargo, si se trata de una asignatura matriculada por segunda o posteriores veces, el número de convocatorias agotadas es diferente. Según la información proporcionada en la pantalla, tienes 5 convocatorias agotadas en la asignatura "Microeconomía" y 5 convocatorias agotadas en la asignatura "Anatomía Humana".
+
+            En general, un estudiante tiene derecho a examen y evaluación de las asignaturas matriculadas hasta que se cumplan los requisitos establecidos para aprobarlas. Sin embargo, si no se aprueban después de varias convocatorias, el expediente queda cerrado a todos los efectos.
+
+            Es importante tener en cuenta que cada caso es único y puede haber excepciones o regulaciones adicionales que apliquen en tu situación específica. Te recomiendo consultar con la secretaría del centro o con un asesor académico para obtener información más precisa y personalizada sobre tus derechos y obligaciones como estudiante de la Universidad de Sevilla.
+
+      \item \textbf{P15.} Me quiero dar de baja y anular mi matrícula entera este año, ¿entonces me devolverán el dinero o todo lo que he pagado? \\
+            \textbf{Nodo activado:} normativo \\
+            \textbf{Respuesta del agente:} Según la normativa proporcionada, si decides darte de baja y anular tu matrícula entera este año, no te devolverán el dinero o todo lo que has pagado. La normativa establece los siguientes efectos en caso de anulación de matrícula:
+
+            \begin{itemize}
+                \item No procederá la devolución de los importes abonados en concepto de precios públicos por servicios académicos y administrativos y el seguro escolar, ni se eximirá de la obligación de satisfacer las cantidades pendientes de pago.
+                \item El abono de las cantidades pendientes de pago no podrá ser objeto de aplazamiento, fraccionamiento ni domiciliación bancaria.
+                \item Serán de aplicación los recargos económicos en la siguiente matrícula que realicen en los mismos estudios.
+                \item No se computará la matrícula realizada a efectos académicos y supondrá la pérdida de las calificaciones incorporadas en acta.
+                \item Si el estudiante accedió por el procedimiento de admisión en el curso 2025-2026, perderá la plaza adjudicada.
+            \end{itemize}
+
+            Es importante tener en cuenta que la normativa puede variar dependiendo de las circunstancias específicas de tu caso. Es recomendable consultar con el centro educativo o con un representante del mismo para obtener información más detallada y precisa sobre los procedimientos y consecuencias de anular tu matrícula.
+
+      \item \textbf{P16.} ¿Estoy completamente obligado a realizar la evaluación continua de una asignatura con mis compañeros de proyecto? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} "¿Podrías especificar qué tipo de asignatura es y cuál es su plan de organización docente? Esto me ayudaría a entender mejor el contexto en el que se aplican las normas sobre evaluación continua."
+
+\end{itemize}
+
+\subsection{Categoría 3: Baremo (17-26)}
+\textit{Pruebas relativas a la extracción y aplicación de criterios de evaluación y baremación de méritos en Bareprof.}
+\begin{itemize}
+      \item \textbf{P17.} Para la plaza de Profesor Ayudante Doctor, ¿cuál es el máximo de puntos que puedo conseguir en el apartado de actividad investigadora según el baremo de 2024? \\
+            \textbf{Nodo activado:} baremo \\
+            \textbf{Respuesta del agente:} Según el baremo de 2024, para la plaza de Profesor Ayudante Doctor, el apartado de Actividad Investigadora tiene un máximo de puntos de 100.
+
+      \item \textbf{P18.} En el baremo de 2024, ¿con qué coeficiente de afinidad se valoran automáticamente los artículos publicados en revistas indexadas en JCR Q1 y Q2? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Disculpa por no tener acceso al texto completo del baremo de 2024. Sin embargo, puedo hacer una pregunta para aclarar la consulta.
+
+            ¿Podrías indicarme si el artículo publicado en revista indexada en JCR Q1 o Q2 es un artículo científico de Revista (epígrafe 3.4 del baremo) y, por lo tanto, se valorará con un coeficiente de afinidad determinado?
+
+      \item \textbf{P19.} Dentro de la experiencia docente universitaria en el baremo, ¿cuántos puntos se otorgan por cada hora impartida para el puesto de Ayudante Doctor en el límite general? \\
+            \textbf{Nodo activado:} baremo \\
+            \textbf{Respuesta del agente:} Según la información proporcionada en el documento "CRITERIOS DE EVALUACIÓN Y REQUISITOS MÍNIMOS.pdf" (página 10), para el puesto de Ayudante Doctor, se otorgan los siguientes puntos por cada hora impartida:
+
+            \begin{itemize}
+                \item Para el bloque 2.1. Experiencia docente, la puntuación máxima es de 45 puntos.
+                \item Dentro del bloque 2.1. Experiencia docente, la puntuación para las horas impartidas en el caso de Ayudante Doctor se indica como "25" (puntos) y no hay una puntuación específica por hora.
+            \end{itemize}
+
+            Sin embargo, en el documento "BAREMO 2024.pdf" (página 11), se proporciona información adicional sobre la experiencia docente. En este caso, para el puesto de Ayudante Doctor, se otorgan los siguientes puntos por cada hora impartida:
+
+            \begin{itemize}
+                \item Para el bloque 2.1. Experiencia docente, la puntuación máxima es de 45 puntos.
+                \item Dentro del bloque 2.1. Experiencia docente, la puntuación para las horas impartidas en el caso de Ayudante Doctor se indica como "30" (puntos).
+            \end{itemize}
+
+            Por lo tanto, según la información proporcionada en ambos documentos, para el puesto de Ayudante Doctor, se otorgan \textbf{30 puntos por cada hora impartida}.
+
+      \item \textbf{P20.} Si estoy aplicando a Profesor Asociado según las instrucciones del baremo, ¿cómo se calculan exactamente los puntos correspondientes a la docencia oficial de más de 1200 horas? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Disculpa por no haber entendido tu consulta anterior. Para aclarar, ¿cuáles son las horas de docencia oficiales que has impartido en titulaciones de Grado o Máster? ¿Son todas con la misma afinidad o hay alguna con una afinidad diferente?
+
+      \item \textbf{P21.} Para Profesor Sustituto Interino, ¿es un requisito estrictamente excluyente sacar más de 0 puntos en la experiencia investigadora? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Disculpa por no haber entendido tu consulta anterior. Para poder ayudarte mejor, necesitaría saber si el baremo que mencionas es el mismo para todos los procesos selectivos de Profesor Sustituto Interino en la Universidad de Sevilla o si se trata de un baremo específico para un concurso público determinado.
+
+            ¿Puedes decirme qué concurso público de méritos estás consultando?
+
+      \item \textbf{P22.} ¿Cómo se valora la participación como Investigador Principal (IP) en proyectos de investigación competitivos para obtener la puntuación máxima en Bareprof? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Antes de responder, ¿podrías decirme si el proyecto en el que has participado como IP es financiado por una convocatoria competitiva de Administraciones o entidades públicas y privadas? Esto me ayudará a entender mejor tu consulta.
+
+      \item \textbf{P23.} En el apartado de transferencia del conocimiento del Baremo 2024, ¿cuántos puntos exactos se pueden conseguir como máximo mediante patentes en explotación? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Disculpa la ambigüedad de tu consulta. Para poder darte una respuesta precisa, necesitaría saber si estás solicitando información para la acreditación a PTU o a CU. ¿Cuál es el tipo de acreditación que te interesa?
+
+      \item \textbf{P24.} Según las instrucciones del baremo vigentes, ¿se puede valorar un mismo artículo simultáneamente en los apartados de investigación y docencia? \\
+            \textbf{Nodo activado:} baremo \\
+            \textbf{Respuesta del agente:} Sí, según las instrucciones del baremo vigentes, se puede valorar un mismo artículo simultáneamente en los apartados de investigación y docencia.
+
+            En el apartado 2.4.4 (Máximo: 100) del baremo, se establece que se pueden valorar "artículos" con una ponderación de 0,20 puntos por unidad. En el mismo apartado, también se establece que los artículos deben ser de carácter docente y pedagógico.
+
+            En el apartado 3.4 (Máximo: 100) del baremo, se establece que se pueden valorar "artículos" con una ponderación de 0,20 puntos por unidad. En este caso, los artículos deben ser de carácter investigador.
+
+            Como se puede ver, en ambos apartados se establece la misma ponderación para los artículos (0,20 puntos por unidad), lo que sugiere que un mismo artículo puede ser valorado simultáneamente en los dos apartados.
+
+      \item \textbf{P25.} Para la figura de Profesor Asociado, ¿qué porcentaje de peso relativo tiene exactamente la experiencia profesional o laboral en la nota final del proceso? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Disculpa la ambigüedad de tu consulta. Para poder ayudarte mejor, necesitaría saber qué bloque temático se refiere a "experiencia profesional o laboral". ¿Podrías indicarme si te refieres al Bloque II (Actividad Docente), al Bloque III (Actividad Investigadora) o al Bloque V (Actividad Profesional Externa a la Universidad)?
+
+      \item \textbf{P26.} En caso de que en la baremación dos solicitantes tengan exactamente la misma puntuación global para ser Ayudante Doctor, ¿cuál es el primer criterio de desempate de la Universidad? \\
+            \textbf{Nodo activado:} baremo \\
+            \textbf{Respuesta del agente:} Según las instrucciones de baremación proporcionadas por la Universidad de Sevilla, en caso de empate en la puntuación global para ser Ayudante Doctor, el primer criterio de desempate es la edad del candidato. El candidato con menor edad tendrá prioridad.
+
+            En concreto, se indica en las instrucciones que "en caso de empate en la puntuación global, se aplicarán los siguientes criterios de desempate: a) Edad del candidato (el candidato con menor edad tendrá prioridad)".
+
+\end{itemize}
+
+\subsection{Categoría 4: Calendario (27-34)}
+\textit{Evalúa la precisión del agente al consultar plazos, fechas límite, festivos y periodos lectivos.}
+\begin{itemize}
+      \item \textbf{P27.} ¿Qué día empiezan oficialmente las clases del curso 2025-2026 para todos aquellos estudiantes de Grado y Máster Universitario? \\
+            \textbf{Nodo activado:} calendario \\
+            \textbf{Respuesta del agente:} El lunes 2 de septiembre de 2024.
+
+      \item \textbf{P28.} Según el calendario académico 2025-2026, ¿en qué fechas exactas tendrán lugar los exámenes de la convocatoria extraordinaria de septiembre para los recién matriculados en primer curso? \\
+            \textbf{Nodo activado:} calendario \\
+            \textbf{Respuesta del agente:} De acuerdo con el texto proporcionado, no se especifica las fechas exactas de los exámenes de la convocatoria extraordinaria de septiembre para los recién matriculados en primer curso. Sin embargo, se menciona que la convocatoria de septiembre (4ª conv.) tendrá lugar del 10 (V) al 21 (M) de julio de 2026.
+
+      \item \textbf{P29.} En el calendario de grado para 2025/2026, ¿cuál es la fecha límite exacta para el cierre de actas de la convocatoria ordinaria del primer cuatrimestre? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} ¿Qué tipo de título está cursando (grado o máster) y qué convocatoria se refiere su consulta? ¿Se trata de la primera convocatoria del curso 2025/2026 o de otra convocatoria específica?
+
+      \item \textbf{P30.} ¿En qué fechas inician y terminan obligatoriamente las vacaciones escolares de Navidad según el calendario 2025-2026? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Disculpa, pero me parece que tu consulta es un poco ambigua. ¿Quieres saber sobre las vacaciones de Navidad en general o específicamente para los estudiantes de Doctorado?
+
+      \item \textbf{P31.} Según dicho calendario 2025-2026, ¿cuándo comienzan a impartirse exactamente las clases correspondientes al segundo cuatrimestre? \\
+            \textbf{Nodo activado:} calendario \\
+            \textbf{Respuesta del agente:} Del texto se puede deducir que el segundo cuatrimestre comienza el día 29 de enero de 2026.
+
+      \item \textbf{P32.} ¿Qué días del mes de abril se consideran no lectivos o festivos en la Universidad de Sevilla con motivo de la Feria de Abril y la Semana Santa en 2026? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Disculpa, pero para poder ayudarte mejor, necesitaría saber si estás refiriéndote al calendario académico o al calendario de festivos. ¿Quieres referirte a los días no lectivos en el contexto del calendario académico o a los días festivos en general?
+
+      \item \textbf{P33.} Según el calendario 2025-2026, ¿cuál es la fecha tope máxima permitida para presentar el cierre de actas de los Trabajos de Fin de Grado de la convocatoria ordinaria? \\
+            \textbf{Nodo activado:} calendario \\
+            \textbf{Respuesta del agente:} La respuesta no está explícitamente mencionada en el texto proporcionado. Sin embargo, según el calendario 2025-2026, se establece que las actas con las calificaciones de los exámenes finales deberán estar firmadas en las fechas determinadas por la Normativa de Matrícula del Instituto de Idiomas.
+
+            Sin embargo, hay una tabla en el texto que muestra las convocatorias de exámenes finales y fechas de cierre de actas. En esta tabla se menciona que para la "Convocatoria Primera" (que corresponde a la convocatoria ordinaria), las actas deberán estar firmadas hasta el 31 de julio de 2026.
+
+            Por lo tanto, la fecha tope máxima permitida para presentar el cierre de actas de los Trabajos de Fin de Grado de la convocatoria ordinaria es el 31 de julio de 2026.
+
+      \item \textbf{P34.} ¿En qué día exacto del mes de marzo hay fiestas autonómicas o festividades locales fijadas en el calendario de este nuevo curso académico? \\
+            \textbf{Nodo activado:} rechazo \\
+            \textbf{Respuesta del agente:} Lo siento, pero no puedo ayudarte con eso. Si necesitas información sobre trámites o normativas de la Universidad de Sevilla, estaré encantado de ayudarte. Sin embargo, si buscas detalles sobre festividades locales o autonómicas, te recomendaría consultar el calendario oficial del gobierno andaluz o buscar en fuentes oficiales como el sitio web de la Junta de Andalucía.
+
+\end{itemize}
+
+\subsection{Categoría 5: Normativo (35-42)}
+\textit{Verifica si el agente comprende regulaciones, normativas internas del BOJA o normas de la universidad.}
+\begin{itemize}
+      \item \textbf{P35.} Basándome en las Normas de Matrícula (MATRUX) 2025-2026, ¿es posible como excepción en algún caso matricular más de 90 créditos en un mismo curso académico de grado? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} ¿En qué tipo de título o situación específica te encuentras? ¿Estás cursando estudios de grado o máster, y tienes alguna circunstancia que te permita superar el límite de 90 créditos?
+
+      \item \textbf{P36.} Según el Reglamento y Normas de Matrícula, ¿cuáles son los motivos explícitos en los que la Universidad concederá el aplazamiento excepcional en el pago de tasas? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Lo siento, pero no tengo acceso al texto completo del Reglamento y Normas de Matrícula. Sin embargo, puedo hacer una pregunta para aclarar tu consulta.
+
+            ¿Cuál es la sección o artículo específico del reglamento que te hace referencia sobre el aplazamiento excepcional en el pago de tasas?
+
+      \item \textbf{P37.} Según las instrucciones del BOJA (Resolución del Rector) para plazas de docencia, ¿cuáles son los requisitos esenciales como la edad y titulación que debe poseer cualquier solicitante español? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Disculpa por no poder encontrar en el texto proporcionado las instrucciones específicas del Rector sobre plazas de docencia. ¿Podrías indicarme qué tipo de plaza de docencia te interesa (por ejemplo, profesorado visitante ordinario, profesor distinguido o personal de cuerpos docentes universitarios con plaza vinculada a servicios asistenciales y de salud pública)?
+
+      \item \textbf{P38.} En la Normativa de Matrícula y Precios, ¿tienen derecho a una bonificación de matrícula quienes superen créditos en primera matrícula durante el curso anterior? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} ¿Qué tipo de título está mencionando (grado o máster universitario) cuando se refiere a "superar créditos en primera matrícula"? ¿Se trata de un estudiante que ya tiene una titulación y ahora quiere hacer otra, o es alguien que está empezando su carrera académica?
+
+      \item \textbf{P39.} Según la normativa de evaluación de la US, si a un alumno de un grado le quedan menos del 10 por ciento de los créditos totales para graduarse, excluidos los TFG, ¿tiene derecho a una convocatoria añadida especial? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Disculpa la ambigüedad en tu consulta. Para entender mejor tu pregunta, necesito saber si estás haciendo referencia a un alumno que está cursando un grado en la Universidad de Sevilla o si se trata de un alumno que ha realizado una movilidad académica y ahora regresa a la US para completar su título. ¿Puedes decirme qué tipo de situación estamos hablando?
+
+      \item \textbf{P40.} De acuerdo estrictamente con el artículo sobre Transferencia y Reconocimiento, ¿se reconocerán créditos superados de asignaturas pertenecientes a titulaciones privadas no oficiales? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} ¿Podrías especificar qué tipo de documentación tendría que presentar un estudiante para solicitar el reconocimiento de créditos de una titulación privada no oficial? ¿Se trata de un título expedido por la universidad en cuestión o de algún otro documento que acredite los estudios realizados?
+
+      \item \textbf{P41.} Según las normas de evaluación, si nunca me llego a presentar físicamente a la primera convocatoria ordinaria del primer cuatrimestre, ¿consume eso alguna convocatoria a efectos de normas de permanencia? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} ¿Cuál es el número total de créditos que tienes pendientes de superar para concluir tus estudios?
+
+      \item \textbf{P42.} Basándonos en MATRUX 2025-2026, ¿tienen derecho a la gratuidad del precio público completo por matrícula todos aquellos estudiantes con discapacidad de grado igual o superior al 33 por 100? \\
+            \textbf{Nodo activado:} normativo \\
+            \textbf{Respuesta del agente:} No. Según el artículo 21 de la Resolución Rectoral, los estudiantes con discapacidad que acrediten tener un grado de discapacidad igual o superior al 33\% tienen derecho a una bonificación del 50\% en el precio público completo por matrícula.
+
+\end{itemize}
+
+\subsection{Categoría 6: Procedimental (43-50)}
+\textit{Consultas basadas en guías (MATRUX, Liquidaciones, Bareprof) sobre cómo llevar a cabo un trámite paso a paso.}
+\begin{itemize}
+      \item \textbf{P43.} ¿Cuáles son los pasos requeridos según la guía breve de liquidaciones si soy personal de investigación e intento solicitar el abono y liquidación de los gastos de manutención tras mi vuelta? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Antes de proceder, ¿podrías indicarme qué tipo de contrato tienes como Personal de Investigación en la Universidad de Sevilla? ¿Eres funcionario o laboral? Esto me ayudará a entender mejor tu situación y a proporcionarte una respuesta más precisa.
+
+      \item \textbf{P44.} Siguiendo totalmente e indicando paso a paso la Guía del Candidato en Bareprof, ¿cómo registro primeramente una nueva candidatura de participación en el concurso público? \\
+            \textbf{Nodo activado:} procedimental \\
+            \textbf{Respuesta del agente:} 
+            \begin{enumerate}
+                \item Accede a la plataforma \textbf{Bareprof}.
+                \item Se mostrarán las plazas que se encuentran en periodo de inscripción, con indicación del número de días que faltan para su conclusión.
+                \item Pulsa el botón "Inscribir" situado en la parte derecha de la pantalla correspondiente a la plaza a la que deseas concursar.
+                \item Se accederá entonces a una ventana en la que se mostrarán los datos de la plaza y un botón para llevar a cabo la inscripción y generar la correspondiente solicitud.
+            \end{enumerate}
+
+            Nota: No hay más instrucciones específicas para registrar una nueva candidatura de participación en el concurso público, ya que el proceso de registro es automático al acceder a la plataforma Bareprof.
+
+      \item \textbf{P45.} ¿Cuál es el procedimiento y los pasos que debo dar según las normas para solicitar de forma justificada en Secretaría la famosa anulación total de matrícula? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Antes de explicarte el procedimiento, ¿podrías decirme si estás solicitando la anulación de matrícula por una causa académica (por ejemplo, coincidencia no prevista de horarios) o porque has obtenido plaza en otra universidad pública?
+
+      \item \textbf{P46.} En base a la Guía completa de liquidación de viajes, ¿qué acciones documentales debo adjuntar paso a paso para justificar ante Gerencia mis diferentes gastos de transporte abonados? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Antes de proceder a indicarte las acciones documentales que debes adjuntar, ¿puedes especificar qué tipo de gasto de transporte se refiere (alojamiento o locomoción) y si has realizado alguna renuncia parcial a los gastos? Esto me permitirá ofrecerte una respuesta más precisa.
+
+      \item \textbf{P47.} Según las instrucciones oficiales, indica los pasos ordenados para solicitar la modificación a matrícula a tiempo parcial demostrando documentalmente mi situación y compatibilidad laboral actual. \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Antes de responder a tu consulta, ¿podrías indicarme si estás solicitando una modificación de matrícula para un curso académico específico (por ejemplo, 2022-2023) o si es una solicitud general? Esto me ayudará a entender mejor el contexto y a proporcionarte la información más relevante.
+
+      \item \textbf{P48.} Para un doctor invitado de otra universidad al que se pagan gastos con fondos del proyecto de investigación, enumera los pasos administrativos procedimentales para gestionar de inicio a fin correctamente sus dietas y el alta a terceros. \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Antes de empezar a enumerar los pasos administrativos, ¿podrías indicarme si el doctor invitado tiene un contrato laboral con la Universidad de Sevilla o es un visitante sin vinculación contractual? Esto me ayudará a entender mejor su situación y a proporcionarte una respuesta más precisa.
+
+      \item \textbf{P49.} ¿Qué pasos de trámite indica la norma que el estudiante debe seguir minuciosamente para lograr que le tramiten la Transferencia de unos créditos previos realizados en una carrera extinta de otra sede española y su convalidación en el archivo? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Disculpa, pero tu consulta es un poco ambigua. ¿Podrías ser más específico sobre qué te refieres con "tramitar la Transferencia de unos créditos previos realizados en una carrera extinta de otra sede española y su convalidación en el archivo"? ¿Quieres saber los pasos a seguir para solicitar la transferencia de créditos o para que se convalide la carrera extinta?
+
+      \item \textbf{P50.} En el portal de Currículum Nacional, ¿qué pasos en orden o acciones exactas debe ejecutar cualquier usuario para exportar e integrar adecuadamente y en última instancia su CVN en la solicitud principal creada para Bareprof? \\
+            \textbf{Nodo activado:} entrevistador \\
+            \textbf{Respuesta del agente:} Disculpa por no haber entendido tu consulta anterior. Me parece que has planteado una pregunta muy amplia sobre los pasos a seguir para exportar e integrar el CVN en la solicitud principal de Bareprof.
+
+            Para aclarar, ¿has intentado exportar y posteriormente importar tu CVN en la solicitud principal de Bareprof y tienes algún problema específico que no te permite hacerlo correctamente?
+
+\end{itemize}
+
+\end{document}
