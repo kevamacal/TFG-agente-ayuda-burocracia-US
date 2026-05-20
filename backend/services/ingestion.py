@@ -5,7 +5,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from langchain_text_splitters import MarkdownTextSplitter
-from langchain_huggingface import HuggingFaceEndpointEmbeddings
+from langchain_cohere import CohereEmbeddings
 from langchain_community.vectorstores.utils import filter_complex_metadata
 from pinecone import Pinecone
 from langchain_pinecone import PineconeVectorStore
@@ -95,9 +95,9 @@ def procesar_un_pdf(filepath: str, original_filename: str):
         
         # 4. Generación de Embeddings y Subida a Pinecone
         print("[Ingesta Async] Generando Embeddings y subiendo a Pinecone...")
-        embeddings = HuggingFaceEndpointEmbeddings(
-            model=settings.MODEL_EMBEDDINGS, 
-            huggingfacehub_api_token=settings.HUGGINGFACEHUB_API_KEY
+        embeddings = CohereEmbeddings(
+            model="embed-multilingual-v3.0",
+            cohere_api_key=settings.COHERE_API_KEY
         )
         vectorstore = PineconeVectorStore(index_name="index-tfg", embedding=embeddings)
         

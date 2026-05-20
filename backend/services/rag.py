@@ -1,33 +1,34 @@
-from langchain_huggingface import HuggingFaceEndpointEmbeddings
+from langchain_cohere import CohereEmbeddings, CohereRerank
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from templates.templates import *
 
-from utils.config import format_docs, config_light_llm, config_llm
+from utils.config import format_docs, config_classifier_llm, config_light_llm, config_llm
 from langchain_pinecone import PineconeVectorStore
 from utils.config import settings
 from langchain_classic.retrievers.contextual_compression import ContextualCompressionRetriever
-from langchain_cohere import CohereRerank
 import datetime
 
 class AsistenteRAG:
     def __init__(self):
         self.llm = config_llm()
         self.light_llm = config_light_llm()
-        self.embeddings = HuggingFaceEndpointEmbeddings(model=settings.MODEL_EMBEDDINGS, huggingfacehub_api_token=settings.HUGGINGFACEHUB_API_KEY)
+        self.classifier_llm = config_classifier_llm()
+        self.embeddings = CohereEmbeddings(model="embed-multilingual-v3.0", cohere_api_key=settings.COHERE_API_KEY)
         self.vectorstore = PineconeVectorStore(index_name="index-tfg", embedding=self.embeddings)        
         
-        retriever_base = self.vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 12})
-        cohere_reranker = CohereRerank(model="rerank-v4.0-pro" ,top_n=5)
+        retriever_base = self.vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 10})
+        cohere_reranker = CohereRerank(model="rerank-v4.0-pro" ,top_n=4)
         self.retriever = ContextualCompressionRetriever(
             base_compressor=cohere_reranker,
             base_retriever=retriever_base
         )
         
         self.chain_reformulacion = self._crear_cadena(PROMPT_REFORMULACION, self.light_llm)
-        self.chain_deteccion = self._crear_cadena(PROMPT_DETECCION, self.light_llm)
-        self.chain_clasificacion = self._crear_cadena(PROMPT_CLASIFICADOR, self.light_llm)
-        self.chain_cuestiona_agente = self._crear_cadena(PROMPT_CUESTIONA_AGENTE, self.light_llm)
+        # Cadenas de clasificación: solo devuelven 1 palabra → LLM ultra-ligero (max 15 tokens)
+        self.chain_deteccion = self._crear_cadena(PROMPT_DETECCION, self.classifier_llm)
+        self.chain_clasificacion = self._crear_cadena(PROMPT_CLASIFICADOR, self.classifier_llm)
+        self.chain_cuestiona_agente = self._crear_cadena(PROMPT_CUESTIONA_AGENTE, self.classifier_llm)
         
         self.cadenas_respuesta = {
             "procedimental": self._crear_cadena(PROMPT_RESULTOR_PROCEDIMENTAL, self.llm),
@@ -58,7 +59,19 @@ class AsistenteRAG:
         return pregunta_busqueda, contexto, referencias
         
     def _buscar_contexto(self, pregunta_reformulada: str):    
-        docs = self.retriever.invoke(pregunta_reformulada)
+        t0 = datetime.datetime.now()
+        query_embedding = self.embeddings.embed_query(pregunta_reformulada)
+        t1 = datetime.datetime.now()
+        print(f"  [TIMING] Cohere Embedding: {(t1-t0).total_seconds():.2f}s")
+        
+        docs_raw = self.vectorstore.similarity_search_by_vector(query_embedding, k=12)
+        t2 = datetime.datetime.now()
+        print(f"  [TIMING] Pinecone Search: {(t2-t1).total_seconds():.2f}s ({len(docs_raw)} docs)")
+        
+        docs = self.retriever.base_compressor.compress_documents(docs_raw, pregunta_reformulada)
+        t3 = datetime.datetime.now()
+        print(f"  [TIMING] Cohere Rerank: {(t3-t2).total_seconds():.2f}s ({len(docs)} docs)")
+        print(f"  [TIMING] Total retrieval: {(t3-t0).total_seconds():.2f}s")
         
         referencias = list(set([
             f"{doc.metadata.get('source', 'Documento desconocido')} (Página {int(doc.metadata.get('page', 0))})" 
@@ -77,23 +90,35 @@ class AsistenteRAG:
         return contexto_final, referencias
     
     def decide_ruta_inicial(self, pregunta_reformulada: str, historial_formateado: str):
-        return self.chain_deteccion.invoke({
+        decision = self.chain_deteccion.invoke({
             "question": pregunta_reformulada, 
             "historial": historial_formateado,
         }).strip().lower()
+        if "rechazo_amable" in decision: return "rechazo_amable"
+        if "recuperador" in decision: return "recuperador"
+        return "recuperador"
     
     def contiene_suficiente_informacion(self, pregunta_reformulada: str, historial_formateado: str, contexto: str):
-        return self.chain_cuestiona_agente.invoke({
+        contexto_reducido = contexto[:800] if len(contexto) > 800 else contexto
+        decision = self.chain_cuestiona_agente.invoke({
             "question": pregunta_reformulada, 
             "historial": historial_formateado,
-            "context": contexto
+            "context": contexto_reducido
         }).strip().lower()
+        if "resultor" in decision: return "resultor"
+        if "entrevistador" in decision: return "entrevistador"
+        return "resultor"
 
     def clasificar_categoria(self, pregunta_reformulada: str, historial_formateado: str):
-        return self.chain_clasificacion.invoke({
+        decision = self.chain_clasificacion.invoke({
             "question": pregunta_reformulada, 
             "historial": historial_formateado
         }).strip().lower()
+        if "procedimental" in decision: return "procedimental"
+        if "calendario" in decision: return "calendario"
+        if "baremo" in decision: return "baremo"
+        if "normativo" in decision: return "normativo"
+        return "normativo"
     
     def responder_consulta(self, contexto: str, historial_formateado: str, pregunta_reformulada: str, tipo_respuesta: str):
         inputs = {

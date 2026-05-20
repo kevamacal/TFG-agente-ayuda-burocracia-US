@@ -20,7 +20,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 @app.get("/")
 def read_root():
-    return {"mensaje": "API del Asistente US funcionando correctamente 🚀"}
+    return {"mensaje": "API del Asistente US funcionando correctamente"}
 
 @app.post("/registro", response_model=schemas.UsuarioResponse, status_code=status.HTTP_201_CREATED)
 def registrar_usuario(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
@@ -147,6 +147,7 @@ def enviar_mensaje(
             respuesta_texto += chunk
             
         referencias = estado_final.get("referencias", [])
+        contexto_rag = estado_final.get("contexto", "")
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en el agente: {str(e)}")
@@ -159,7 +160,7 @@ def enviar_mensaje(
     # Disparamos poda de contexto asíncrona
     background_tasks.add_task(actualizar_resumen_memoria, conv.id)
 
-    return {"respuesta": respuesta_texto, "referencias": referencias}
+    return {"respuesta": respuesta_texto, "referencias": referencias, "contexto": contexto_rag}
 
 def actualizar_resumen_memoria(conversacion_id: int):
     """Actualiza el resumen de memoria para proteger la ventana de contexto de Groq"""

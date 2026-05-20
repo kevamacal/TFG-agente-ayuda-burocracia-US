@@ -5,17 +5,22 @@ from services.rag import AsistenteRAG
 rag = AsistenteRAG()
 
 def decide_ruta_inicial(state: StateSchema) -> str:
-    print("\n--- EDGE: DECIDIENDO INTENCIÓN ---", datetime.datetime.now())
+    t0 = datetime.datetime.now()
+    print(f"\n--- EDGE: DECIDIENDO INTENCION --- {t0}")
     
     pregunta = state.get("pregunta", "")
     historial = state.get("historial_formateado", [])
     
     decision = rag.decide_ruta_inicial(pregunta, historial)
     
+    t1 = datetime.datetime.now()
+    print(f"  [TIMING] Deteccion intencion: {(t1-t0).total_seconds():.2f}s -> '{decision}'")
+    
     return decision
 
 def decide_suficiente_informacion(state: StateSchema) -> str:
-    print("\n--- EDGE: DECIDIENDO SIGUIENTE PASO ---", datetime.datetime.now())
+    t0 = datetime.datetime.now()
+    print(f"\n--- EDGE: DECIDIENDO SIGUIENTE PASO --- {t0}")
     
     pregunta_reformulada = state.get("pregunta_reformulada", "")
     historial = state.get("historial_formateado", [])
@@ -23,12 +28,14 @@ def decide_suficiente_informacion(state: StateSchema) -> str:
     
     decision = rag.contiene_suficiente_informacion(pregunta_reformulada, historial, contexto)
     
-    print(f"Decisión tomada: ir a nodo '{decision}'", datetime.datetime.now())
+    t1 = datetime.datetime.now()
+    print(f"  [TIMING] Suficiente info: {(t1-t0).total_seconds():.2f}s -> '{decision}'")
     
     return decision
         
 def decide_respuesta(state: StateSchema) -> str:
-    print("\n--- EDGE: DECIDIENDO TIPO DE RESPUESTA ---", datetime.datetime.now())
+    t0 = datetime.datetime.now()
+    print(f"\n--- EDGE: DECIDIENDO TIPO DE RESPUESTA --- {t0}")
     
     pregunta_reformulada = state.get("pregunta_reformulada", state.get("pregunta", ""))
     historial = state.get("historial_formateado", [])
@@ -42,6 +49,7 @@ def decide_respuesta(state: StateSchema) -> str:
     if decision_limpia not in categorias_validas:
         decision_limpia = "normativo"
     
-    print(f"Pregunta clasificada como: '{decision_limpia}'", datetime.datetime.now())
+    t1 = datetime.datetime.now()
+    print(f"  [TIMING] Clasificacion: {(t1-t0).total_seconds():.2f}s -> '{decision_limpia}'")
     
     return decision_limpia

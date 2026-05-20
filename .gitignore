@@ -5,3 +5,7 @@ venv/
 *.sqlite
 poppler-25.12.0/
 /scripts
+reports/*
+docs/*
+!docs/*.tex
+!docs/*.pdf

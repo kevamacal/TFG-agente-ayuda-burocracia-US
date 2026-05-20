@@ -1,0 +1,1066 @@
+\documentclass[12pt,a4paper,oneside]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{amsmath}
+
+\geometry{a4paper, margin=2.5cm}
+\onehalfspacing
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=magenta,      
+    urlcolor=blue,
+    citecolor=black,
+}
+
+\begin{document}
+
+% ============================================================
+% PORTADA
+% ============================================================
+\begin{titlepage}
+    \centering
+
+    \includegraphics[width=0.8\textwidth]{logo_us}\\[1cm]
+
+    {\Large \textsc{Trabajo Fin de Grado}}\\[1.5cm]
+
+    \begin{spacing}{1.5}
+        {\huge \textbf{Desarrollo de un Agente Conversacional basado en IA para la Gestión Burocrática en la Universidad de Sevilla}}\\[1cm]
+    \end{spacing}
+
+    {\large Realizado por}\\[0.2cm]
+    {\Large \textbf{Kevin Amador Calzadilla}}\\[2.5cm]
+
+    {\large Para la obtención del título de}\\[0.1cm]
+    {\large \textbf{Grado en Ingeniería Informática - Ingeniería del Software}}\\[1cm]
+
+    {\large Dirigido por}\\[0.1cm]
+    {\large \textbf{José Enrique Sánchez López y Pablo Reina Jiménez}}\\[1cm]
+
+    {\large En el departamento de}\\[0.1cm]
+    {\large \textbf{Lenguajes y Sistemas Informáticos}}\\[1cm]
+
+    {\large 15 de abril de 2026}
+
+\end{titlepage}
+
+\pagenumbering{roman}
+\tableofcontents
+\listoffigures
+\listoftables
+\newpage
+\pagenumbering{arabic}
+
+% ============================================================
+% PARTE I: INTRODUCCIÓN Y CONCEPTOS
+% ============================================================
+\part{Introducción y Conceptos}
+
+\chapter{Introducción}
+\section{Marco conceptual}
+
+En los últimos años, los Modelos de Lenguaje Grandes (LLMs) han revolucionado la forma en que las máquinas entienden y generan texto. Sin embargo, cualquiera que haya trabajado con ellos sabe que tienen un grave problema, las llamadas ``alucinaciones''. Básicamente, el modelo puede generar respuestas que suenan perfectamente razonables pero que, en realidad, se las ha inventado por completo. Esto los convierte en herramientas poco fiables cuando necesitamos precisión, algo imprescindible si hablamos de la gestión de documentación universitaria.
+
+Para lidiar con este problema, en este trabajo se ha optado por implementar un sistema RAG (\textit{Retrieval-Augmented Generation}). La idea es sencilla pero eficaz: en lugar de pedirle al modelo que ``recuerde'' la información, le damos acceso directo a la documentación oficial, previamente procesada y convertida en vectores. De esta manera, cada respuesta que genera combina la fluidez conversacional propia de un LLM con datos reales extraídos de fuentes institucionales verificables.
+
+\textit{Nota: Estos conceptos y tecnologías base se definirán en profundidad en el Capítulo 2.}
+
+\section{Motivación}
+
+Creo que cualquier persona que haya pasado por una universidad grande sabe lo desesperante que puede llegar a ser encontrar un dato concreto entre la maraña de documentación institucional. En mi caso, como estudiante de la Universidad de Sevilla, he vivido en primera persona esa frustración más veces de las que me gustaría admitir: buscar un plazo de matrícula que aparece en un PDF de 80 páginas, intentar descifrar los criterios de un baremo de contratación o simplemente averiguar a qué ventanilla acudir para resolver un trámite. Y no soy el único: compañeros, profesores e incluso el propio personal administrativo se enfrentan a diario al mismo problema.
+
+Lo habitual cuando surge una duda administrativa es descargar varios PDFs extensos y poco manejables, preguntar en la secretaría de la facultad ---si es que coincide con el horario de atención--- o enviar un correo electrónico sabiendo que la respuesta puede tardar días. Este desgaste no lo sufre solo el usuario, que puede perder horas buscando algo que debería encontrar en minutos; también lo padece el Personal de Administración y Servicios (PAS), cuya jornada se consume en buena parte respondiendo las mismas dudas una y otra vez, dudas que teóricamente ya están resueltas en los documentos publicados.
+
+Ahí es precisamente donde nace la motivación de este proyecto: contar con un asistente virtual disponible las 24 horas, capaz de resolver consultas de forma inmediata, precisa y fundamentada en la documentación real de la universidad. A través de una interfaz sencilla, el sistema interpreta lo que el usuario necesita en lenguaje natural y le devuelve una respuesta clara, sin obligarle a bucear entre decenas de documentos.
+
+\section{Objetivos}
+
+El propósito de este proyecto es, en esencia, cambiar por completo la forma en que los usuarios interactúan con la densa normativa de la Universidad de Sevilla, apoyándonos para ello en tecnologías punteras del campo de la Inteligencia Artificial.
+
+\subsection{Objetivo general}
+
+Lo que se busca con este trabajo es diseñar, desarrollar y poner a prueba un asistente conversacional inteligente basado en arquitecturas RAG (\textit{Retrieval-Augmented Generation}). Este asistente debe ser capaz de ayudar a candidatos, estudiantes y docentes apoyándose únicamente en los documentos que los administradores le proporcionan. La clave está en que pueda interpretar consultas complejas sobre trámites burocráticos y normativos, y devolver respuestas lo suficientemente precisas como para que el usuario no tenga que recurrir a otras fuentes.
+
+\subsection{Objetivos técnicos}
+
+Para poder alcanzar ese objetivo general, se han marcado una serie de hitos técnicos concretos:
+
+\begin{itemize}
+    \item \textbf{Optimización de la ingesta de documentos:} Desarrollar un flujo de procesamiento mediante el que es posible interpretar documentos con estructuras complejas (tablas, anexos, notas al pie) mediante LlamaParse, garantizando que la información no pierda sentido al ser vectorizada.
+    \item \textbf{Estructura agéntica:} Implementar un sistema basado en LangGraph con nodos especializados para la resolución de consultas:
+          \begin{itemize}
+              \item Nodos resultores expertos para respuestas directas.
+              \item Nodo entrevistador para resolución de ambigüedades.
+              \item Nodo de rechazo para consultas fuera de dominio.
+          \end{itemize}
+
+    \item \textbf{Diseño de un sistema dual RAG:} Construir una arquitectura capaz de separar el conocimiento normativo de las directrices de estilo y buenas prácticas cuando se atiende a un usuario
+
+    \item \textbf{Minimizar el tiempo de respuesta:} Reducir los tiempos de respuesta a menos de veinte segundos combinando el uso de modelos pesados para generar la respuesta final con modelos livianos para las decisiones intermedias.
+
+    \item \textbf{Validación del sistema:}  Evaluar el sistema con varios casos de uso reales que simulen conversaciones con estudiantes, docentes y personal administrativo. Los criterios de evaluación se basarán en métricas de \textit{Faithfulness}, \textit{Relevancy} y \textit{Correctness}.
+\end{itemize}
+
+\section{Alcance del proyecto}
+
+Conviene dejar claro desde el principio qué abarca este proyecto y qué queda fuera. En concreto, el trabajo incluye:
+
+\begin{itemize}
+    \item El desarrollo de un \textbf{backend API REST} capaz de gestionar las peticiones de usuarios, el historial de conversaciones y toda la lógica del agente.
+    \item La implementación de un \textbf{agente conversacional} basado en LangGraph con capacidad de enrutamiento inteligente y recuperación semántica de documentos.
+    \item Un \textbf{pipeline de ingesta} que procesa documentos PDF oficiales de la US y los almacena como vectores en Pinecone.
+    \item Una \textbf{interfaz web} desarrollada con Streamlit que permite la interacción con el agente en tiempo real.
+    \item La \textbf{contenedorización} completa del sistema mediante Docker Compose.
+    \item Una \textbf{evaluación cuantitativa} del sistema.
+\end{itemize}
+
+Queda fuera del alcance de este TFG el despliegue en un entorno de producción con alta disponibilidad, la integración con sistemas internos de la US (como SEVIUS o la Secretaría Virtual) y la creación de un sistema de retroalimentación de usuarios. Estas líneas, no obstante, se retoman como trabajo futuro en el capítulo final.
+
+\section{Estructura del proyecto}
+
+Para que la lectura de este documento resulte lo más fluida posible, se ha organizado en seis bloques temáticos bien diferenciados:
+
+\begin{itemize}
+    \item \textbf{Parte I: Introducción y Conceptos.} Se expone la motivación del trabajo, los objetivos perseguidos y se realiza un repaso por el estado del arte de las tecnologías implicadas, incluyendo los LLMs, sistemas RAG y arquitecturas agénticas.
+    \item \textbf{Parte II: Metodología y Planificación.} Describe el ciclo de vida elegido para el proyecto, detallando la adaptación del marco de trabajo Scrum y proporcionando el desglose temporal de las tareas.
+    \item \textbf{Parte III: Análisis y Diseño.} Desglosa los requisitos funcionales y no funcionales, e introduce la arquitectura del sistema tanto a nivel conceptual (LangGraph) como de servicios (FastAPI, Streamlit, bases de datos).
+    \item \textbf{Parte IV: Implementación.} Profundiza en los detalles técnicos del desarrollo: cómo se resolvieron los problemas de ingesta de documentos, la orquestación del agente y los desafíos surgidos con los LLM y su latencia.
+    \item \textbf{Parte V: Evaluación y Validación.} Muestra los resultados obtenidos tras someter al agente a una exhaustiva batería de pruebas, utilizando un LLM como juez para evaluar su rigor y fiabilidad.
+    \item \textbf{Parte VI: Conclusiones y Trabajo Futuro.} Recopila las reflexiones finales, valorando si se cumplieron los objetivos iniciales, y plantea posibles vías para continuar mejorando el sistema.
+\end{itemize}
+
+\chapter{Estado del Arte}
+\section{Modelos de Lenguaje Grande (LLMs)}
+\subsection{Definición y evolución}
+
+Un Modelo de Lenguaje de Gran Escala (LLM, por sus siglas en inglés) es un sistema de \textit{Deep Learning} fundamentado en redes neuronales con miles de millones de parámetros. Su entrenamiento principal consiste en asimilar cantidades masivas de texto sin etiquetar para aprender a predecir, estadísticamente, cuál es la siguiente palabra en una secuencia. El verdadero salto cualitativo de estos sistemas llegó con la introducción del mecanismo de \textit{atención}, presentado en el influyente artículo 'Attention is all you need' \cite{vaswani2017}. Esta arquitectura, conocida como \textit{Transformer}, permite al modelo sopesar qué partes del texto de entrada son más relevantes, procesando la información en paralelo y capturando el contexto a largo plazo de forma mucho más eficaz que sus predecesores.
+
+Si echamos la vista atrás, desde los primeros modelos como GPT-2 en 2019 hasta las iteraciones actuales como Llama 3 \cite{meta_llama}, GPT-4 o Claude, el tamaño de estas redes ha crecido de forma desmesurada. Curiosamente, este aumento exponencial de parámetros ha revelado un fenómeno fascinante: al alcanzar cierta escala, los modelos desarrollan habilidades emergentes que nadie programó explícitamente durante su entrenamiento, tales como el razonamiento deductivo, la escritura de código o la capacidad de seguir instrucciones complejas.
+
+Dicho todo esto, y a pesar de lo impresionantes que resultan, los LLMs arrastran limitaciones que conviene tener muy presentes:
+
+\begin{itemize}
+    \item \textbf{Alucinaciones:} Quizá el problema más conocido. El modelo puede generar información que suena perfectamente creíble pero que es sencillamente falsa. Al fin y al cabo, lo que hace es predecir el siguiente token en función de patrones estadísticos; no tiene forma de ``saber'' si lo que dice es cierto o no.
+    \item \textbf{Conocimiento congelado:} Todo lo que un LLM sabe quedó fijado en el momento de su entrenamiento. No puede acceder por su cuenta a información nueva ni consultar documentos específicos de un ámbito concreto, a menos que alguien se los proporcione explícitamente.
+    \item \textbf{Ventana de contexto limitada:} Aunque las ventanas de contexto han ido creciendo año tras año, el espacio del que dispone el modelo para ``leer'' información dentro de un prompt sigue siendo finito. Esto obliga a ser selectivos con qué le pasamos y cómo.
+\end{itemize}
+
+Estas carencias son las que han empujado a la comunidad investigadora a buscar técnicas complementarias que las mitiguen. En este trabajo nos centraremos en dos de ellas: los sistemas de Generación Aumentada por Recuperación (RAG) y las arquitecturas de agentes conversacionales.
+
+\section{Generación Aumentada por Recuperación (RAG)}
+\subsection{Concepto y arquitectura general}
+
+La Generación Aumentada por Recuperación (\textit{Retrieval-Augmented Generation}, RAG) es un paradigma propuesto por Lewis et al. \cite{lewis2020} que combina la capacidad generativa de los LLMs con un sistema de recuperación de información. En lugar de confiar exclusivamente en el conocimiento paramétrico del modelo, RAG inyecta fragmentos de documentos relevantes en el prompt antes de la generación, permitiendo que la respuesta se fundamente en fuentes verificables.
+
+El flujo típico de un sistema RAG consta de tres fases:
+\begin{enumerate}
+    \item \textbf{Ingesta:} Los documentos se procesan, fragmentan y transforman en representaciones vectoriales (embeddings) que se almacenan en una base de datos vectorial.
+    \item \textbf{Recuperación:} Ante una consulta del usuario, se genera el embedding de la pregunta y se buscan los fragmentos más similares semánticamente en la base de datos.
+    \item \textbf{Generación:} Los fragmentos recuperados se inyectan como contexto en el prompt del LLM, que genera una respuesta basada en dicha información.
+\end{enumerate}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{flujo_rag.png}
+    \caption{Estructura típica de un sistema RAG}
+    \label{fig:rag_structure}
+\end{figure}
+
+\subsection{Embeddings y bases de datos vectoriales}
+
+Un \textit{embedding} es una representación numérica densa de un fragmento de texto en un espacio vectorial de alta dimensionalidad. Dos textos semánticamente similares producirán vectores cercanos en este espacio, lo que permite realizar búsquedas por similitud semántica en lugar de por coincidencia exacta de palabras.
+
+Los modelos de embeddings multilingües son capaces de generar representaciones que capturan el significado del texto independientemente del idioma, lo que resulta esencial para un sistema que opera sobre documentación en español.
+
+Las bases de datos vectoriales, como Pinecone, están optimizadas para almacenar y buscar eficientemente entre millones de vectores. Estas utilizan algoritmos de búsqueda aproximada de vecinos más cercanos (ANN, \textit{Approximate Nearest Neighbors}) que permiten recuperar los documentos más relevantes en milisegundos.
+
+\subsection{Estrategias de fragmentación (chunking)}
+
+La fragmentación o \textit{chunking} es el proceso de dividir documentos extensos en segmentos manejables para su vectorización. La calidad de esta fragmentación impacta directamente en la precisión de la recuperación, y existen diversos tipos como son los siguientes:
+
+\begin{itemize}
+    \item \textbf{Fragmentación por tamaño fijo:} Divide el texto en bloques de $n$ caracteres con un solapamiento (\textit{overlap}) configurable. Es simple pero puede romper el contexto de tablas o párrafos.
+    \item \textbf{Fragmentación semántica:} Respeta los límites naturales del documento (encabezados, párrafos, tablas) para preservar la coherencia. Herramientas como \texttt{MarkdownTextSplitter} de LangChain utilizan la estructura Markdown como guía para los cortes.
+    \item \textbf{Fragmentación asistida por IA:} Herramientas como LlamaParse utilizan modelos de visión para interpretar la estructura del documento, preservando tablas, notas al pie y jerarquías de encabezados.
+\end{itemize}
+
+\section{Agentes de Inteligencia Artificial}
+\subsection{De LLMs a sistemas agénticos}
+
+Si nos paramos a pensarlo, un LLM por sí solo funciona como una caja que recibe texto y devuelve texto. Para lo que buscamos en este proyecto ---un asistente que sea capaz de tomar decisiones, consultar fuentes y mantener el hilo de una conversación--- eso se queda corto. Necesitamos un paso más: convertir ese modelo en el ``cerebro'' de un agente de IA que, además de generar lenguaje, pueda hacer lo siguiente:
+
+\begin{itemize}
+    \item \textbf{Razonar:} Analizar la consulta del usuario y decidir las acciones que debe tomar.
+    \item \textbf{Planificar:} Descomponer tareas complejas en subtareas para poder resolverlas de manera más eficiente.
+    \item \textbf{Actuar:} Invocar herramientas externas, mediante las que enriquecer la calidad de la información a la que el modelo puede acceder (APIs, bases de datos, buscadores, etc).
+    \item \textbf{Recordar:} Mantener un estado conversacional a lo largo de múltiples interacciones con el usuario.
+\end{itemize}
+
+\subsection{Grafos de estado: LangGraph}
+
+Una vez decidido que íbamos a trabajar con agentes, hacía falta una herramienta que nos permitiera orquestar todo esto desde Python. Después de evaluar varias alternativas, se optó por LangGraph, una extensión de LangChain que modela el flujo de un agente como un grafo dirigido de estados. Cada operación se representa como un nodo del grafo, y las transiciones condicionales entre operaciones se definen como aristas.
+Este planteamiento ofrece varias ventajas claras frente al esquema clásico de entrada/salida:
+
+\begin{itemize}
+    \item \textbf{Flujos condicionales:} En función de la entrada del usuario, el agente podrá tomar caminos diferentes teniendo a su disposición diversas herramientas.
+    \item \textbf{Ciclos controlados:} Permite implementar bucles controlados de interacción con el usuario en los cuales el agente pueda solicitar información adicional en caso de ser algo ambigua la consulta.
+    \item \textbf{Estado compartido:} Todos los nodos acceden y modifican a un estado global tipado (\texttt{StateSchema}), garantizando la coherencia.
+    \item \textbf{Depuración:} Debido a la estructura de grafo facilita la trazabilidad de las decisiones del agente, facilitando de esta manera la identificación de errores.
+\end{itemize}
+
+\section{Chatbots institucionales: antecedentes}
+
+La idea de poner un chatbot en una universidad no es nada nueva. Desde hace años, muchas instituciones han desplegado asistentes virtuales apoyándose en motores de Reconocimiento del Lenguaje Natural (NLU) y clasificación de intenciones, con plataformas conocidas como DialogFlow o Rasa. Estas herramientas funcionan razonablemente bien cuando el flujo de diálogo está bien acotado, pero se quedan cortas en cuanto el volumen de información crece. El motivo es que se basan en árboles de decisión y reglas predefinidas, lo que obliga a un mantenimiento constante: cada vez que surge una nueva casuística hay que añadir frases de entrenamiento y mapear la interacción manualmente.
+
+Lo que diferencia a este trabajo de esos enfoques clásicos es el salto de un modelo basado en intenciones a uno generativo y dinámico. Combinando la flexibilidad de los LLMs con el conocimiento institucional actualizado mediante RAG y una estructura agéntica con distintos nodos especializados, el sistema es capaz de localizar la respuesta en la documentación oficial y presentarla de forma clara, sin necesidad de haber previsto cada posible pregunta de antemano.
+
+\section{Tecnologías clave del ecosistema}
+
+\subsection{Lenguaje y Frameworks base}
+
+Como lenguaje principal se ha utilizado Python. La elección, siendo sincero, fue bastante natural: a día de hoy es prácticamente el estándar de facto en todo lo que rodea a la Inteligencia Artificial. Su ecosistema de bibliotecas es enorme y ofrece compatibilidad directa con las herramientas de orquestación que veremos a continuación (LangChain, LangGraph), además de con prácticamente cualquier librería de procesamiento de datos que se necesite.
+
+Sobre esta base, el sistema se ha estructurado utilizando dos \textit{frameworks} principales, ambos orientados en cada una de las capas de nuestra aplicación (frontend/backend):
+\begin{itemize}
+    \item \textbf{FastAPI:} para la implementación de la lógica del servidor \textit{backend} y la exposición de servicios mediante una API REST. Esta tecnología ha sido seleccionada puesto que destaca por su alto rendimiento y su soporte nativo ante operaciones asíncronas, característica crítica para gestionar de manera eficiente los tiempos de espera derivados de las llamadas a los modelos y a la base de datos vectorial, evitando así en todo momento el bloqueo del hilo principal de ejecución.
+    \item \textbf{Streamlit:} permite una construcción ágil de aplicaciones web interactivas orientadas a datos directamente en Python. Se ha tomado esta opción debido a que incorpora componentes nativos diseñados especificamente para interfaces conversacionales. Facilitando enormemente la implementación del historial del chat, la gestión del estado de la sesión en el cliente y la renderización de las respuestas del agente de forma progresiva (\textit{streaming})
+\end{itemize}
+
+\subsection{Orquestación y Lógica Agéntica}
+
+LangChain \cite{langchain_docs} es un framework de código abierto que proporciona abstracciones para conectar LLMs con fuentes de datos externas, cadenas de procesamiento y herramientas. LangGraph \cite{langgraph_docs} extiende este framework con la capacidad de definir grafos de estado, permitiendo flujos de control complejos con nodos y aristas condicionales.
+
+\subsection{Pinecone como base de datos vectorial}
+
+Pinecone \cite{pinecone_docs} es un servicio gestionado de base de datos vectorial que ofrece almacenamiento, indexación y búsqueda de vectores de alta dimensionalidad con baja latencia. Su modelo serverless elimina la necesidad de gestionar infraestructura, lo que simplifica el despliegue.
+
+\subsection{Cohere: embeddings y reranking}
+
+Cohere \cite{cohere_docs} proporciona dos servicios fundamentales para este proyecto: un modelo de embeddings multilingüe (\texttt{embed-multilingual-v3.0}) para la vectorización de documentos en español, y un modelo de reranking (\texttt{rerank-v4.0-pro}) que reordena los resultados de la búsqueda vectorial según su relevancia contextual con la consulta.
+
+\subsection{Groq: inferencia de baja latencia}
+
+Groq \cite{groq_docs} es una plataforma de inferencia que utiliza hardware especializado (LPUs, \textit{Language Processing Units}) diseñado específicamente para la ejecución de modelos de lenguaje. Frente a las GPUs tradicionales, los LPUs ofrecen latencias de inferencia significativamente menores, lo que resulta crítico para un asistente conversacional en tiempo real.
+
+\subsection{LlamaParse: procesamiento de documentos}
+
+LlamaParse \cite{llamaparse_docs} es un servicio de procesamiento de documentos que utiliza modelos de visión por computador para extraer contenido de archivos PDF preservando su estructura original. A diferencia de extractores de texto convencionales, LlamaParse es capaz de interpretar tablas complejas, notas al pie y jerarquías de encabezados, convirtiendo el contenido a formato Markdown estructurado.
+
+\subsection{Encriptado de contraseñas}
+
+Para poder garantizar la seguridad y privacidad de los usuarios, se ha implementado un flujo de \textit{hashing} para las contraseñas, utilizando el algoritmo bcrypt. Se ha elegido principalmente porque, además de ofrecer un cifrado unidireccional (irrecuperable), incorpora de forma nativa un sistema de \textit{salting}. Este consiste en añadir datos aleatorios a la contraseña antes de cifrarla, lo que permite ajustar el 'coste' computacional del algoritmo. Esto hace que el sistema sea resistente a ataques de fuerza bruta, garantizando que, incluso ante una filtración de la base de datos, los atacantes no puedan obtener las contraseñas reales.
+
+\subsection{Gestión de la base de datos relacional}
+
+Para la persistencia de los datos, se plantearon diversas opciones, tales como MySQL, SQLServer u Oracle. Para  el objetivo de este proyecto, se ha considerado que la opción más conveniente es PostgreSQL, puesto que no solo ofrece una buena solución, sino que además ya se tenía algo de experiencia previa trabajando con la misma. Se trata de un sistema de gestión de base de datos relacional que se caracteriza por:
+\begin{itemize}
+    \item \textbf{Integridad y fiabilidad de datos:} garantiza el cumplimiento estricto de las propiedades ACID (Atomicidad, Consistencia, Aislamiento, Durabilidad), lo que le permite ser muy tolerante a fallos, garantizando así transacciones muy seguras.
+    \item \textbf{Código abierto y gratuito:} a diferencia de las bases de datos que requieren de una licencia comercial para poder hacer uso de todas sus funciones, esta tecnología al ser \textit{open source} no tiene ningun tipo de coste, conviertiéndola en una alternativa rentable frente a opciones privativas.
+    \item \textbf{Rendimiento y escalabilidad:} está diseñado para manejar grandes volúmenes de datos y cargas de trabajo pesadas, lo que le permite ser altamente escalable y eficiente en consultas complejas.
+\end{itemize}
+
+Para poder interaccionar con la base de datos desde el backend. aunque se valoró el uso de \textit{psycopg2}, la cual ofrece una gran velocidad a la hora de resolver tareas sencillas, se requería de un ORM (Object-Relational Mapping) más robusto. Finalmente, se optó por \textit{SQLAlchemy} dado que ofrece tanto el propio ORM como un \textit{SQL Expression Language}, facilitando enormemente la realización de consultas. Además, destaca por su facilidad para gestionar conexiones, migraciones y proteger el sistema frente a vulnerabilidades como la inyección SQL.
+% ============================================================
+% PARTE II: METODOLOGÍA Y PLANIFICACIÓN
+% ============================================================
+\part{Metodología y Planificación}
+
+\chapter{Metodología de desarrollo}
+\section{Ciclo de vida del proyecto}
+
+Desde el primer momento tuve claro que un enfoque en cascada no iba a funcionar para este proyecto. Al tratarse de un sistema donde las decisiones sobre modelos, estrategias de fragmentación o hiperparámetros dependen en gran medida de resultados empíricos ---es decir, de probar y ver qué sale---, necesitaba un ciclo de vida que me permitiera equivocarme pronto y corregir rápido. Por eso se optó por un enfoque iterativo e incremental, en el que cada iteración produce un incremento funcional del sistema.
+
+En la práctica, cada iteración ha seguido el ciclo: análisis $\rightarrow$ diseño $\rightarrow$ implementación $\rightarrow$ pruebas $\rightarrow$ retroalimentación. Esto me permitió ir refinando componentes críticos como el pipeline de ingesta o la configuración de los modelos de lenguaje a medida que aprendía de los errores.
+
+\section{Metodología Scrum}
+
+Como marco de trabajo ágil se adoptó Scrum, aunque evidentemente hubo que adaptarlo a la realidad de un TFG individual. No tiene mucho sentido hacer una \textit{daily} contigo mismo, pero sí que resultó muy útil mantener la filosofía de sprints cortos, backlog priorizado y revisiones periódicas.
+
+\subsection{Roles}
+
+Al ser un proyecto individual, los roles de Scrum se han repartido de la manera más lógica posible:
+\begin{itemize}
+    \item \textbf{Product Owner:} Los tutores del TFG (José Enrique Sánchez López y Pablo Reina Jiménez), encargados de definir prioridades y validar que lo desarrollado tenía sentido.
+    \item \textbf{Scrum Master y Equipo de Desarrollo:} Yo mismo, Kevin Amador Calzadilla, que gestionaba el backlog, ejecutaba los sprints y hacía las retrospectivas (básicamente, pararme a pensar qué había ido bien y qué podía mejorar).
+\end{itemize}
+
+\subsection{Artefactos}
+
+\begin{itemize}
+    \item \textbf{Product Backlog:} Lista priorizada de funcionalidades y tareas técnicas, mantenida y actualizada de forma continua a lo largo del desarrollo.
+    \item \textbf{Sprint Backlog:} Subconjunto de tareas seleccionadas para cada sprint de dos semanas.
+    \item \textbf{Incremento:} Cada sprint concluye con una versión funcional del sistema que integra las nuevas funcionalidades desarrolladas.
+\end{itemize}
+
+\subsection{Ceremonias}
+
+Las ceremonias se adaptaron al formato individual: al inicio de cada sprint me sentaba a planificar qué tareas abordaría en las dos semanas siguientes, y al finalizar revisaba los avances con los tutores y hacía una retrospectiva personal para identificar qué mejorar en el siguiente ciclo.
+
+\section{Herramientas de gestión}
+
+\begin{itemize}
+    \item \textbf{Control de versiones:} Git con repositorio alojado en GitHub.
+    \item \textbf{Gestión de tareas:} Seguimiento manual del backlog y los sprints mediante documentación propia del alumno.
+    \item \textbf{Entorno de desarrollo:} Visual Studio Code con extensiones para Python, LaTeX y Docker.
+    \item \textbf{Contenedorización:} Docker y Docker Compose para la reproducibilidad del entorno.
+\end{itemize}
+
+\chapter{Planificación}
+\section{Definición de sprints}
+
+El trabajo se organizó en sprints de dos semanas, cada uno con un hito principal bien definido. A continuación se muestra cómo se distribuyeron:
+
+\begin{table}[H]
+    \centering
+    \caption{Planificación de sprints del proyecto}
+    \begin{tabular}{@{}clp{8cm}@{}}
+        \toprule
+        \textbf{Sprint} & \textbf{Periodo} & \textbf{Hito principal}                                      \\
+        \midrule
+        1               & Semanas 1--2     & Investigación del estado del arte y definición de requisitos \\
+        2               & Semanas 3--4     & Pipeline de ingesta: extracción de PDFs y fragmentación      \\
+        3               & Semanas 5--6     & Implementación del RAG básico con Pinecone y Cohere          \\
+        4               & Semanas 7--8     & Diseño e implementación del grafo LangGraph                  \\
+        5               & Semanas 9--10    & Desarrollo del backend FastAPI y modelo de datos             \\
+        6               & Semanas 11--12   & Desarrollo del frontend Streamlit                            \\
+        7               & Semanas 13--14   & Migración a Groq y optimización de latencia                  \\
+        8               & Semanas 15--16   & Contenedorización con Docker Compose                         \\
+        9               & Semanas 17--18   & Evaluación y validación del sistema                          \\
+        10              & Semanas 19--20   & Redacción de la memoria y documentación final                \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{Diagrama de Gantt}
+
+Para visualizar mejor la distribución temporal de las tareas y sus dependencias, se ha elaborado un diagrama de Gantt que refleja el cronograma seguido durante las 20 semanas de desarrollo.
+
+\textit{Nota: Inserta aquí la imagen de tu diagrama de Gantt. Puedes usar el siguiente bloque como plantilla:}
+
+\begin{figure}[H]
+    \centering
+    % Descomentar y ajustar el nombre del archivo cuando tengas la imagen
+    % \includegraphics[width=1\textwidth]{diagrama_gantt.png}
+    \caption{Diagrama de Gantt de la planificación del TFG}
+    \label{fig:gantt}
+\end{figure}
+
+\section{Estimación de esfuerzo}
+
+Se estima una dedicación media de 15--20 horas semanales durante 20 semanas, totalizando aproximadamente 300--400 horas de trabajo. La distribución aproximada del esfuerzo por área es:
+
+\begin{itemize}
+    \item Investigación y estado del arte: 15\%
+    \item Diseño e implementación del pipeline RAG: 25\%
+    \item Desarrollo del agente (LangGraph): 20\%
+    \item Backend y frontend: 15\%
+    \item Evaluación y validación: 10\%
+    \item Documentación y memoria: 15\%
+\end{itemize}
+
+\section{Análisis de riesgos}
+
+A lo largo del ciclo de vida del proyecto, se han identificado diversos riesgos que podrían comprometer la planificación o la calidad del sistema. Para cada uno de ellos se ha evaluado su probabilidad de ocurrencia y su impacto en el proyecto, definiendo estrategias de mitigación proactivas.
+
+\begin{table}[H]
+    \centering
+    \caption{Matriz de análisis de riesgos del proyecto}
+    \begin{tabular}{@{}p{4.5cm}ccp{5.5cm}@{}}
+        \toprule
+        \textbf{Riesgo}                                       & \textbf{Probabilidad} & \textbf{Impacto} & \textbf{Mitigación}                                             \\
+        \midrule
+        Límite de tokens en APIs gratuitas (Groq, LlamaParse) & Alta                  & Alto             & Estrategia multi-modelo con modelos ligeros para tareas simples \\
+        Alucinaciones del LLM                                 & Media                 & Alto             & Temperatura baja (0.1) y RAG estricto con fuentes verificables  \\
+        Mala fragmentación de tablas en PDFs                  & Alta                  & Medio            & Migración a LlamaParse con prompts especializados               \\
+        Latencia excesiva en respuestas                       & Media                 & Medio            & Migración de endpoints de HuggingFace a Groq (LPUs)             \\
+        Pérdida de contexto en conversaciones largas          & Baja                  & Bajo             & Implementación de ventana deslizante y resumen de memoria       \\
+        Curva de aprendizaje de LangGraph                     & Media                 & Medio            & Asignación de tiempo extra en los primeros sprints de diseño    \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:riesgos}
+\end{table}
+
+\section{Estimación de costes}
+
+Aunque este proyecto es puramente académico, resulta interesante hacer el ejercicio de estimar cuánto costaría si se tratase de un encargo profesional real desarrollado por un ingeniero de software junior. He dividido la estimación en tres partidas: personal, recursos materiales y costes indirectos.
+
+\subsection{Costes de personal}
+Tomando como referencia la estimación de 400 horas de dedicación calculada en la sección anterior, y asumiendo un coste por hora estándar para un perfil de desarrollador junior de 15 €/hora, el coste de personal asciende a:
+\begin{itemize}
+    \item \textbf{Desarrollador Junior:} 400 horas $\times$ 15 €/hora = 6.000 €
+\end{itemize}
+
+\subsection{Costes de hardware y software}
+\begin{itemize}
+    \item \textbf{Hardware:} Se ha empleado un equipo informático portátil valorado en 1.200 €. Considerando un periodo de amortización de 4 años, y dado que el proyecto ha durado 5 meses, la cuota de amortización imputable al proyecto es de aproximadamente 125 €.
+    \item \textbf{Software y APIs:} El desarrollo se ha apoyado mayoritariamente en herramientas de código abierto (Python, FastAPI, Streamlit, Docker). Los servicios de IA y bases de datos vectoriales (Groq, Cohere, Pinecone, LlamaParse) se han utilizado en su capa gratuita (\textit{Free Tier}), por lo que el coste directo en este apartado es de 0 €. Sin embargo, en un entorno de producción, los costes de inferencia y almacenamiento escalarían según el uso.
+\end{itemize}
+
+\subsection{Costes indirectos}
+Se contemplan gastos de suministros como electricidad y conexión a internet durante los 5 meses de desarrollo, que se estiman conservadoramente en 20 € mensuales imputables al proyecto.
+\begin{itemize}
+    \item \textbf{Suministros:} 5 meses $\times$ 20 €/mes = 100 €
+\end{itemize}
+
+\subsection{Coste total del proyecto}
+Sumando todas las partidas anteriores, obtenemos el coste total estimado del proyecto:
+
+\begin{table}[H]
+    \centering
+    \caption{Presupuesto total estimado}
+    \begin{tabular}{@{}lr@{}}
+        \toprule
+        \textbf{Concepto}                 & \textbf{Coste estimado (€)} \\
+        \midrule
+        Costes de Personal                & 6.000,00                    \\
+        Costes de Hardware (Amortización) & 125,00                      \\
+        Costes de Software y APIs         & 0,00                        \\
+        Costes Indirectos                 & 100,00                      \\
+        \midrule
+        \textbf{Base Imponible}           & \textbf{6.225,00}           \\
+        IVA (21\%)                        & 1.307,25                    \\
+        \midrule
+        \textbf{Total Presupuesto}        & \textbf{7.532,25}           \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:presupuesto}
+\end{table}
+
+% ============================================================
+% PARTE III: ANÁLISIS Y DISEÑO
+% ============================================================
+\part{Análisis y Diseño}
+\chapter{Análisis de requisitos}
+\section{Requisitos funcionales}
+
+\begin{longtable}{@{}cp{12cm}@{}}
+    \caption{Requisitos funcionales del sistema}                                                                                   \\
+    \toprule
+    \textbf{ID} & \textbf{Descripción}                                                                                             \\
+    \midrule
+    \endfirsthead
+
+    \caption[]{Requisitos funcionales del sistema (continuación)}                                                                  \\
+    \toprule
+    \textbf{ID} & \textbf{Descripción}                                                                                             \\
+    \midrule
+    \endhead
+
+    RF-01       & El sistema debe permitir el registro de usuarios mediante email y contraseña.                                    \\
+    RF-02       & El sistema debe permitir la autenticación de usuarios mediante JWT.                                              \\
+    RF-03       & El usuario debe poder crear, renombrar y eliminar conversaciones.                                                \\
+    RF-04       & El sistema debe procesar la consulta del usuario y generar una respuesta fundamentada en documentos oficiales.   \\
+    RF-05       & El sistema debe clasificar la intención del usuario y enrutar la consulta al nodo especializado correspondiente. \\
+    RF-06       & El sistema debe rechazar amablemente consultas que no estén relacionadas con trámites de la US.                  \\
+    RF-07       & El sistema debe solicitar aclaraciones al usuario cuando la consulta sea ambigua.                                \\
+    RF-08       & El sistema debe mostrar las fuentes y referencias consultadas junto con cada respuesta.                          \\
+    RF-09       & El sistema debe mantener el contexto de la conversación a lo largo de múltiples turnos.                          \\
+    RF-10       & Los administradores deben poder ingestar nuevos documentos PDF al sistema desde la interfaz.                     \\
+    RF-11       & El sistema debe generar automáticamente títulos descriptivos para las conversaciones.                            \\
+    RF-12       & El sistema debe comprimir la memoria de conversaciones largas para mantener la coherencia.                       \\
+    RF-13       & El sistema debe mostrar a los administradores las cuentas de usuario existentes en el programa.                  \\
+    RF-14       & El sistema debe permitir a los administradores eliminar cuentas de usuario.                                      \\
+    RF-15       & El sistema debe permitir a los administradores convertir a otros usuarios en administradores.                    \\
+    RF-16       & El sistema debe permitir a los administradores degradar a otros administradores en usuarios.                     \\
+    \bottomrule
+\end{longtable}
+
+\section{Requisitos no funcionales}
+
+\begin{table}[H]
+    \centering
+    \caption{Requisitos no funcionales del sistema}
+    \begin{tabular}{@{}cp{12cm}@{}}
+        \toprule
+        \textbf{ID} & \textbf{Descripción}                                                                                     \\
+        \midrule
+        RNF-01      & El tiempo de respuesta del agente no debe superar los 20 segundos.                                       \\
+        RNF-02      & El sistema debe desplegarse mediante contenedores Docker para garantizar la portabilidad.                \\
+        RNF-03      & Las contraseñas deben almacenarse hasheadas con bcrypt.                                                  \\
+        RNF-04      & La interfaz debe ser accesible desde cualquier navegador web moderno.                                    \\
+        RNF-05      & El sistema debe ser capaz de procesar documentos PDF de hasta 100 páginas.                               \\
+        RNF-06      & Las respuestas del agente deben basarse exclusivamente en los documentos ingestados (sin alucinaciones). \\
+        RNF-07      & La arquitectura debe permitir la adición de nuevos tipos de nodos sin modificar el núcleo del sistema.   \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{Casos de uso}
+
+Los principales casos de uso identificados son:
+
+\begin{itemize}
+    \item \textbf{CU-01: Registrarse.} Un usuario nuevo crea una cuenta proporcionando email y contraseña.
+    \item \textbf{CU-02: Iniciar sesión.} Un usuario registrado se autentica para acceder al sistema.
+    \item \textbf{CU-03: Realizar consulta burocrática.} El usuario formula una pregunta sobre normativa o trámites de la US y recibe una respuesta fundamentada.
+    \item \textbf{CU-04: Gestionar conversaciones.} El usuario crea, renombra o elimina sus conversaciones.
+    \item \textbf{CU-05: Ingestar documento (Admin).} Un administrador sube un nuevo PDF para ampliar la base de conocimiento del agente.
+    \item \textbf{CU-06: Gestionar usuarios (Admin).} Un administrador puede gestionar usuarios ya sea añadiendo como nuevo administrador, eliminándolo, degradándolo a usuario normal.
+\end{itemize}
+
+\chapter{Diseño de la arquitectura}
+\section{Arquitectura general del sistema}
+
+El sistema sigue una arquitectura de microservicios contenedorizados orquestados mediante Docker Compose. Los tres servicios principales son:
+
+\begin{itemize}
+    \item \textbf{Frontend (Streamlit):} Interfaz web que se comunica con el backend vía HTTP REST. Puerto 8501.
+    \item \textbf{Backend (FastAPI):} API REST que gestiona la autenticación, las conversaciones y orquesta el agente LangGraph. Puerto 8000.
+    \item \textbf{Base de datos (PostgreSQL 15):} Almacena usuarios, conversaciones y mensajes. Puerto 5432.
+\end{itemize}
+
+Adicionalmente, el sistema se conecta con servicios externos en la nube:
+\begin{itemize}
+    \item \textbf{Pinecone:} Base de datos vectorial para almacenamiento y búsqueda de embeddings.
+    \item \textbf{Groq:} API de inferencia para los modelos Llama 3.1 8B y Llama 3.3 70B.
+    \item \textbf{Cohere:} API para generación de embeddings y reranking de documentos.
+    \item \textbf{LlamaParse:} API para el procesamiento inteligente de PDFs.
+\end{itemize}
+
+\section{Arquitectura del backend (FastAPI)}
+\subsection{Modelo de datos}
+
+El modelo relacional del sistema se compone de tres entidades principales implementadas con SQLAlchemy ORM:
+
+\begin{itemize}
+    \item \textbf{Usuario:} Almacena el email, contraseña hasheada, rol de administrador y fecha de creación. Relación uno a muchos con Conversación.
+    \item \textbf{Conversación:} Contiene el título (auto-generado), un campo de resumen de memoria para conversaciones largas y la referencia al usuario propietario. Relación uno a muchos con Mensaje.
+    \item \textbf{Mensaje:} Almacena el rol (user/assistant), el contenido textual, las referencias a documentos consultados (en formato JSON) y la marca temporal.
+\end{itemize}
+
+Las relaciones incluyen eliminación en cascada: al eliminar un usuario se eliminan sus conversaciones, y al eliminar una conversación se eliminan sus mensajes.
+
+\subsection{Endpoints de la API REST}
+
+\begin{table}[H]
+    \centering
+    \caption{Endpoints principales de la API}
+    \begin{tabular}{@{}llp{7cm}@{}}
+        \toprule
+        \textbf{Método} & \textbf{Ruta}                   & \textbf{Descripción}                          \\
+        \midrule
+        POST            & /registro                       & Registro de nuevo usuario                     \\
+        POST            & /login                          & Autenticación con email/contraseña            \\
+        GET             & /me                             & Datos del usuario autenticado                 \\
+        GET             & /conversaciones                 & Lista de conversaciones del usuario           \\
+        POST            & /conversaciones                 & Crear nueva conversación                      \\
+        GET             & /conversaciones/\{id\}/mensajes & Historial de mensajes                         \\
+        POST            & /conversaciones/\{id\}/chat     & Enviar mensaje y obtener respuesta del agente \\
+        PUT             & /conversaciones/\{id\}          & Renombrar conversación                        \\
+        DELETE          & /conversaciones/\{id\}          & Eliminar conversación                         \\
+        POST            & /admin/ingestar                 & Subir PDF para ingesta (solo admin)           \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Autenticación y autorización (JWT)}
+
+El sistema implementa autenticación basada en tokens JWT (\textit{JSON Web Tokens}) con el algoritmo HS256. Los tokens tienen una validez de 7 días. El flujo es: el usuario envía sus credenciales al endpoint \texttt{/login}, el servidor verifica la contraseña contra el hash bcrypt almacenado en la base de datos, y si es correcta, genera un token JWT que el cliente incluirá en la cabecera \texttt{Authorization} de las solicitudes posteriores.
+
+Para las rutas de administración (como \texttt{/admin/ingestar}), se añade una capa adicional que verifica el campo \texttt{is\_admin} del usuario autenticado.
+
+\section{Diseño del agente conversacional}
+\subsection{Grafo de estados (LangGraph)}
+
+El agente se implementa como un \texttt{StateGraph} de LangGraph con ocho nodos y transiciones condicionales. El estado compartido entre nodos se define mediante un \texttt{TypedDict} (\texttt{StateSchema}) con los siguientes campos: \texttt{pregunta}, \texttt{pregunta\_reformulada}, \texttt{historial}, \texttt{historial\_formateado}, \texttt{contexto}, \texttt{stream} y \texttt{referencias}.
+
+El flujo general del grafo es:
+
+\begin{enumerate}
+    \item \textbf{START $\rightarrow$ Estado Inicial:} Formatea el historial de la conversación.
+    \item \textbf{Estado Inicial $\rightarrow$ Recuperador | Rechazo:} Decide si la consulta es relevante.
+    \item \textbf{Recuperador $\rightarrow$ Entrevistador | Clasificador:} Decide si hay suficiente información o se necesitan aclaraciones.
+    \item \textbf{Clasificador $\rightarrow$ Procedimental | Calendario | Normativo | Baremo:} Enruta al nodo especializado.
+    \item \textbf{Nodo final $\rightarrow$ END:} Genera la respuesta y finaliza.
+\end{enumerate}
+
+\subsection{Nodo Estado Inicial}
+Formatea el historial de mensajes de la conversación en un formato legible (``rol: contenido'') que será utilizado por los prompts de los nodos posteriores.
+
+\subsection{Nodo Router: clasificación de intenciones}
+Utiliza un LLM clasificador ultra-ligero (Llama 3.1 8B con \texttt{max\_tokens=15}) para determinar si la consulta del usuario es relevante para el dominio del agente. Devuelve ``recuperador'' si la consulta está relacionada con trámites de la US, o ``rechazo\_amable'' en caso contrario.
+
+\subsection{Nodo Recuperador: pipeline RAG}
+Este nodo ejecuta el pipeline completo de recuperación de información:
+\begin{enumerate}
+    \item Reformula la pregunta del usuario integrando el contexto del historial.
+    \item Genera el embedding de la pregunta reformulada con Cohere.
+    \item Busca los 12 documentos más similares en Pinecone.
+    \item Aplica reranking con Cohere (\texttt{rerank-v4.0-pro}) seleccionando los 4 más relevantes.
+    \item Formatea los documentos con metadata (fuente y página).
+\end{enumerate}
+
+\subsection{Nodo Entrevistador: gestión de ambigüedades}
+Se activa cuando el sistema detecta que la consulta del usuario es ambigua o le faltan datos clave. El nodo genera una respuesta en dos partes: primero ofrece información general sobre el tema consultado, y al final formula una pregunta aclaratoria para obtener el dato que falta. Una regla estricta impide que el agente haga dos preguntas consecutivas al usuario.
+
+\subsection{Nodos Resolutores: respuestas especializadas}
+
+Se han diseñado cuatro nodos resolutores, cada uno con un prompt especializado:
+
+\begin{itemize}
+    \item \textbf{Procedimental:} Genera respuestas paso a paso para trámites administrativos (matrícula, liquidación de viajes, etc.), usando listas numeradas y resaltando plataformas y documentos requeridos.
+    \item \textbf{Calendario:} Especializado en fechas, plazos y periodos del calendario académico, con especial énfasis en la precisión de las fechas.
+    \item \textbf{Normativo:} Explica normativas, requisitos legales y resoluciones rectorales, citando artículos específicos cuando están disponibles en el contexto.
+    \item \textbf{Baremo:} Detalla criterios de evaluación, puntuaciones y méritos en procesos de selección de profesorado, utilizando tablas cuando es apropiado.
+\end{itemize}
+
+\subsection{Nodo Rechazo Amable}
+Genera una respuesta educada y empática indicando al usuario que su consulta no puede ser atendida, sugiriendo alternativas cuando es posible.
+
+\section{Diseño del sistema Dual RAG}
+
+El sistema implementa dos niveles de RAG paralelos:
+
+\begin{itemize}
+    \item \textbf{RAG de conocimiento normativo:} La base de datos vectorial en Pinecone contiene los fragmentos de los 15 documentos oficiales de la US (normativas de matrícula, baremos de contratación, calendarios académicos, guías de viajes, etc.).
+    \item \textbf{RAG de buenas prácticas:} Los prompts de cada nodo resolutor incorporan directrices de estilo, formato y tono que guían la generación de respuestas cercanas al usuario sin sacrificar el rigor técnico.
+\end{itemize}
+
+De esta forma, el contenido factual proviene exclusivamente de los documentos oficiales, mientras que la forma y estructura de la respuesta se define mediante las instrucciones embebidas en los templates de cada nodo.
+
+\section{Diseño del frontend (Streamlit)}
+
+La interfaz web se organiza en tres áreas funcionales:
+
+\begin{itemize}
+    \item \textbf{Pantalla de autenticación:} Tabs de inicio de sesión y registro, con el logo de la US.
+    \item \textbf{Barra lateral:} Lista de conversaciones con opciones de crear, renombrar y eliminar. Para administradores, incluye un panel de gestión de conocimiento para ingestar nuevos PDFs.
+    \item \textbf{Área de chat:} Burbujas de mensaje con animación de entrada (\textit{fade-in}), streaming simulado de respuestas palabra por palabra, y expansores para mostrar las fuentes consultadas.
+\end{itemize}
+
+El diseño visual utiliza una paleta oscura con tipografía Inter, siguiendo una estética moderna tipo SaaS. Los botones cambian al color corporativo de la US (\texttt{\#9D1C34}) al pasar el cursor.
+
+% ============================================================
+% PARTE IV: IMPLEMENTACIÓN
+% ============================================================
+\part{Implementación}
+
+\chapter{Infraestructura y despliegue}
+\section{Contenedorización con Docker}
+\subsection{Docker Compose: orquestación de servicios}
+
+El sistema se despliega mediante un archivo \texttt{docker-compose.yml} que define tres servicios:
+
+\begin{itemize}
+    \item \textbf{db:} Contenedor PostgreSQL 15 con volumen persistente (\texttt{postgres\_data}) para la durabilidad de los datos. Se expone en el puerto 5434 del host.
+    \item \textbf{backend:} Contenedor con la aplicación FastAPI, que se construye desde el directorio \texttt{./backend}. Depende del servicio \texttt{db} y se expone en el puerto 8000.
+    \item \textbf{frontend:} Contenedor con la aplicación Streamlit, construido desde la raíz del proyecto. Se conecta al backend mediante la URL interna \texttt{http://backend:8000} y se expone en el puerto 8501.
+\end{itemize}
+
+\subsection{Configuración de red y variables de entorno}
+
+Docker Compose crea automáticamente una red interna que permite la comunicación entre servicios por nombre de host. Las credenciales de bases de datos, claves API (Groq, Pinecone, Cohere, LlamaParse) y parámetros de configuración se gestionan mediante un archivo \texttt{.env} compartido, evitando la exposición de secretos en el código fuente.
+
+\section{Base de datos PostgreSQL}
+
+Se utiliza PostgreSQL 15 como sistema de gestión de base de datos relacional. La interacción con la base de datos se realiza a través de SQLAlchemy ORM con la siguiente configuración:
+
+\begin{itemize}
+    \item Motor de conexión con \texttt{client\_encoding=utf8} para soporte de caracteres especiales en español.
+    \item Sesiones gestionadas mediante un generador (\texttt{get\_db}) que garantiza el cierre correcto de conexiones.
+    \item Creación automática de tablas al iniciar la aplicación mediante \texttt{Base.metadata.create\_all}.
+\end{itemize}
+
+\chapter{Pipeline de ingesta de documentos}
+\section{Procesamiento con LlamaParse}
+
+LlamaParse se configura con un \texttt{system\_prompt} especializado en documentos burocráticos universitarios que instruye al modelo para:
+
+\begin{enumerate}
+    \item Extraer todas las celdas de tablas sin omitir texto, incluyendo celdas combinadas.
+    \item Mantener notas al pie y aclaraciones inmediatamente después de la sección a la que hacen referencia.
+    \item Respetar la jerarquía de encabezados (H1, H2, H3) y listas enumeradas.
+    \item Extraer el texto íntegramente, sin resumir.
+\end{enumerate}
+
+La extracción se realiza mediante el método \texttt{get\_json\_result}, que devuelve los resultados organizados por página, permitiendo asociar cada fragmento con su página de origen en los metadatos.
+
+\section{Fragmentación semántica (chunking)}
+\subsection{Evolución de la estrategia de fragmentación}
+
+Si algo aprendí durante el desarrollo de este proyecto es que la forma de fragmentar los documentos importa muchísimo más de lo que parece a primera vista. De hecho, la estrategia de fragmentación evolucionó a lo largo de tres fases hasta dar con una solución satisfactoria:
+
+\begin{enumerate}
+    \item \textbf{Fase inicial:} Fragmentación genérica con chunks de 1000 caracteres y solapamiento de 200. Los fragmentos carecían de contexto suficiente y las tablas quedaban rotas.
+    \item \textbf{Fase intermedia (Docling):} Se incorporó Docling para una extracción más inteligente. Mejoró la claridad del contexto pero seguía fallando con tablas y elementos complejos.
+    \item \textbf{Fase final (LlamaParse):} La migración a LlamaParse resolvió la preservación de tablas y jerarquías documentales, produciendo Markdown estructurado de alta calidad.
+\end{enumerate}
+
+\subsection{El problema del doble splitter}
+
+Este fue uno de esos errores sutiles que te vuelven loco. En un momento dado, las respuestas sobre baremos empezaron a degradarse sin razón aparente. Después de bastante tiempo depurando, descubrí que se estaban ejecutando dos procesos de fragmentación de forma redundante: LlamaParse ya producía fragmentos semánticos de calidad, pero añadí un \texttt{MarkdownTextSplitter} adicional que volvía a cortar esos fragmentos, rompiendo tablas y separando notas de su contexto.
+
+La solución fue sencilla una vez identificado el problema: confiar en la segmentación de LlamaParse para la estructura semántica, y usar el \texttt{MarkdownTextSplitter} únicamente como red de seguridad para fragmentos que excedieran el tamaño máximo.
+
+\subsection{Configuración final: MarkdownTextSplitter}
+
+La configuración final del splitter utiliza:
+\begin{itemize}
+    \item \texttt{chunk\_size = 1500}: Tamaño suficiente para contener una sección completa con su contexto.
+    \item \texttt{chunk\_overlap = 250}: Solapamiento que garantiza continuidad entre fragmentos adyacentes.
+\end{itemize}
+
+Tras la fragmentación, se aplica \texttt{filter\_complex\_metadata} para limpiar metadatos incompatibles con Pinecone.
+
+\section{Generación de embeddings con Cohere}
+
+Se utiliza el modelo \texttt{embed-multilingual-v3.0} de Cohere para generar embeddings de 1024 dimensiones. Este modelo fue seleccionado por su rendimiento superior en textos en español frente a alternativas como los embeddings de HuggingFace, y por su capacidad de capturar matices semánticos en documentación normativa.
+
+\section{Almacenamiento en Pinecone}
+
+Los vectores se almacenan en un índice denominado \texttt{index-tfg} en Pinecone. La subida se realiza por lotes de 100 fragmentos para evitar timeouts y respetar los límites de la API. Cada vector almacena como metadata el nombre del documento fuente y el número de página, información que posteriormente se utiliza para generar las referencias en las respuestas.
+
+\chapter{Implementación del agente}
+\section{Esquema de estado (StateSchema)}
+
+El estado compartido entre todos los nodos del grafo se define mediante un \texttt{TypedDict} de Python con los siguientes campos:
+
+\begin{itemize}
+    \item \texttt{pregunta} (\texttt{str}): La consulta original del usuario.
+    \item \texttt{pregunta\_reformulada} (\texttt{str}): La consulta enriquecida con contexto del historial.
+    \item \texttt{historial} (\texttt{list}): Lista de mensajes previos en formato \texttt{\{role, content\}}.
+    \item \texttt{historial\_formateado} (\texttt{list}): Historial en formato texto plano para inyección en prompts.
+    \item \texttt{contexto} (\texttt{str}): Fragmentos de documentos recuperados del RAG.
+    \item \texttt{stream} (\texttt{str}): Generador de la respuesta para streaming.
+    \item \texttt{referencias} (\texttt{list}): Lista de fuentes consultadas.
+\end{itemize}
+
+\section{Sistema de prompts}
+
+Todos los prompts del sistema se centralizan en un módulo \texttt{templates.py}, lo que facilita su mantenimiento y evolución iterativa.
+
+\subsection{Prompt de detección de intención}
+Determina si la consulta del usuario está relacionada con trámites burocráticos de la US. Devuelve exclusivamente ``recuperador'' o ``rechazo\_amable''. Se ejecuta con el LLM clasificador (max\_tokens=15) para minimizar latencia.
+
+\subsection{Prompt de reformulación}
+Reformula la última intervención del usuario incorporando toda la información aclarada en turnos anteriores, generando una consulta autónoma que pueda utilizarse para la búsqueda semántica sin pérdida de contexto.
+
+\subsection{Prompt de suficiencia de información}
+Analiza si el contexto recuperado contiene información suficiente para dar una respuesta directa o si es necesario preguntar al usuario. Implementa una ``Regla de Oro'' que prohíbe devolver ``entrevistador'' si la última intervención del asistente fue una pregunta, evitando bucles de clarificación.
+
+\subsection{Prompt clasificador de categorías}
+Clasifica la consulta en una de cuatro categorías: procedimental, calendario, normativo o baremo, basándose en el tipo de respuesta que necesita el usuario. Incluye ejemplos concretos para cada categoría (\textit{few-shot prompting}).
+
+\subsection{Prompts de los nodos resolutores}
+Cada nodo resolutor cuenta con un prompt especializado que define el formato, tono y nivel de detalle esperado. Los prompts incluyen instrucciones específicas sobre el uso de listas, tablas, negritas y emojis según la categoría.
+
+\section{Pipeline de recuperación}
+\subsection{Búsqueda semántica en Pinecone}
+
+El proceso de búsqueda se ejecuta en tres etapas con instrumentación de tiempos:
+\begin{enumerate}
+    \item \textbf{Embedding de la consulta:} Se genera el vector de la pregunta reformulada usando Cohere.
+    \item \textbf{Búsqueda vectorial:} Se recuperan los 12 documentos más similares (\texttt{k=12}) mediante \texttt{similarity\_search\_by\_vector} en Pinecone.
+    \item \textbf{Reranking:} Se aplica Cohere Rerank para reordenar y seleccionar los 4 documentos más relevantes.
+\end{enumerate}
+
+\subsection{Reranking con Cohere}
+
+El reranking con el modelo \texttt{rerank-v4.0-pro} de Cohere implementa un \texttt{ContextualCompressionRetriever} que actúa como una segunda capa de filtrado. Recibe los 12 documentos candidatos y los reordena según su relevancia semántica respecto a la consulta, seleccionando únicamente los 4 mejores (\texttt{top\_n=4}). Esto mejora significativamente la precisión del contexto inyectado al LLM.
+
+\section{Gestión de memoria conversacional}
+\subsection{Ventana deslizante de mensajes}
+
+Para evitar exceder la ventana de contexto de los modelos de Groq, se implementa una ventana deslizante que envía al agente únicamente los últimos 5 mensajes de la conversación. El historial completo se almacena en la base de datos, pero solo el subconjunto reciente se utiliza para la inferencia.
+
+\subsection{Compresión de memoria con resumen}
+
+Cuando una conversación supera los 5 mensajes, se ejecuta una tarea en segundo plano (\texttt{BackgroundTasks} de FastAPI) que utiliza el LLM ligero para generar un resumen comprimido del historial antiguo. Este resumen se almacena en el campo \texttt{resumen\_memoria} de la conversación y se inyecta como mensaje de sistema al inicio del historial, preservando información clave (tipo de estudios, problema principal, fechas mencionadas) sin consumir tokens excesivos.
+
+\section{Generación automática de títulos}
+
+Al enviar el primer mensaje de una conversación con título ``Nueva conversación'', se dispara una tarea asíncrona que utiliza el LLM ligero para generar un título descriptivo de 4-5 palabras basado en el contenido del mensaje.
+
+\chapter{Implementación del frontend}
+\section{Interfaz de autenticación}
+
+La pantalla de autenticación presenta dos tabs (Iniciar Sesión y Registrarse) con el logo de la Universidad de Sevilla. Se utiliza la función \texttt{api\_request} como capa de abstracción para todas las llamadas HTTP, que incluye automáticamente el token JWT en las cabeceras cuando el usuario está autenticado.
+
+\section{Panel de conversaciones}
+
+La barra lateral muestra la lista de conversaciones del usuario, con la conversación activa marcada con un indicador visual. Incluye opciones para crear nuevas conversaciones, renombrarlas o eliminarlas, así como un botón de cierre de sesión.
+
+\section{Interfaz de chat}
+
+La interfaz de chat implementa las siguientes funcionalidades:
+\begin{itemize}
+    \item \textbf{Burbujas de mensaje} con animación CSS \texttt{fadeInUp} para una entrada suave.
+    \item \textbf{Streaming simulado:} Las respuestas se muestran palabra por palabra con un delay de 15ms mediante \texttt{st.write\_stream}, creando una experiencia de escritura en tiempo real.
+    \item \textbf{Referencias expandibles:} Cada respuesta del asistente incluye un expansor con las fuentes y páginas consultadas.
+    \item \textbf{CSS personalizado:} Paleta oscura (\texttt{\#000000} / \texttt{\#171A21}), tipografía Inter, y botones con hover en color corporativo (\texttt{\#9D1C34}).
+\end{itemize}
+
+\section{Panel de administración}
+
+Los usuarios con rol de administrador (\texttt{is\_admin=True}) acceden a un panel adicional en la barra lateral que permite subir documentos PDF. La ingesta se ejecuta en segundo plano mediante \texttt{BackgroundTasks}, y el usuario recibe confirmación inmediata del encolamiento.
+
+\chapter{Selección y configuración de modelos}
+\section{Evolución de la infraestructura de inferencia}
+\subsection{Fase 1: Modelos locales (Llama 3.1 8B)}
+
+Al principio del proyecto, la idea era ejecutar todo en local usando Llama 3.1 8B a través de Ollama. El modelo cumplía bastante bien con las tareas de clasificación, pero los tiempos de inferencia eran completamente inaceptables: entre 30 y 60 segundos por cada llamada al modelo. Para un asistente que se supone que debe responder en tiempo real, esto era inviable. Además, la ejecución local hacía imposible cualquier tipo de despliegue más allá de mi propio ordenador.
+
+\subsection{Fase 2: API de HuggingFace}
+
+El siguiente paso fue migrar a los endpoints de inferencia de HuggingFace, lo que mejoró bastante los tiempos. Pero apareció otro problema que no había previsto: el \textit{cold start}. La primera solicitud tras un rato de inactividad podía tardar hasta 30 segundos mientras la instancia se aprovisionaba. Era frustrante porque funcionaba bien en las pruebas seguidas, pero en cuanto dejabas de usar el sistema un rato, la primera respuesta tardaba una eternidad.
+
+\subsection{Fase 3: API de Groq}
+
+La solución definitiva llegó con la API de Groq, que utiliza un hardware especializado llamado LPU (\textit{Language Processing Units}) diseñado específicamente para ejecutar modelos de lenguaje. El cambio fue drástico: los tiempos de respuesta bajaron a fracciones de segundo por invocación, sin ningún problema de inicio en frío. La única pega es que la capa gratuita tiene límites de tokens por minuto y por día, pero para el ámbito de este proyecto fue más que suficiente.
+
+\section{Estrategia multi-modelo}
+
+Para optimizar el consumo de tokens y la latencia, se implementó una estrategia de tres niveles de modelo:
+
+\subsection{LLM clasificador (Llama 3.1 8B Instant)}
+Configurado con \texttt{temperature=0.0} y \texttt{max\_tokens=15}. Se utiliza exclusivamente para tareas de clasificación binaria (detección de intención, suficiencia de información, categorización). Su respuesta es una única palabra clave, lo que minimiza el consumo de tokens.
+
+\subsection{LLM ligero (Llama 3.1 8B Instant)}
+Configurado con \texttt{temperature=0.1} y \texttt{max\_tokens=300}. Se emplea para reformulación de consultas, generación de títulos, compresión de memoria y respuestas del nodo entrevistador y rechazo amable. Al tratarse de un modelo de 8B parámetros, ofrece baja latencia con calidad suficiente para estas tareas.
+
+\subsection{LLM principal (Llama 3.3 70B Versatile)}
+Configurado con \texttt{temperature=0.1} y \texttt{max\_tokens=1500}. Se reserva para los nodos resolutores, donde la calidad de la respuesta es crítica. El modelo de 70B parámetros demuestra una capacidad cognitiva superior para interpretar normativa compleja y sintetizar información de múltiples fragmentos.
+
+\section{Ajuste de hiperparámetros}
+
+De todos los parámetros con los que experimenté, la \texttt{temperature} fue sin duda el más determinante. Con valores altos (0.7 o más), el modelo alucinaba con frecuencia preocupante; con 0.0, las respuestas eran correctas pero sonaban demasiado mecánicas. Al final me quedé con 0.1, que era el punto justo en el que el agente priorizaba la precisión factual pero seguía siendo capaz de parafrasear y adaptar su tono según el contexto. También configuré \texttt{max\_retries} a 10 para el modelo principal, como colchón ante los posibles errores de \textit{rate-limiting} de la API de Groq.
+
+% ============================================================
+% PARTE V: EVALUACIÓN Y VALIDACIÓN
+% ============================================================
+\part{Evaluación y Validación}
+
+\chapter{Estrategia de evaluación}
+\section{Dataset de evaluación}
+
+Para poder evaluar el sistema de forma rigurosa, diseñé un dataset con 34 preguntas que cubren todos los nodos del agente. La idea era simular consultas reales que podría hacer un estudiante, un profesor o un candidato a una plaza. Las preguntas se distribuyeron de la siguiente manera:
+
+\begin{table}[H]
+    \centering
+    \caption{Distribución del dataset de evaluación por categoría}
+    \begin{tabular}{@{}lc@{}}
+        \toprule
+        \textbf{Categoría} & \textbf{N.º de preguntas} \\
+        \midrule
+        Calendario         & 8                         \\
+        Procedimental      & 7                         \\
+        Normativo          & 7                         \\
+        Baremo             & 5                         \\
+        Consulta (ambigua) & 2                         \\
+        Rechazo            & 5                         \\
+        \midrule
+        \textbf{Total}     & \textbf{34}               \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Cada caso de prueba incluye: la pregunta del usuario, la ruta esperada del router y un \textit{ground truth} que describe la respuesta correcta esperada.
+
+\section{Métricas empleadas}
+\subsection{Routing Accuracy}
+Mide el porcentaje de consultas en las que el agente clasifica correctamente la intención del usuario y la enruta al nodo especializado adecuado. Es una métrica binaria: acierto (1) o fallo (0) por cada caso.
+
+\subsection{Faithfulness}
+Evalúa en una escala de 1 a 5 si la respuesta generada se basa exclusivamente en la información presente en el contexto recuperado, sin inventar datos. Una puntuación de 5 indica que toda la respuesta está fielmente soportada por los documentos.
+
+\subsection{Answer Relevancy}
+Evalúa en una escala de 1 a 5 si la respuesta del agente aborda adecuadamente la pregunta del usuario. Una puntuación de 5 indica que la respuesta responde perfectamente y de forma completa a lo preguntado.
+
+\subsection{Correctness}
+Compara la respuesta generada contra el \textit{ground truth} definido, evaluando en una escala de 1 a 5 la coincidencia factual entre ambas. Una puntuación de 5 indica concordancia plena.
+
+\section{Evaluación con LLM como juez}
+
+Se adoptó el paradigma \textit{LLM-as-Judge}, utilizando Llama 3.1 ejecutado localmente mediante Ollama como evaluador automático. Este enfoque evita el consumo de tokens de APIs externas durante la fase de evaluación.
+
+El proceso de evaluación para cada caso de prueba sigue este pipeline:
+
+\begin{enumerate}
+    \item El agente procesa la pregunta recorriendo el grafo completo (detección $\rightarrow$ recuperación $\rightarrow$ clasificación $\rightarrow$ generación).
+    \item Se registra la ruta tomada y se compara con la esperada (Routing Accuracy).
+    \item El LLM juez evalúa la respuesta generada contra el contexto (Faithfulness), contra la pregunta (Relevancy) y contra el ground truth (Correctness).
+    \item Los resultados se exportan a un archivo CSV para análisis posterior.
+\end{enumerate}
+
+\chapter{Resultados}
+\section{Precisión del enrutamiento}
+
+Uno de los resultados que más me sorprendió fue la fiabilidad del sistema a la hora de clasificar las intenciones del usuario. Al asignar el rol de enrutador a Llama 3.1 8B con una temperatura de 0.0, conseguimos decisiones prácticamente deterministas en milisegundos. El nodo de rechazo, en particular, funcionó de forma especialmente consistente, interceptando sin problemas las preguntas que se salían de la temática universitaria.
+
+\textit{Nota: Completa la siguiente tabla con los resultados numéricos de tus evaluaciones una vez hayas ejecutado los tests finales. Es muy recomendable incluir gráficos de barras o pastel visualizando estos resultados.}
+
+\begin{table}[H]
+    \centering
+    \caption{Resultados de la precisión de enrutamiento}
+    \begin{tabular}{@{}lcc@{}}
+        \toprule
+        \textbf{Categoría} & \textbf{Casos de Prueba} & \textbf{Aciertos (\%)} \\
+        \midrule
+        Procedimental      & 7                        & X\%                    \\
+        Calendario         & 8                        & X\%                    \\
+        Normativo          & 7                        & X\%                    \\
+        Baremo             & 5                        & X\%                    \\
+        Rechazo            & 5                        & X\%                    \\
+        Ambigüedad         & 2                        & X\%                    \\
+        \midrule
+        \textbf{Total}     & \textbf{34}              & \textbf{XX.X\%}        \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:routing_results}
+\end{table}
+
+\section{Análisis de fidelidad (Faithfulness)}
+
+En general, el agente se ciñó bastante bien al contexto recuperado, lo que resulta lógico si tenemos en cuenta que la temperatura estaba configurada a 0.1 y que los prompts incluían instrucciones explícitas para no inventar nada. Los pocos casos con menor puntuación coincidieron con consultas donde el contexto recuperado era solo parcialmente relevante, y el modelo ---quizá por inercia--- rellenaba los huecos con información general que sonaba plausible pero que no estaba en los documentos.
+
+\section{Análisis de relevancia}
+
+La relevancia de las respuestas fue consistentemente alta, especialmente en los nodos procedimental y calendario donde las instrucciones de formato (pasos numerados, fechas en negrita) facilitan respuestas directas y accionables.
+
+\section{Análisis de corrección}
+
+La corrección frente al \textit{ground truth} fue la métrica más variable, y tiene su explicación: algunos \textit{ground truths} los redacté de forma genérica (por ejemplo, ``el plazo de matrícula está en septiembre''), mientras que el agente, al tener acceso directo a los documentos, proporcionaba datos mucho más específicos (fechas exactas, artículos concretos). Paradójicamente, en algunos casos el agente era más preciso que mi propio \textit{ground truth}.
+
+\section{Comparativa: entorno local vs Groq}
+
+\begin{table}[H]
+    \centering
+    \caption{Comparativa entre entorno local y Groq}
+    \begin{tabular}{@{}lcc@{}}
+        \toprule
+        \textbf{Aspecto}           & \textbf{Local (Llama 3.1 8B)} & \textbf{Groq (Llama 3.3 70B)} \\
+        \midrule
+        Latencia por nodo          & $>$10 segundos                & $<$1 segundo                  \\
+        Precisión en clasificación & Alta                          & Alta                          \\
+        Razonamiento complejo      & Limitado                      & Superior                      \\
+        Flujos multi-turno         & Finalizan abruptamente        & Fluidos y naturales           \\
+        Coste                      & Gratuito (hardware propio)    & Gratuito (cuotas limitadas)   \\
+        Escalabilidad              & No viable                     & Viable                        \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+La migración a Groq fue, sin duda, el punto de inflexión del proyecto. Lo que antes era un prototipo con el que tenías que armarte de paciencia para cada consulta, se transformó en un sistema que respondía en menos de 10 segundos de extremo a extremo.
+
+\section{Evaluación del retriever (Hit Rate)}
+
+Más allá de la generación de texto, es vital evaluar el motor de búsqueda. Para ello, medimos la métrica \textit{Hit Rate}, que indica la capacidad de la base de datos vectorial (Pinecone) para incluir el documento exacto que responde a la consulta dentro del top-4 de resultados devueltos al modelo.
+
+\textit{Nota: Añade aquí los porcentajes de Hit Rate obtenidos en tus pruebas de recuperación. Si tienes una gráfica de "Hit Rate vs. Top-K", este es el lugar ideal para insertarla.}
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.7\textwidth]{hit_rate_chart.png}
+%     \caption{Evolución del Hit Rate según el número de documentos recuperados}
+%     \label{fig:hit_rate}
+% \end{figure}
+
+% ============================================================
+% PARTE VI: CONCLUSIONES
+% ============================================================
+\part{Conclusiones y Trabajo Futuro}
+
+\chapter{Conclusiones}
+\section{Cumplimiento de objetivos}
+
+Mirando hacia atrás, creo que el proyecto ha cumplido de forma satisfactoria los objetivos que se plantearon al inicio:
+
+\begin{itemize}
+    \item \textbf{Ingesta semántica:} Se ha desarrollado un pipeline capaz de procesar 15 documentos oficiales de la US, preservando tablas, jerarquías y notas al pie mediante LlamaParse.
+    \item \textbf{Enrutamiento inteligente:} El agente LangGraph clasifica correctamente las consultas y las dirige al nodo especializado correspondiente, con una alta precisión de enrutamiento.
+    \item \textbf{Sistema Dual RAG:} Se ha implementado la separación entre conocimiento normativo (Pinecone) y directrices de estilo (prompts), logrando respuestas técnicamente correctas con un tono cercano al usuario.
+    \item \textbf{Latencia optimizada:} La migración a Groq y la estrategia multi-modelo han reducido los tiempos de respuesta por debajo del umbral de 20 segundos establecido.
+    \item \textbf{Validación:} Se ha evaluado el sistema con 34 casos de prueba utilizando el paradigma LLM-as-Judge.
+\end{itemize}
+
+\section{Lecciones aprendidas}
+
+Más allá del resultado técnico, hay varias lecciones que me llevo de este trabajo y que creo que merece la pena compartir:
+
+\begin{itemize}
+    \item \textbf{La ingesta importa más que el modelo:} Perdí bastante tiempo al principio intentando mejorar las respuestas cambiando de modelo, cuando el verdadero problema estaba en cómo fragmentaba los documentos. Una mala segmentación invalida cualquier mejora que hagas aguas abajo.
+    \item \textbf{La temperatura es el hiperparámetro más crítico:} Parece un detalle menor, pero pasar de 0.7 a 0.1 fue la diferencia entre un agente que alucinaba con frecuencia y uno que se ceñía a los documentos. El valor de 0.1 resultó ser el punto justo entre precisión factual y cierta naturalidad en la redacción.
+    \item \textbf{Los prompts son código:} La ingeniería de prompts requiere el mismo rigor iterativo que el desarrollo de software. Pequeños cambios en una palabra pueden alterar por completo el comportamiento del agente.
+    \item \textbf{No todo necesita el modelo grande:} Usar Llama 3.3 70B para tareas de clasificación binaria era como matar moscas a cañonazos. La estrategia multi-modelo no solo reduce costes, sino que también baja la latencia de forma significativa.
+\end{itemize}
+
+\section{Dificultades encontradas}
+
+No todo fue un camino de rosas, ni mucho menos. Estas fueron las dificultades más relevantes:
+
+\begin{itemize}
+    \item \textbf{Procesamiento de tablas en PDFs:} Sin duda, el mayor dolor de cabeza técnico. Hicieron falta tres intentos distintos (fragmentación genérica $\rightarrow$ Docling $\rightarrow$ LlamaParse) hasta conseguir que las tablas se preservaran correctamente.
+    \item \textbf{Límites de APIs gratuitas:} Trabajar con las capas gratuitas de Groq, Cohere y LlamaParse fue un ejercicio constante de optimización. Cada token contaba, y hubo días en los que agoté la cuota de la API a mitad de una sesión de pruebas.
+    \item \textbf{Bucles de clarificación:} Al principio, el nodo entrevistador tendía a hacer preguntas una y otra vez sin avanzar. Se resolvió implementando lo que llamé la ``Regla de Oro'' en el prompt de suficiencia: si el asistente acaba de preguntar, no puede volver a preguntar en el siguiente turno.
+    \item \textbf{Redundancia del doble splitter:} Un error sutil que estuvo degradando las respuestas sobre baremos durante semanas hasta que lo localicé analizando el pipeline completo paso a paso.
+\end{itemize}
+
+\chapter{Trabajo futuro}
+\section{Mejoras en el pipeline RAG}
+
+Una de las líneas que más me gustaría explorar es la implementación de \textit{Hypothetical Document Embeddings} (HyDE). La idea consiste en generar un documento hipotético a partir de la pregunta del usuario antes de lanzar la búsqueda en la base vectorial, lo que en teoría mejoraría bastante la precisión semántica de la recuperación.
+
+\section{Ampliación de la base de conocimiento}
+
+El sistema está pensado para escalar sin demasiado esfuerzo. La funcionalidad de ingesta desde el panel de administración ya permite añadir nuevos documentos sin tocar una línea de código. Una extensión natural sería incorporar documentos adicionales como planes de estudio, guías docentes o la normativa específica de TFG.
+
+\section{Integración con canales de mensajería}
+
+Otra vía que creo que tiene mucho potencial es conectar el agente con plataformas de mensajería como Telegram o WhatsApp. Al fin y al cabo, si el objetivo es que el usuario pueda resolver sus dudas de la forma más cómoda posible, tiene todo el sentido que pueda hacerlo directamente desde la aplicación que ya usa a diario.
+
+\section{Despliegue en producción}
+
+Para llevar este sistema a un entorno real, la idea sería migrarlo a un servicio cloud (AWS, Google Cloud o Azure) con balanceo de carga y escalado automático. También sería necesario añadir monitorización de métricas en tiempo real y algún mecanismo para que los propios usuarios puedan reportar respuestas incorrectas, cerrando así el ciclo de mejora continua.
+
+% ============================================================
+% BIBLIOGRAFÍA
+% ============================================================
+\begin{thebibliography}{99}
+    \bibitem{aws_llm} Amazon Web Services. ¿Qué es un modelo de lenguaje grande (LLM)? Disponible en: \url{https://aws.amazon.com/es/what-is/large-language-model/}
+    \bibitem{langchain_docs} LangChain AI. LangChain Documentation. Disponible en: \url{https://python.langchain.com/}
+    \bibitem{langgraph_docs} LangGraph Documentation. Disponible en: \url{https://langchain-ai.github.io/langgraph/}
+    \bibitem{ragas_docs} RAGAS Framework. Automated Evaluation of RAG. Disponible en: \url{https://docs.ragas.io/}
+    \bibitem{pinecone_docs} Pinecone. Vector Database Documentation. Disponible en: \url{https://docs.pinecone.io/}
+    \bibitem{cohere_docs} Cohere. Embeddings and Reranking API. Disponible en: \url{https://docs.cohere.com/}
+    \bibitem{groq_docs} Groq. LPU Inference Engine. Disponible en: \url{https://groq.com/}
+    \bibitem{llamaparse_docs} LlamaIndex. LlamaParse Documentation. Disponible en: \url{https://docs.llamaindex.ai/}
+    \bibitem{fastapi_docs} FastAPI. Modern web framework for building APIs. Disponible en: \url{https://fastapi.tiangolo.com/}
+    \bibitem{streamlit_docs} Streamlit. Framework for data apps. Disponible en: \url{https://docs.streamlit.io/}
+    \bibitem{docker_docs} Docker. Container platform documentation. Disponible en: \url{https://docs.docker.com/}
+    \bibitem{vaswani2017} Vaswani, A. et al. (2017). Attention Is All You Need. \textit{Advances in Neural Information Processing Systems}.
+    \bibitem{lewis2020} Lewis, P. et al. (2020). Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. \textit{NeurIPS 2020}.
+    \bibitem{meta_llama} Meta AI. Llama 3: Open Foundation Language Models. Disponible en: \url{https://ai.meta.com/llama/}
+\end{thebibliography}
+
+% ============================================================
+% APÉNDICES
+% ============================================================
+\appendix
+
+\chapter{Batería de validación completa}
+A continuación, se detalla la lista exhaustiva de los 34 casos de prueba utilizados para someter al agente a evaluación, incluyendo la consulta simulada, la categoría esperada y la salida obtenida.
+
+\textit{Nota: Aquí deberás pegar o importar el archivo CSV/JSON con tus 34 preguntas. Puedes formatearlo como una tabla \texttt{longtable} o una lista numerada.}
+
+\chapter{Prompts del sistema}
+Para asegurar la reproducibilidad de los resultados, se adjuntan en este anexo los prompts exactos (plantillas de sistema) utilizados en los distintos nodos de LangGraph.
+
+\textit{Nota: Pega aquí el contenido de tu archivo \texttt{templates.py} utilizando el entorno \texttt{lstlisting} para formatearlo como código.}
+
+\chapter{Uso de la Inteligencia Artificial}
+En cumplimiento con las directrices académicas, se declara el uso de modelos de lenguaje para la asistencia en la generación de código LaTeX y el refactor de scripts de evaluación.
+
+\end{document}
