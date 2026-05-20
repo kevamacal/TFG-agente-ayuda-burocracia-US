@@ -9,3 +9,4 @@ reports/*
 docs/*
 !docs/*.tex
 !docs/*.pdf
+!docs/*.png
