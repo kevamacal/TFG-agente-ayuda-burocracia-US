@@ -22,9 +22,11 @@ def logout(mensaje_razon=None):
     st.session_state.messages = []
     st.session_state.is_admin = False
     
-    cookie_controller.remove("auth_token")
-    cookie_controller.remove("is_admin")
-    cookie_controller.remove("conversacion_id")
+    for c in ["auth_token", "is_admin", "conversacion_id"]:
+        try:
+            cookie_controller.remove(c)
+        except KeyError:
+            pass
     
     time.sleep(0.5)
     st.rerun()
@@ -268,7 +270,10 @@ else:
                     res_del = api_request("DELETE", f"/conversaciones/{st.session_state.conversacion_id}")
                     if res_del and res_del.status_code == 200:
                         st.session_state.conversacion_id = None
-                        cookie_controller.remove("conversacion_id")
+                        try:
+                            cookie_controller.remove("conversacion_id")
+                        except KeyError:
+                            pass
                         st.session_state.messages = []
                         time.sleep(0.5)
                         st.rerun()
