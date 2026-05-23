@@ -93,14 +93,14 @@ class AsistenteRAG:
         docs_ordenados_lexico = [d[0] for d in sorted(scores_lexicos, key=lambda x: x[1], reverse=True)]
         
         # 3. Fusión por Reciprocal Rank Fusion (RRF)
-        rrf_scores = {}
+        rrf_scores = []
         for idx, doc in enumerate(docs_raw):
             dense_rank = idx + 1
             lexico_rank = docs_ordenados_lexico.index(doc) + 1
             rrf_score = (1.0 / (60.0 + dense_rank)) + (1.0 / (60.0 + lexico_rank))
-            rrf_scores[doc] = rrf_score
+            rrf_scores.append((doc, rrf_score))
             
-        docs_combinados = sorted(docs_raw, key=lambda d: rrf_scores[d], reverse=True)
+        docs_combinados = [item[0] for item in sorted(rrf_scores, key=lambda x: x[1], reverse=True)]
         docs_hibridos = docs_combinados[:12]
         
         t2_5 = datetime.datetime.now()
