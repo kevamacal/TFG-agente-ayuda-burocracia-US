@@ -1,12 +1,51 @@
+# Entorno y credenciales
 .env
+.env.*.local
+
+# Python cache y entornos virtuales
 __pycache__/
+**/__pycache__/
 .venv/
+venv/
+ENV/
+*.pyc
+*.pyo
+*.pyd
+
+# Base de datos local
 *.db
 *.sqlite
+
+# Carpetas temporales y descargas
 poppler-25.12.0/
 /scripts
 reports/*
+scratch_test_pinecone.py
+backend/static/
+backend/temp_uploads/
+
+# Documentación (mantener solo tex/pdf/png)
 docs/*
 !docs/*.tex
 !docs/*.pdf
 !docs/*.png
+
+# Frontend (Node / Next.js)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# Editores e IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+.DS_Store
