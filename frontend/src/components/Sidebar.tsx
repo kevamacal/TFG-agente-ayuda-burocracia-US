@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MessageSquare, Files, Users, LogOut, Plus, Edit2, Trash2, Check, X } from "lucide-react";
+import { MessageSquare, Files, Users, LogOut, Plus, Edit2, Trash2, Check, X, ThumbsDown } from "lucide-react";
 import { Conversation } from "../hooks/useChat";
 
 interface SidebarProps {
@@ -98,17 +98,31 @@ export function Sidebar({
           </button>
 
           {isAdmin && (
-            <button
-              onClick={() => setActiveTab("users")}
-              className={`flex w-full items-center space-x-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
-                activeTab === "users"
-                  ? "bg-accent text-white"
-                  : "text-gray-400 hover:bg-[#1f222d] hover:text-white"
-              }`}
-            >
-              <Users size={18} />
-              <span>Administrar Usuarios</span>
-            </button>
+            <>
+              <button
+                onClick={() => setActiveTab("users")}
+                className={`flex w-full items-center space-x-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
+                  activeTab === "users"
+                    ? "bg-accent text-white"
+                    : "text-gray-400 hover:bg-[#1f222d] hover:text-white"
+                }`}
+              >
+                <Users size={18} />
+                <span>Administrar Usuarios</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab("feedback")}
+                className={`flex w-full items-center space-x-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
+                  activeTab === "feedback"
+                    ? "bg-accent text-white"
+                    : "text-gray-400 hover:bg-[#1f222d] hover:text-white"
+                }`}
+              >
+                <ThumbsDown size={18} />
+                <span>Feedback Negativo</span>
+              </button>
+            </>
           )}
         </div>
       </div>

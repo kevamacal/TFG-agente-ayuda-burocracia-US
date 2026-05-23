@@ -10,6 +10,7 @@ class UsuarioResponse(BaseModel):
     id: int
     email: EmailStr
     is_admin: bool = False
+    perfil_metadata: Optional[str] = '{}'
     fecha_creacion: datetime
 
     class Config:
@@ -28,9 +29,16 @@ class MensajeResponse(MensajeBase):
     id: int
     fecha_creacion: datetime
     referencias: str | None = None
+    feedback: Optional[bool] = None
+    feedback_comentario: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+class MensajeFeedbackUpdate(BaseModel):
+    feedback: bool
+    feedback_comentario: Optional[str] = None
+
 
 class ConversacionCreate(BaseModel):
     titulo: str

@@ -7,6 +7,7 @@ import { Sidebar } from "../components/Sidebar";
 import { ChatInterface } from "../components/ChatInterface";
 import { DocumentList } from "../components/DocumentList";
 import { UserManagement } from "../components/UserManagement";
+import { FeedbackList } from "../components/FeedbackList";
 import { useChat } from "../hooks/useChat";
 import { API_URL } from "@/utils/api";
 
@@ -109,6 +110,7 @@ export default function Home() {
             isLoading={chat.isLoading}
             onSendMessage={chat.sendMessage}
             activeConversationId={chat.activeConversationId}
+            onSubmitFeedback={chat.submitFeedback}
           />
         )}
 
@@ -118,6 +120,10 @@ export default function Home() {
 
         {activeTab === "users" && isAdmin && (
           <UserManagement currentUserEmail={userEmail} />
+        )}
+
+        {activeTab === "feedback" && isAdmin && (
+          <FeedbackList />
         )}
       </div>
     </div>
