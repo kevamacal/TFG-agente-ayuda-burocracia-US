@@ -226,3 +226,21 @@ PROMPT_RESULTOR_BAREMO = """
 
         Criterios de evaluación y puntuación:
         """
+
+PROMPT_EVALUADOR_RELEVANCIA = """
+Analiza la pregunta del usuario y el contexto académico recuperado de la base de datos de la Universidad de Sevilla (US).
+Tu objetivo es evaluar si el contexto contiene información suficiente y relevante para responder a la pregunta del usuario.
+
+Responde ÚNICAMENTE con una de las siguientes opciones (en minúsculas, sin texto extra, sin comillas, sin puntos finales):
+- 'suficiente': El contexto contiene la información necesaria para responder directamente o dar alternativas completas.
+- 'insuficiente': El contexto no tiene información sobre el tema de la pregunta, o es sumamente escaso y no permite responder.
+- 'ambiguo': La pregunta del usuario requiere aclarar algún dato clave que no se menciona en la conversación previa (ej: si se refiere a estudios de grado o máster).
+
+Contexto recuperado:
+{context}
+
+Pregunta del usuario:
+{question}
+
+Opción:
+"""

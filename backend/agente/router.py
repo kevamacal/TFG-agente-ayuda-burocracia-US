@@ -9,6 +9,7 @@ from agente.resultor_normativo import resultor_normativo
 from agente.resultor_baremo import resultor_baremo
 from agente.recuperador import recuperador
 from agente.estado_inicial import estado_inicial
+from agente.busqueda_web import busqueda_web
 
 graph = StateGraph(state_schema=StateSchema)
 
@@ -16,6 +17,7 @@ graph.add_node("estado_inicial", estado_inicial)
 graph.add_node("recuperador", recuperador)
 graph.add_node("entrevistador", consulta_usuario)
 graph.add_node("rechazo_amable", rechazo_amable)
+graph.add_node("busqueda_web", busqueda_web)
 graph.add_node("clasificador", lambda state: state) 
 graph.add_node("procedimental", resultor_procedimental)
 graph.add_node("calendario", resultor_calendario)
@@ -37,8 +39,11 @@ graph.add_conditional_edges(
     {
         "entrevistador": "entrevistador",
         "resultor": "clasificador",
+        "busqueda_web": "busqueda_web",
     }
 )
+
+graph.add_edge("busqueda_web", "clasificador")
 
 graph.add_conditional_edges(
     "clasificador",
