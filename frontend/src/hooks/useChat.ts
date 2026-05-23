@@ -2,11 +2,15 @@ import { useState, useEffect, useRef } from "react";
 import Cookies from "js-cookie";
 
 export interface Message {
+  id?: number;
   role: "user" | "assistant" | "system";
   content: string;
   referencias?: string[];
   contexto?: string;
   isStreaming?: boolean;
+  status?: string;
+  feedback?: boolean | null;
+  feedback_comentario?: string | null;
 }
 
 export interface Conversation {
@@ -59,9 +63,12 @@ export function useChat() {
             }
           }
           return {
+            id: m.id,
             role: m.rol,
             content: m.contenido,
             referencias: refs,
+            feedback: m.feedback,
+            feedback_comentario: m.feedback_comentario,
           };
         });
         setMessages(parsed);
@@ -213,7 +220,20 @@ export function useChat() {
               try {
                 const parsedData = JSON.parse(dataString);
                 
-                if (eventType === "metadata") {
+                if (eventType === "status") {
+                  const statusMsg = parsedData.message || "";
+                  setMessages((prev) => {
+                    const next = [...prev];
+                    const idx = next.length - 1;
+                    if (idx >= 0 && next[idx].role === "assistant") {
+                      next[idx] = {
+                        ...next[idx],
+                        status: statusMsg,
+                      };
+                    }
+                    return next;
+                  });
+                } else if (eventType === "metadata") {
                   currentReferences = parsedData.referencias || [];
                   currentContext = parsedData.contexto || "";
                   
@@ -284,6 +304,8 @@ export function useChat() {
 
       // Reload conversations to fetch any updated title in background
       await fetchConversations();
+      // Fetch messages again to populate database IDs for feedback
+      await fetchMessages(activeConversationId);
 
     } catch (err) {
       console.error("Error sending message:", err);
@@ -301,6 +323,31 @@ export function useChat() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const submitFeedback = async (messageId: number, feedback: boolean, comentario?: string) => {
+    if (!token || !activeConversationId) return;
+    try {
+      const res = await fetch(`${API_URL}/conversaciones/${activeConversationId}/mensajes/${messageId}/feedback`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ feedback, feedback_comentario: comentario || null }),
+      });
+      if (res.ok) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId
+              ? { ...m, feedback, feedback_comentario: comentario || null }
+              : m
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Error submitting feedback:", err);
     }
   };
 
@@ -330,6 +377,7 @@ export function useChat() {
     deleteConversation,
     renameConversation,
     sendMessage,
+    submitFeedback,
     reloadConversations: fetchConversations,
   };
 }

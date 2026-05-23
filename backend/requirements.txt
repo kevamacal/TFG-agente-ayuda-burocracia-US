@@ -18,3 +18,7 @@ pinecone
 langchain-groq
 llama-parse
 nest-asyncio
+duckduckgo-search
+langfuse
+pandas
+ragas

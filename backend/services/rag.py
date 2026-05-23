@@ -29,6 +29,7 @@ class AsistenteRAG:
         self.chain_deteccion = self._crear_cadena(PROMPT_DETECCION, self.classifier_llm)
         self.chain_clasificacion = self._crear_cadena(PROMPT_CLASIFICADOR, self.classifier_llm)
         self.chain_cuestiona_agente = self._crear_cadena(PROMPT_CUESTIONA_AGENTE, self.classifier_llm)
+        self.chain_evaluador = self._crear_cadena(PROMPT_EVALUADOR_RELEVANCIA, self.classifier_llm)
         
         self.cadenas_respuesta = {
             "procedimental": self._crear_cadena(PROMPT_RESULTOR_PROCEDIMENTAL, self.llm),
@@ -64,13 +65,51 @@ class AsistenteRAG:
         t1 = datetime.datetime.now()
         print(f"  [TIMING] Cohere Embedding: {(t1-t0).total_seconds():.2f}s")
         
-        docs_raw = self.vectorstore.similarity_search_by_vector(query_embedding, k=12)
+        # 1. Recuperar un conjunto mayor de candidatos densos (k=18)
+        docs_raw = self.vectorstore.similarity_search_by_vector(query_embedding, k=18)
         t2 = datetime.datetime.now()
         print(f"  [TIMING] Pinecone Search: {(t2-t1).total_seconds():.2f}s ({len(docs_raw)} docs)")
         
-        docs = self.retriever.base_compressor.compress_documents(docs_raw, pregunta_reformulada)
+        # 2. Búsqueda Léxica (Sparse/Keyword) sobre los candidatos
+        stopwords = {
+            "el", "la", "los", "las", "un", "una", "unos", "unas", "de", "del", "al", "a", 
+            "en", "y", "o", "u", "para", "por", "con", "como", "que", "es", "son",
+            "mi", "tu", "su", "mis", "tus", "sus", "sobre", "esta", "este", "estos", "estas"
+        }
+        palabras_clave = [
+            w.lower().strip("?,.¡!¿()\"'") 
+            for w in pregunta_reformulada.split() 
+            if w.lower().strip("?,.¡!¿()\"'") not in stopwords and len(w) > 2
+        ]
+        
+        scores_lexicos = []
+        for doc in docs_raw:
+            content_lower = doc.page_content.lower()
+            score = 0
+            for word in palabras_clave:
+                score += content_lower.count(word)
+            scores_lexicos.append((doc, score))
+            
+        docs_ordenados_lexico = [d[0] for d in sorted(scores_lexicos, key=lambda x: x[1], reverse=True)]
+        
+        # 3. Fusión por Reciprocal Rank Fusion (RRF)
+        rrf_scores = {}
+        for idx, doc in enumerate(docs_raw):
+            dense_rank = idx + 1
+            lexico_rank = docs_ordenados_lexico.index(doc) + 1
+            rrf_score = (1.0 / (60.0 + dense_rank)) + (1.0 / (60.0 + lexico_rank))
+            rrf_scores[doc] = rrf_score
+            
+        docs_combinados = sorted(docs_raw, key=lambda d: rrf_scores[d], reverse=True)
+        docs_hibridos = docs_combinados[:12]
+        
+        t2_5 = datetime.datetime.now()
+        print(f"  [TIMING] RRF Hybrid Fusion: {(t2_5-t2).total_seconds():.4f}s")
+        
+        # 4. Cohere Rerank sobre los candidatos híbridos
+        docs = self.retriever.base_compressor.compress_documents(docs_hibridos, pregunta_reformulada)
         t3 = datetime.datetime.now()
-        print(f"  [TIMING] Cohere Rerank: {(t3-t2).total_seconds():.2f}s ({len(docs)} docs)")
+        print(f"  [TIMING] Cohere Rerank: {(t3-t2_5).total_seconds():.2f}s ({len(docs)} docs)")
         print(f"  [TIMING] Total retrieval: {(t3-t0).total_seconds():.2f}s")
         
         referencias = list(set([
@@ -99,15 +138,23 @@ class AsistenteRAG:
         return "recuperador"
     
     def contiene_suficiente_informacion(self, pregunta_reformulada: str, historial_formateado: str, contexto: str):
-        contexto_reducido = contexto[:800] if len(contexto) > 800 else contexto
-        decision = self.chain_cuestiona_agente.invoke({
+        if not contexto or not contexto.strip():
+            print("🧐 [EVALUATOR] Contexto vacío -> busqueda_web")
+            return "busqueda_web"
+            
+        contexto_reducido = contexto[:1500] if len(contexto) > 1500 else contexto
+        res = self.chain_evaluador.invoke({
             "question": pregunta_reformulada, 
-            "historial": historial_formateado,
             "context": contexto_reducido
         }).strip().lower()
-        if "resultor" in decision: return "resultor"
-        if "entrevistador" in decision: return "entrevistador"
-        return "resultor"
+        
+        print(f"🧐 [EVALUATOR] Relevancia evaluada: '{res}'")
+        if "suficiente" in res:
+            return "resultor"
+        elif "ambiguo" in res:
+            return "entrevistador"
+        else:
+            return "busqueda_web"
 
     def clasificar_categoria(self, pregunta_reformulada: str, historial_formateado: str):
         decision = self.chain_clasificacion.invoke({

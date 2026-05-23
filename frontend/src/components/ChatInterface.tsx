@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { MessageSquare, Send, BookOpen, User, Bot, ChevronDown, ChevronUp } from "lucide-react";
+import { MessageSquare, Send, BookOpen, User, Bot, ChevronDown, ChevronUp, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Message } from "../hooks/useChat";
 import ReactMarkdown from "react-markdown";
 
@@ -8,6 +8,7 @@ interface ChatInterfaceProps {
   isLoading: boolean;
   onSendMessage: (text: string) => void;
   activeConversationId: number | null;
+  onSubmitFeedback: (messageId: number, feedback: boolean, comentario?: string) => Promise<void>;
 }
 
 export function ChatInterface({
@@ -15,9 +16,12 @@ export function ChatInterface({
   isLoading,
   onSendMessage,
   activeConversationId,
+  onSubmitFeedback,
 }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const [activeCommentMsgId, setActiveCommentMsgId] = useState<number | null>(null);
+  const [commentText, setCommentText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -124,7 +128,12 @@ export function ChatInterface({
                       {msg.content + (msg.isStreaming ? " ▎" : "")}
                     </ReactMarkdown>
                   ) : (
-                    msg.isStreaming && <span className="inline-block w-2 h-4 bg-accent animate-pulse">▎</span>
+                    msg.isStreaming && (
+                      <div className="flex items-center space-x-2 text-xs text-gray-400 italic py-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-accent animate-ping shrink-0" />
+                        <span className="animate-pulse">{msg.status || "Pensando..."}</span>
+                      </div>
+                    )
                   )}
                 </div>
 
@@ -148,6 +157,83 @@ export function ChatInterface({
                           </li>
                         ))}
                       </ul>
+                    )}
+                  </div>
+                )}
+
+                {/* Feedback */}
+                {!isUser && msg.id && (
+                  <div className="mt-2.5 flex flex-col space-y-2 border-t border-border/40 pt-2 text-xs text-gray-500">
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => onSubmitFeedback(msg.id!, true)}
+                        className={`hover:text-green-400 transition-colors flex items-center space-x-1 ${
+                          msg.feedback === true ? "text-green-500 font-semibold" : ""
+                        }`}
+                        title="Respuesta útil"
+                      >
+                        <ThumbsUp size={12} className={msg.feedback === true ? "fill-green-500/20" : ""} />
+                        <span>Útil</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          onSubmitFeedback(msg.id!, false);
+                          setActiveCommentMsgId(msg.id!);
+                          setCommentText(msg.feedback_comentario || "");
+                        }}
+                        className={`hover:text-red-400 transition-colors flex items-center space-x-1 ${
+                          msg.feedback === false ? "text-red-500 font-semibold" : ""
+                        }`}
+                        title="Respuesta incorrecta o incompleta"
+                      >
+                        <ThumbsDown size={12} className={msg.feedback === false ? "fill-red-500/20" : ""} />
+                        <span>No útil</span>
+                      </button>
+                      
+                      {msg.feedback === false && msg.feedback_comentario && activeCommentMsgId !== msg.id && (
+                        <span className="text-[10px] text-gray-400 italic truncate max-w-[200px]" title={msg.feedback_comentario}>
+                          Comentario: "{msg.feedback_comentario}"
+                        </span>
+                      )}
+                    </div>
+
+                    {activeCommentMsgId === msg.id && (
+                      <div className="mt-1 rounded-lg bg-[#0d0e12] border border-border/80 p-2 space-y-2">
+                        <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400">
+                          ¿Qué ha fallado en esta respuesta?
+                        </label>
+                        <textarea
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          className="w-full rounded bg-[#090a0c] border border-border p-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-accent"
+                          placeholder="Ej: La fecha indicada es incorrecta..."
+                          rows={2}
+                        />
+                        <div className="flex justify-end space-x-1.5 text-[9px]">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveCommentMsgId(null);
+                              setCommentText("");
+                            }}
+                            className="rounded border border-border px-2 py-0.5 text-gray-400 hover:text-white"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await onSubmitFeedback(msg.id!, false, commentText);
+                              setActiveCommentMsgId(null);
+                              setCommentText("");
+                            }}
+                            className="rounded bg-accent px-2 py-0.5 text-white hover:bg-accent-hover font-semibold"
+                          >
+                            Enviar Comentario
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
