@@ -19,6 +19,6 @@ langchain-groq
 llama-parse
 nest-asyncio
 duckduckgo-search
-langfuse
+langfuse<3
 pandas
 ragas
