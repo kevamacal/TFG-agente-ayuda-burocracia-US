@@ -45,3 +45,14 @@ class ConversacionResponse(BaseModel):
 
 class PreguntaChat(BaseModel):
     pregunta: str
+
+class UsuarioAdminCreate(BaseModel):
+    email: EmailStr
+    password: str
+    is_admin: bool = False
+
+class UsuarioAdminUpdateRole(BaseModel):
+    is_admin: bool
+
+class DocumentoResponse(BaseModel):
+    nombre: str

@@ -4,19 +4,30 @@ from jose import JWTError, jwt
 import models, schemas, security
 from database import engine, get_db
 from agente.router import router as agente_router
-from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks, UploadFile, File
+from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks, UploadFile, File, Query
+from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+import asyncio
 from utils.config import config_light_llm 
 from database import SessionLocal
 import os
 import shutil
 import json
-from services.ingestion import procesar_un_pdf
+from services.ingestion import procesar_un_pdf, eliminar_vectores_de_pdf
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="API Asistente US")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login", auto_error=False)
 
 @app.get("/")
 def read_root():
@@ -53,15 +64,22 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     return {"access_token": access_token, "token_type": "bearer", "is_admin": usuario.is_admin}
 
 
-def get_usuario_actual(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    """Extrae el usuario de la base de datos usando el token JWT"""
+def get_usuario_actual(
+    token: str | None = Depends(oauth2_scheme), 
+    token_query: str | None = Query(None, alias="token"), 
+    db: Session = Depends(get_db)
+):
+    """Extrae el usuario de la base de datos usando el token JWT (desde cabecera o query param)"""
+    actual_token = token or token_query
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="No se pudieron validar las credenciales",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    if not actual_token:
+        raise credentials_exception
     try:
-        payload = jwt.decode(token, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+        payload = jwt.decode(actual_token, security.SECRET_KEY, algorithms=[security.ALGORITHM])
         usuario_id: str = payload.get("sub")
         if usuario_id is None:
             raise credentials_exception
@@ -109,7 +127,7 @@ def enviar_mensaje(
     db: Session = Depends(get_db), 
     usuario_actual: models.Usuario = Depends(get_usuario_actual)
 ):
-    """Guarda el mensaje del usuario, consulta a LangGraph y guarda la respuesta"""
+    """Guarda el mensaje del usuario y devuelve un flujo SSE (Server-Sent Events) de la respuesta del agente"""
     conv = db.query(models.Conversacion).filter(models.Conversacion.id == conversacion_id, models.Conversacion.usuario_id == usuario_actual.id).first()
     if not conv:
         raise HTTPException(status_code=404, detail="Conversación no encontrada")
@@ -122,7 +140,6 @@ def enviar_mensaje(
     db.commit()
 
     historial_db = db.query(models.Mensaje).filter(models.Mensaje.conversacion_id == conv.id).order_by(models.Mensaje.fecha_creacion).all()
-    
     mensajes_recientes = historial_db[-5:] if len(historial_db) > 5 else historial_db
     
     historial_langgraph = []
@@ -139,28 +156,46 @@ def enviar_mensaje(
         "referencias": []
     }
     
-    try:
-        estado_final = agente_router.invoke(estado_inicial)
-        
-        respuesta_texto = ""
-        for chunk in estado_final["stream"]:
-            respuesta_texto += chunk
+    async def sse_generator():
+        try:
+            # Ejecutar el agente para obtener el contexto y referencias, y la referencia del stream
+            estado_final = agente_router.invoke(estado_inicial)
+            referencias = estado_final.get("referencias", [])
+            contexto_rag = estado_final.get("contexto", "")
             
-        referencias = estado_final.get("referencias", [])
-        contexto_rag = estado_final.get("contexto", "")
+            # Enviar metadatos iniciales
+            yield f"event: metadata\ndata: {json.dumps({'referencias': referencias, 'contexto': contexto_rag})}\n\n"
             
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en el agente: {str(e)}")
+            # Iterar y enviar tokens en tiempo real
+            respuesta_texto = ""
+            for chunk in estado_final.get("stream", []):
+                respuesta_texto += chunk
+                yield f"event: token\ndata: {json.dumps({'token': chunk})}\n\n"
+                await asyncio.sleep(0.01) # Ceder control para streaming en tiempo real
+                
+            # Guardar el mensaje del asistente en la base de datos
+            db_gen = SessionLocal()
+            try:
+                referencias_str = json.dumps(referencias)
+                msg_asistente = models.Mensaje(conversacion_id=conv.id, rol="assistant", contenido=respuesta_texto, referencias=referencias_str)
+                db_gen.add(msg_asistente)
+                db_gen.commit()
+                print(f"✅ Respuesta del asistente guardada en la base de datos para conv {conv.id}")
+            except Exception as db_err:
+                print(f"Error guardando respuesta en base de datos: {db_err}")
+            finally:
+                db_gen.close()
+                
+            # Poda de contexto
+            background_tasks.add_task(actualizar_resumen_memoria, conv.id)
+            
+            yield "event: close\ndata: close\n\n"
+            
+        except Exception as e:
+            print(f"Error en sse_generator: {e}")
+            yield f"event: error\ndata: {json.dumps({'detail': str(e)})}\n\n"
 
-    referencias_str = json.dumps(referencias)
-    msg_asistente = models.Mensaje(conversacion_id=conv.id, rol="assistant", contenido=respuesta_texto, referencias=referencias_str)
-    db.add(msg_asistente)
-    db.commit()
-
-    # Disparamos poda de contexto asíncrona
-    background_tasks.add_task(actualizar_resumen_memoria, conv.id)
-
-    return {"respuesta": respuesta_texto, "referencias": referencias, "contexto": contexto_rag}
+    return StreamingResponse(sse_generator(), media_type="text/event-stream")
 
 def actualizar_resumen_memoria(conversacion_id: int):
     """Actualiza el resumen de memoria para proteger la ventana de contexto de Groq"""
@@ -265,5 +300,138 @@ def ingestar_pdf(background_tasks: BackgroundTasks, file: UploadFile = File(...)
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
         
-    background_tasks.add_task(procesar_un_pdf, temp_path, file.filename)
+    background_tasks.add_task(procesar_un_pdf, temp_path, file.filename, False)
     return {"mensaje": f"El archivo '{file.filename}' se está procesando en segundo plano."}
+
+
+# Endpoints de administración de usuarios
+@app.get("/admin/usuarios", response_model=list[schemas.UsuarioResponse])
+def listar_usuarios(admin: models.Usuario = Depends(get_usuario_admin), db: Session = Depends(get_db)):
+    """Lista todos los usuarios (solo admin)"""
+    return db.query(models.Usuario).order_by(models.Usuario.id).all()
+
+@app.post("/admin/usuarios", response_model=schemas.UsuarioResponse, status_code=status.HTTP_201_CREATED)
+def crear_usuario_admin(usuario: schemas.UsuarioAdminCreate, admin: models.Usuario = Depends(get_usuario_admin), db: Session = Depends(get_db)):
+    """Crea un nuevo usuario con rol configurable (solo admin)"""
+    db_user = db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="El email ya está registrado")
+    
+    hashed_password = security.get_password_hash(usuario.password)
+    nuevo_usuario = models.Usuario(email=usuario.email, hashed_password=hashed_password, is_admin=usuario.is_admin)
+    db.add(nuevo_usuario)
+    db.commit()
+    db.refresh(nuevo_usuario)
+    return nuevo_usuario
+
+@app.delete("/admin/usuarios/{usuario_id}")
+def eliminar_usuario_admin(usuario_id: int, admin: models.Usuario = Depends(get_usuario_admin), db: Session = Depends(get_db)):
+    """Elimina un usuario (solo admin)"""
+    if usuario_id == admin.id:
+        raise HTTPException(status_code=400, detail="No puedes eliminarte a ti mismo")
+        
+    usuario = db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+    db.delete(usuario)
+    db.commit()
+    return {"mensaje": "Usuario eliminado correctamente"}
+
+@app.put("/admin/usuarios/{usuario_id}/admin", response_model=schemas.UsuarioResponse)
+def cambiar_permisos_admin(usuario_id: int, req: schemas.UsuarioAdminUpdateRole, admin: models.Usuario = Depends(get_usuario_admin), db: Session = Depends(get_db)):
+    """Otorga o elimina permisos de administrador a un usuario (solo admin)"""
+    if usuario_id == admin.id:
+        raise HTTPException(status_code=400, detail="No puedes cambiar tus propios permisos de administrador")
+        
+    usuario = db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+    usuario.is_admin = req.is_admin
+    db.commit()
+    db.refresh(usuario)
+    return usuario
+
+# Endpoints de documentos (obtenidos de Pinecone)
+@app.get("/documentos", response_model=list[schemas.DocumentoResponse])
+def listar_documentos(usuario_actual: models.Usuario = Depends(get_usuario_actual)):
+    """Devuelve la lista de documentos en la base de datos vectorial Pinecone"""
+    try:
+        from pinecone import Pinecone
+        from utils.config import settings
+        pc = Pinecone(api_key=settings.PINECONE_API_KEY)
+        index = pc.Index("index-tfg")
+        res = index.query(
+            vector=[0.0] * 1024,
+            top_k=10000,
+            include_metadata=True
+        )
+        sources = set()
+        for match in res.get("matches", []):
+            metadata = match.get("metadata", {})
+            source = metadata.get("source")
+            if source:
+                sources.add(source)
+        return [{"nombre": s} for s in sorted(sources)]
+    except Exception as e:
+        print(f"Error consultando documentos de Pinecone: {e}")
+        return []
+
+@app.delete("/admin/documentos")
+def eliminar_documento_admin(nombre: str = Query(..., description="Nombre del documento a eliminar"), admin: models.Usuario = Depends(get_usuario_admin)):
+    """Elimina los vectores de Pinecone y el archivo del disco (solo admin)"""
+    # 1. Eliminar vectores de Pinecone
+    eliminar_vectores_de_pdf(nombre)
+    
+    # 2. Eliminar archivo físico de la carpeta estática
+    static_dir = os.path.join(os.path.dirname(__file__), "static", "documentos")
+    ruta_archivo = os.path.join(static_dir, nombre)
+    if os.path.exists(ruta_archivo):
+        try:
+            os.remove(ruta_archivo)
+            print(f"Archivo eliminado de static: {ruta_archivo}")
+        except Exception as e:
+            print(f"Error eliminando archivo físico {ruta_archivo}: {e}")
+            
+    # 3. Eliminar archivo de la carpeta Documentos_US
+    source_dirs = [
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "Documentos_US")),
+        "/Documentos_US"
+    ]
+    for sdir in source_dirs:
+        alt_path = os.path.join(sdir, nombre)
+        if os.path.exists(alt_path):
+            try:
+                os.remove(alt_path)
+                print(f"Archivo eliminado de {sdir}: {alt_path}")
+            except Exception as e:
+                print(f"Error al eliminar archivo de {sdir}: {e}")
+                
+    return {"mensaje": f"Documento '{nombre}' y sus vectores eliminados con éxito."}
+
+def seed_admin_user():
+    db = SessionLocal()
+    try:
+        # Verificar si ya existe algún administrador
+        admin_exists = db.query(models.Usuario).filter(models.Usuario.is_admin == True).first()
+        if not admin_exists:
+            email = "admin@us.es"
+            password = "adminpassword"
+            hashed_pwd = security.get_password_hash(password)
+            nuevo_admin = models.Usuario(
+                email=email,
+                hashed_password=hashed_pwd,
+                is_admin=True
+            )
+            db.add(nuevo_admin)
+            db.commit()
+            print(f"🔑 Se ha creado la cuenta de administrador inicial: {email} / {password}")
+    except Exception as e:
+        print(f"Error al crear el administrador inicial: {e}")
+    finally:
+        db.close()
+
+@app.on_event("startup")
+def startup_event():
+    seed_admin_user()

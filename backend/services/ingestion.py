@@ -62,7 +62,7 @@ def extraer_texto_un_pdf(pdf_path: str, original_filename: str):
                 
     return docs
 
-def procesar_un_pdf(filepath: str, original_filename: str):
+def procesar_un_pdf(filepath: str, original_filename: str, keep_file: bool = False):
     """
     Servicio de backend asíncrono para ingestar un único documento.
     """
@@ -82,8 +82,6 @@ def procesar_un_pdf(filepath: str, original_filename: str):
 
         # 3. Fragmentación (Text Splitter)
         print(f"[Ingesta Async] Fragmentando el Markdown de {original_filename}...")
-        # NOTA: Los chunks aquí pueden afinarse, mantenemos chunks conservadores (1000 size / 200 overlap como recomendamos)
-        # o los originales (4000/500). Por ahora ponemos 1500 / 250 para mejor QA.
         splitter = MarkdownTextSplitter(
             chunk_size=1500, 
             chunk_overlap=250
@@ -112,10 +110,26 @@ def procesar_un_pdf(filepath: str, original_filename: str):
     except Exception as e:
         print(f"[Ingesta Async] ❌ Error total durante el procesado: {e}")
     finally:
-        # 5. Asegurarnos de limpiar basura residual en local pase lo que pase
-        try:
-            if os.path.exists(filepath):
-                os.remove(filepath)
-                print(f"[Ingesta Async] 🧹 Archivo temporal local descartado: {filepath}")
-        except Exception as cleanup_err:
-            print(f"[Ingesta Async] ⚠️ No se pudo eliminar el fichero {filepath}. Error: {cleanup_err}")
+        # 5. Asegurarnos de limpiar basura residual en local pase lo que pase si no queremos conservarlo
+        if not keep_file:
+            try:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                    print(f"[Ingesta Async] 🧹 Archivo temporal local descartado: {filepath}")
+            except Exception as cleanup_err:
+                print(f"[Ingesta Async] ⚠️ No se pudo eliminar el fichero {filepath}. Error: {cleanup_err}")
+
+def eliminar_vectores_de_pdf(filename: str):
+    """
+    Elimina los vectores asociados a un archivo de Pinecone.
+    """
+    try:
+        pc = Pinecone(api_key=settings.PINECONE_API_KEY)
+        index = pc.Index("index-tfg")
+        # El filter de Pinecone depende del metadato. source es donde guardamos el nombre del archivo
+        index.delete(filter={"source": {"$eq": filename}})
+        print(f"✅ Vectores de '{filename}' eliminados de Pinecone.")
+        return True
+    except Exception as e:
+        print(f"Error eliminando vectores de {filename} de Pinecone: {e}")
+        return False

@@ -25,16 +25,17 @@ services:
       - .env
     depends_on:
       - db
+    volumes:
+      - ./Documentos_US:/Documentos_US
 
   frontend:
     build: 
-      context: . 
+      context: ./frontend
     container_name: asistente_us_frontend
     restart: always
     ports:
       - "8501:8501"
     environment:
-      - PYTHONPATH=/app:/app/backend
       - API_URL=http://backend:8000
     env_file:
       - .env
