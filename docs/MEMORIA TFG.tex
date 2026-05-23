@@ -145,13 +145,13 @@ Conviene dejar claro desde el principio qué abarca este proyecto y qué queda f
     \item El desarrollo de un \textbf{backend API REST} capaz de gestionar las peticiones de usuarios, el historial de conversaciones y toda la lógica del agente.
     \item La implementación de un \textbf{agente conversacional} basado en LangGraph con capacidad de enrutamiento inteligente y recuperación semántica de documentos.
     \item Un \textbf{pipeline de ingesta} que procesa documentos PDF oficiales de la US y los almacena como vectores en Pinecone.
-    \item Una \textbf{interfaz web} desarrollada con Streamlit que permite la interacción con el agente en tiempo real.
+    \item Una \textbf{interfaz web} SPA moderna e interactiva desarrollada con React y TypeScript, estilizada con TailwindCSS y optimizada para una navegación fluida.
     \item La \textbf{contenedorización} completa del sistema mediante Docker Compose.
     \item Una \textbf{evaluación cuantitativa} del sistema.
     \item \textbf{Despliegue} en un entorno de producción con alta disponibilidad, como lo es Render
 \end{itemize}
 
-Queda fuera del alcance de este TFG  la integración con sistemas internos de la US (como SEVIUS o la Secretaría Virtual) y la creación de un sistema de retroalimentación de usuarios. Estas líneas, no obstante, se retoman como trabajo futuro en el capítulo final.
+Queda fuera del alcance de este TFG la integración con sistemas internos de la US (como SEVIUS o la Secretaría Virtual), centrándonos en la lógica del asistente, la personalización del usuario y el sistema integrado de feedback.
 
 \section{Estructura del proyecto}
 
@@ -160,7 +160,7 @@ Para que la lectura de este documento resulte lo más fluida posible, se ha orga
 \begin{itemize}
     \item \textbf{Parte I: Introducción y Conceptos.} Se expone la motivación del trabajo, los objetivos perseguidos y se realiza un repaso por el estado del arte de las tecnologías implicadas, incluyendo los LLMs, sistemas RAG y arquitecturas agénticas.
     \item \textbf{Parte II: Metodología y Planificación.} Describe el ciclo de vida elegido para el proyecto, detallando la adaptación del marco de trabajo Scrum y proporcionando el desglose temporal de las tareas.
-    \item \textbf{Parte III: Análisis y Diseño.} Desglosa los requisitos funcionales y no funcionales, e introduce la arquitectura del sistema tanto a nivel conceptual (LangGraph) como de servicios (FastAPI, Streamlit, bases de datos).
+    \item \textbf{Parte III: Análisis y Diseño.} Desglosa los requisitos funcionales y no funcionales, e introduce la arquitectura del sistema tanto a nivel conceptual (LangGraph) como de servicios (FastAPI, React + TypeScript, bases de datos).
     \item \textbf{Parte IV: Implementación.} Profundiza en los detalles técnicos del desarrollo: cómo se resolvieron los problemas de ingesta de documentos, la orquestación del agente y los desafíos surgidos con los LLM y su latencia.
     \item \textbf{Parte V: Evaluación y Validación.} Muestra los resultados obtenidos tras someter al agente a una exhaustiva batería de pruebas, utilizando un LLM como juez para evaluar su rigor y fiabilidad.
     \item \textbf{Parte VI: Conclusiones y Trabajo Futuro.} Recopila las reflexiones finales, valorando si se cumplieron los objetivos iniciales, y plantea posibles vías para continuar mejorando el sistema.
@@ -258,8 +258,8 @@ Como lenguaje principal se ha utilizado Python. La elección se realizó de mane
 
 Sobre esta base, el sistema se ha estructurado utilizando dos \textit{frameworks} principales, ambos orientados en cada una de las capas de nuestra aplicación (frontend/backend):
 \begin{itemize}
-    \item \textbf{FastAPI:} para la implementación de la lógica del servidor \textit{backend} y la exposición de servicios mediante una API REST. Esta tecnología ha sido seleccionada puesto que destaca por su alto rendimiento y su soporte nativo ante operaciones asíncronas, característica crítica para gestionar de manera eficiente los tiempos de espera derivados de las llamadas a los modelos y a la base de datos vectorial, evitando así en todo momento el bloqueo del hilo principal de ejecución.
-    \item \textbf{Streamlit:} permite una construcción ágil de aplicaciones web interactivas orientadas a datos directamente en Python. Se ha tomado esta opción debido a que incorpora componentes nativos diseñados especificamente para interfaces conversacionales. Facilitando enormemente la implementación del historial del chat, la gestión del estado de la sesión en el cliente y la renderización de las respuestas del agente de forma progresiva (\textit{streaming})
+    \item \textbf{FastAPI (Backend):} para la implementación de la lógica del servidor y la exposición de servicios mediante una API REST y streaming por Server-Sent Events (SSE). Esta tecnología destaca por su alto rendimiento y su soporte nativo ante operaciones asíncronas, característica crítica para gestionar de manera eficiente las llamadas a los modelos de lenguaje y a la base de datos vectorial sin bloquear el hilo principal.
+    \item \textbf{React y TypeScript (Frontend):} para la interfaz de usuario. Aunque inicialmente se planteó usar Streamlit por su rapidez de prototipado, pronto se requirió un nivel superior de interactividad, modularidad y control estético. La transición a una aplicación de página única (SPA) desarrollada en React con TypeScript y TailwindCSS permitió separar limpiamente el cliente del servidor, implementar controles avanzados de sesión por cookies JWT, mostrar estados intermedios del agente a través de eventos en tiempo real, e integrar un panel de feedback y auditoría interactivo sin recargas invasivas de página.
 \end{itemize}
 
 \subsection{Orquestación y Lógica Agéntica}
@@ -303,8 +303,7 @@ Para poner el sistema a disposición de los usuarios finales en un entorno de pr
 
 Las dos tecnologías clave que hacen esto posible son \textbf{Docker} y \textbf{Render}:
 
-\begin{itemize}
-    \item \textbf{Docker para la contenedorización:} En lugar de lidiar con las diferencias de configuración y dependencias entre servidores, cada componente del sistema (el \textit{frontend} en Streamlit y el \textit{backend} en FastAPI) se empaqueta en su propio contenedor Docker utilizando imágenes base ligeras de Python (\texttt{python:3.11-slim-bookworm}). Esto encapsula todo lo necesario para la ejecución ---desde las librerías del sistema hasta las dependencias de Python---, aislando las aplicaciones y eliminando por completo el clásico problema del ``en mi máquina funcionaba''.
+    \item \textbf{Docker para la contenedorización:} En lugar de lidiar con las diferencias de configuración y dependencias entre servidores, cada componente del sistema (el \textit{frontend} en React y el \textit{backend} en FastAPI) se empaqueta en su propio contenedor Docker utilizando imágenes base estables (como \texttt{node:18-alpine} para el cliente frontend y \texttt{python:3.11-slim-bookworm} para el servidor API backend). Esto encapsula todo lo necesario para la ejecución, aislando las aplicaciones y eliminando por completo el clásico problema del ``en mi máquina funcionaba''.
     
     \item \textbf{Render para la infraestructura en la nube:} Render es una plataforma en la nube que destaca por su facilidad de uso e integración continua con GitHub. Permite desplegar aplicaciones web a partir de un \texttt{Dockerfile} de forma automatizada: cada vez que se sube un cambio al repositorio de producción, Render descarga el código, construye la imagen de Docker y despliega la nueva versión sin tiempo de caída.
 \end{itemize}
@@ -314,7 +313,7 @@ En el entorno de producción, la arquitectura del sistema se distribuye de maner
 \begin{enumerate}
     \item \textbf{Servicio de Backend (FastAPI):} Configurado como un \textit{Web Service} que expone los endpoints de la API. Se construye utilizando el archivo \texttt{Dockerfile} de la carpeta \texttt{/backend} y gestiona toda la lógica del agente LangGraph.
     
-    \item \textbf{Servicio de Frontend (Streamlit):} Configurado como otro \textit{Web Service} público. Se compila a partir del \texttt{Dockerfile} de la raíz del proyecto y sirve la interfaz de usuario que consume la API del backend.
+    \item \textbf{Servicio de Frontend (React):} Configurado como otro \textit{Web Service} público. Se compila a partir del \texttt{Dockerfile} de la carpeta \texttt{/frontend} y sirve la interfaz de usuario de tipo SPA (Single Page Application) que consume la API del backend.
     
     \item \textbf{Base de Datos Gestionada (PostgreSQL):} En lugar de ejecutar PostgreSQL dentro de un contenedor autogestionado en producción, se utiliza un servicio de base de datos gestionada provisto directamente por Render. Esto garantiza copias de seguridad automáticas, alta disponibilidad y un rendimiento óptimo sin añadir complejidad de administración.
 \end{enumerate}
@@ -392,7 +391,7 @@ Para estructurar las 20 semanas de duración estimadas para el desarrollo del TF
         3               & Semanas 5--6     & Conexión del RAG básico: embeddings de Cohere y Pinecone.             \\
         4               & Semanas 7--8     & Diseño lógico y programación del grafo de estados en LangGraph.       \\
         5               & Semanas 9--10    & Desarrollo del backend FastAPI y diseño del modelo de datos.         \\
-        6               & Semanas 11--12   & Creación de la interfaz de chat en Streamlit.                         \\
+        6               & Semanas 11--12   & Creación de la interfaz modular de chat en React.                     \\
         7               & Semanas 13--14   & Migración a la API de Groq para la optimización de latencias.        \\
         8               & Semanas 15--16   & Contenedorización de todos los servicios locales con Docker Compose.  \\
         9               & Semanas 17--18   & Batería de pruebas de validación y evaluación cuantitativa.           \\
@@ -422,7 +421,7 @@ Se planificó una dedicación media de entre 15 y 20 horas semanales durante las
     \item \textbf{Investigación teórica y estado del arte:} 15\% del tiempo (lectura de artículos sobre RAG, agentes conversacionales y documentación de APIs).
     \item \textbf{Desarrollo del pipeline RAG e ingesta:} 25\% del tiempo (pruebas de extracción de PDFs, vectorización y almacenamiento).
     \item \textbf{Orquestación del agente inteligente (LangGraph):} 20\% del tiempo (definición de nodos, transiciones condicionales y prompts de enrutamiento).
-    \item \textbf{Backend y Frontend:} 15\% del tiempo (creación de la API de FastAPI, base de datos relacional e interfaz de chat con Streamlit).
+    \item \textbf{Backend y Frontend:} 15\% del tiempo (creación de la API de FastAPI, base de datos relacional e interfaz modular de chat en React con TypeScript).
     \item \textbf{Evaluación y validación:} 10\% del tiempo (baterías de pruebas para evaluar la fiabilidad de las respuestas).
     \item \textbf{Redacción de la memoria y documentación:} 15\% del tiempo (documentación técnica y redacción de este documento).
 \end{itemize}
@@ -474,7 +473,7 @@ Tomando como referencia la estimación de 350 horas de dedicación calculada en 
 \subsection{Costes de hardware y software}
 \begin{itemize}
     \item \textbf{Hardware:} Se ha empleado un equipo informático portátil valorado en 1.200 €. Considerando un periodo de amortización de 4 años, y dado que el proyecto ha durado 5 meses, la cuota de amortización imputable al proyecto es de aproximadamente 125 €.
-    \item \textbf{Software y APIs:} El desarrollo se ha apoyado mayoritariamente en herramientas de código abierto (Python, FastAPI, Streamlit, Docker). Los servicios de IA y bases de datos vectoriales (Groq, Cohere, Pinecone, LlamaParse) se han utilizado en su capa gratuita (\textit{Free Tier}), por lo que el coste directo en este apartado es de 0 €. Sin embargo, en un entorno de producción, los costes de inferencia y almacenamiento escalarían según el uso.
+    \item \textbf{Software y APIs:} El desarrollo se ha apoyado mayoritariamente en herramientas de código abierto (Python, React, FastAPI, Docker). Los servicios de IA y bases de datos vectoriales (Groq, Cohere, Pinecone, LlamaParse) se han utilizado en su capa gratuita (\textit{Free Tier'}), por lo que el coste directo en este apartado es de 0 €. Sin embargo, en un entorno de producción, los costes de inferencia y almacenamiento escalarían según el uso.
 \end{itemize}
 
 \subsection{Costes indirectos}
@@ -585,7 +584,7 @@ Los principales casos de uso identificados son:
 El sistema sigue una arquitectura de microservicios contenedorizados orquestados mediante Docker Compose. Los tres servicios principales son:
 
 \begin{itemize}
-    \item \textbf{Frontend (Streamlit):} Interfaz web que se comunica con el backend vía HTTP REST. Puerto 8501.
+    \item \textbf{Frontend (React + TypeScript):} Interfaz web SPA (Single Page Application) que se comunica con el backend vía HTTP REST y Server-Sent Events (SSE). Puerto 8501.
     \item \textbf{Backend (FastAPI):} API REST que gestiona la autenticación, las conversaciones y orquesta el agente LangGraph. Puerto 8000.
     \item \textbf{Base de datos (PostgreSQL 15):} Almacena usuarios, conversaciones y mensajes. Puerto 5432.
 \end{itemize}
@@ -713,17 +712,20 @@ El sistema implementa dos niveles de RAG paralelos:
 
 De esta forma, el contenido proviene exclusivamente de los documentos oficiales, mientras que la forma y estructura de la respuesta se define mediante las instrucciones embebidas en los templates de cada nodo.
 
-\section{Diseño del frontend (Streamlit)}
+\section{Diseño del frontend (React + TypeScript)}
 
-La interfaz web se organiza en tres áreas funcionales:
+La interfaz web se ha diseñado como una aplicación de página única (SPA) modular estructurada en cinco áreas principales:
 
 \begin{itemize}
-    \item \textbf{Pantalla de autenticación:} Tabs de inicio de sesión y registro, con el logo de la US.
-    \item \textbf{Barra lateral:} Lista de conversaciones con opciones de crear, renombrar y eliminar. Para administradores, incluye un panel de gestión de conocimiento para ingestar nuevos PDFs.
-    \item \textbf{Área de chat:} Burbujas de mensaje con animación de entrada (\textit{fade-in}), streaming simulado de respuestas palabra por palabra, y expansores para mostrar las fuentes consultadas.
+    \item \textbf{Pantalla de autenticación:} Interfaz de acceso y registro interactiva. La sesión del usuario se mantiene de forma segura mediante una cookie JWT, lo que evita la necesidad de volver a autenticarse al recargar la página.
+    \item \textbf{Barra lateral de navegación (Sidebar):} Contiene la lista histórica de conversaciones del usuario (con opciones rápidas para crear chats, renombrarlos o eliminarlos) y, si el usuario tiene privilegios de administrador, acceso a los paneles de gestión documental y auditoría de feedback.
+    \item \textbf{Área de chat interactivo:} Globo del chat que implementa animaciones de entrada, burbujas de conversación diferenciadas por colores y un renderizador de Markdown que visualiza negritas, listas y enlaces de manera legible.
+    \item \textbf{Canal de visualización de estados del agente (SSE):} Indicadores de estado dinámicos que muestran el paso lógico por el que transiciona el agente LangGraph en el backend (por ejemplo, cuando evalúa documentos o realiza búsquedas externas).
+    \item \textbf{Sistema de Feedback e Inline Comments:} Botones de 👍 / 👎 integrados de manera discreta al final de cada respuesta del asistente. Al votar negativamente, se despliega una caja de texto simple para recopilar de forma directa el motivo del descontento del usuario.
+    \item \textbf{Panel de Auditoría de Feedback (Admin):} Una vista dedicada que organiza de forma visual las quejas recopiladas, permitiendo que los administradores analicen qué pregunta originó el fallo, qué respondió el asistente, qué comentario dejó el usuario y qué fragmentos de Pinecone se consultaron.
 \end{itemize}
 
-El diseño visual utiliza una paleta oscura con tipografía Inter, siguiendo una estética moderna tipo SaaS. Los botones cambian al color corporativo de la US (\texttt{\#9D1C34}) al pasar el cursor.
+El diseño visual adopta una estética premium oscura basada en una paleta HSL optimizada (\texttt{\#0D0E12} para fondos principales, \texttt{\#171A21} para tarjetas y componentes de panel) combinada con tipografía moderna \textit{Inter} y transiciones de micro-animaciones en botones y modales que hacen hover con el color granate corporativo de la Universidad de Sevilla (\texttt{\#9D1C34}).
 
 % ============================================================
 % PARTE IV: IMPLEMENTACIÓN
@@ -739,7 +741,7 @@ El sistema se despliega mediante un archivo \texttt{docker-compose.yml} que defi
 \begin{itemize}
     \item \textbf{db:} Contenedor PostgreSQL 15 con volumen persistente (\texttt{postgres\_data}) para la durabilidad de los datos. Se expone en el puerto 5434 del host.
     \item \textbf{backend:} Contenedor con la aplicación FastAPI, que se construye desde el directorio \texttt{./backend}. Depende del servicio \texttt{db} y se expone en el puerto 8000.
-    \item \textbf{frontend:} Contenedor con la aplicación Streamlit, construido desde la raíz del proyecto. Se conecta al backend mediante la URL interna \texttt{http://backend:8000} y se expone en el puerto 8501.
+    \item \textbf{frontend:} Contenedor con la aplicación React, construido desde el directorio \texttt{./frontend}. Se conecta al backend mediante la URL interna \texttt{http://backend:8000} (o resolviéndose dinámicamente en el cliente) y se expone en el puerto 8501 del host.
 \end{itemize}
 
 \subsection{Configuración de red y variables de entorno}
@@ -897,19 +899,26 @@ Clasifica la consulta en una de cuatro categorías: procedimental, calendario, n
 Cada nodo resolutor cuenta con un prompt especializado que define el formato, tono y nivel de detalle esperado. Los prompts incluyen instrucciones específicas sobre el uso de listas, tablas, negritas y emojis según la categoría.
 
 \section{Pipeline de recuperación}
-\subsection{Búsqueda semántica en Pinecone}
 
-El proceso de búsqueda se ejecuta en tres etapas con instrumentación de tiempos:
+\subsection{Búsqueda Híbrida (Dense + Sparse) y RRF}
+
+En el diseño original, el sistema confiaba ciegamente en la búsqueda densa basada en embeddings vectoriales. Sin embargo, en un contexto burocrático universitario, esto presenta problemas. Las consultas que incluyen nombres específicos de trámites, siglas institucionales (como UVUS, automatrícula, baremación de contratos) o códigos de reglamentos a veces se diluyen en el espacio latente del modelo de embeddings, devolviendo fragmentos temáticamente cercanos pero sin el término exacto requerido.
+
+Para solucionar esto, decidí implementar un motor de **Búsqueda Híbrida a nivel de aplicación**. Dado que nuestro índice de Pinecone es denso y no queríamos duplicar ni reestructurar el índice entero en producción, opté por una estrategia de fusión:
 \begin{enumerate}
-    \item \textbf{Embedding de la consulta:} Se genera el vector de la pregunta reformulada usando Cohere.
-    \item \textbf{Búsqueda vectorial:} Se recuperan los 12 documentos más similares (\texttt{k=12}) mediante \texttt{similarity\_search\_by\_vector} en Pinecone.
-    \item \textbf{Reranking:} Se aplica Cohere Rerank para reordenar y seleccionar los 4 documentos más relevantes.
+    \item \textbf{Recuperación densa:} Realizamos una consulta vectorial en Pinecone utilizando la pregunta reformulada del usuario y el modelo de embeddings \texttt{embed-multilingual-v3.0} de Cohere, solicitando los 18 candidatos más cercanos ($k=18$).
+    \item \textbf{Recuperación léxica (Sparse):} En paralelo, en el backend, realizamos una búsqueda por palabra clave exacta usando una indexación y puntuación por frecuencia de términos (lexical search) sobre los fragmentos locales del documento. Esto puntúa los fragmentos que contienen los términos exactos de la consulta reformulada.
+    \item \textbf{Reciprocal Rank Fusion (RRF):} Una vez obtenidos ambos rankings de documentos candidateados, los fusionamos en una lista única ponderando la posición que ocupa cada fragmento en cada uno de los métodos. El cálculo matemático se realiza mediante la siguiente ecuación:
+    \[ RRF(d) = \frac{1}{60 + \text{Rank}_{\text{dense}}(d)} + \frac{1}{60 + \text{Rank}_{\text{sparse}}(d)} \]
+    donde el factor constante de regularización se establece en 60 para evitar que los primeros resultados monopolicen el peso de forma desproporcionada.
 \end{enumerate}
+Los 12 fragmentos con mejor puntuación RRF se envían a la siguiente fase del pipeline.
 
-\subsection{Reranking con Cohere}
+\subsection{Reranking y Compresión con Cohere}
 
-El reranking con el modelo \texttt{rerank-v4.0-pro} de Cohere implementa un \\
-\texttt{ContextualCompressionRetriever} que actúa como una segunda capa de filtrado. Recibe los 12 documentos candidatos y los reordena según su relevancia semántica respecto a la consulta, seleccionando únicamente los 4 mejores (\texttt{top\_n=4}). Esto mejora significativamente la precisión del contexto inyectado al LLM.
+Los 12 mejores candidatos obtenidos tras la fusión RRF pasan por un filtro de reranking contextual con el modelo \texttt{rerank-v4.0-pro} de Cohere. Este modelo está especializado en calcular la relevancia directa de un fragmento de texto con respecto a una consulta en lenguaje natural.
+
+El reranking actúa como un embudo crítico: reduce los 12 candidatos híbridos a los 4 documentos finales con mayor relevancia contextual (\texttt{top\_n=4}). Esto disminuye la cantidad de tokens de ruido inyectados en la ventana de contexto del LLM generador, reduciendo costes y evitando la alucinación del modelo principal, además de asegurar que las tablas e instrucciones específicas de los reglamentos lleguen intactas.
 
 \section{Gestión de memoria conversacional}
 \subsection{Ventana deslizante de mensajes}
@@ -924,28 +933,76 @@ Cuando una conversación supera los 5 mensajes, se ejecuta una tarea en segundo 
 
 Al enviar el primer mensaje de una conversación con título ``Nueva conversación'', se dispara una tarea asíncrona que utiliza el LLM ligero para generar un título descriptivo de 4-5 palabras basado en el contenido del mensaje.
 
-\chapter{Implementación del frontend}
-\section{Interfaz de autenticación}
+\section{Corrective RAG (CRAG) y Búsqueda Web Fallback}
 
-La pantalla de autenticación presenta dos tabs (Iniciar Sesión y Registrarse) con el logo de la Universidad de Sevilla. Se utiliza la función \texttt{api\_request} como capa de abstracción para todas las llamadas HTTP, que incluye automáticamente el token JWT en las cabeceras cuando el usuario está autenticado.
+Uno de los principales riesgos de los sistemas RAG tradicionales es la falta de información útil dentro de los documentos almacenados. Si el usuario pregunta algo que no está en la base de datos de PDFs (por ejemplo, plazos específicos de automatrícula del curso vigente que aún no se han subido), el agente respondería típicamente que "no dispone de esa información", o peor, podría alucinar.
 
-\section{Panel de conversaciones}
-
-La barra lateral muestra la lista de conversaciones del usuario, con la conversación activa marcada con un indicador visual. Incluye opciones para crear nuevas conversaciones, renombrarlas o eliminarlas, así como un botón de cierre de sesión.
-
-\section{Interfaz de chat}
-
-La interfaz de chat implementa las siguientes funcionalidades:
+Para mitigar esto, implementamos un flujo de **Corrective RAG (CRAG)** en LangGraph. Después de recuperar los documentos de Pinecone, insertamos un nodo clasificador de relevancia. Este evaluador utiliza el LLM para analizar la concordancia entre los fragmentos recuperados y la pregunta reformulada del usuario, clasificando el contexto en:
 \begin{itemize}
-    \item \textbf{Burbujas de mensaje} con animación CSS \texttt{fadeInUp} para una entrada suave.
-    \item \textbf{Streaming simulado:} Las respuestas se muestran palabra por palabra con un delay de 15ms mediante \texttt{st.write\_stream}, creando una experiencia de escritura en tiempo real.
-    \item \textbf{Referencias expandibles:} Cada respuesta del asistente incluye un expansor con las fuentes y páginas consultadas.
-    \item \textbf{CSS personalizado:} Paleta oscura (\texttt{\#000000} / \texttt{\#171A21}), tipografía Inter, y botones con hover en color corporativo (\texttt{\#9D1C34}).
+    \item \textbf{Suficiente:} Los fragmentos responden directamente a la pregunta. El flujo continúa hacia el nodo resolutor correspondiente.
+    \item \textbf{Insuficiente:} Los fragmentos recuperados no contienen la respuesta a la consulta. En este caso, el grafo transiciona a un nodo especializado de \texttt{busqueda\_web}.
 \end{itemize}
 
-\section{Panel de administración}
+En el nodo de \texttt{busqueda\_web}, realizamos una consulta utilizando la API de DuckDuckGo restringida de forma estricta a la URL oficial de la Universidad de Sevilla (\texttt{site:us.es}). El agente descarga los extractos de la web oficial en tiempo real, los procesa y los añade al contexto del prompt para que el LLM pueda redactar una respuesta precisa con información del portal oficial.
 
-Los usuarios con rol de administrador (\texttt{is\_admin=True}) acceden a un panel adicional en la barra lateral que permite subir documentos PDF. La ingesta se ejecuta en segundo plano mediante \texttt{BackgroundTasks}, y el usuario recibe confirmación inmediata del encolamiento.
+Para que la experiencia de usuario sea fluida y transparente, el backend transmite eventos intermedios mediante **Server-Sent Events (SSE)** con el estado de ejecución (por ejemplo, \textit{"Información interna insuficiente. Buscando en el portal de la US..."}), informando al usuario de qué está ocurriendo en cada paso y reduciendo la latencia percibida.
+
+\section{Perfilado Dinámico y Memoria Persistente de Usuario}
+
+Para evitar que el asistente se comporte de manera impersonal, desarrollamos un mecanismo de **perfilado dinámico y memoria persistente** que se ejecuta en segundo plano.
+
+En la base de datos PostgreSQL, agregamos una columna \texttt{perfil\_metadata} (tipo texto con estructura JSON) en la tabla de usuarios. Al finalizar cada interacción de chat, en lugar de ralentizar el flujo de respuesta del usuario, disparamos una tarea en segundo plano mediante \texttt{BackgroundTasks} de FastAPI:
+\begin{enumerate}
+    \item Un extractor basado en un LLM analiza el historial reciente del chat.
+    \item Identifica datos implícitos y explícitos del perfil del usuario, como su titulación (p. ej., Grado en Medicina), su rol (alumno, profesor, PAS) o si solicita becas de interés.
+    \item Actualiza de manera incremental el JSON \texttt{perfil\_metadata} en la base de datos sin machacar los campos previamente aprendidos.
+\end{enumerate}
+
+Al abrir una nueva conversación o continuar una existente, el backend recupera esta información de perfil y la inyecta como contexto inicial del sistema en el prompt. Gracias a esto, el agente adapta automáticamente su lenguaje y sus respuestas. Por ejemplo, si el usuario aprendió que es del Grado de Medicina y pregunta "¿cuándo empiezan las clases?", el asistente recuperará directamente el calendario lectivo específico para la Facultad de Medicina sin necesidad de pedir aclaraciones adicionales.
+
+\chapter{Implementación del frontend}
+
+\section{Arquitectura del Cliente SPA (React y Vite)}
+
+El frontend original basado en Streamlit se reconstruyó por completo como una aplicación de página única (SPA) modular bajo el ecosistema de **React** y **Vite**, asegurando tiempos de carga inmediatos, una gestión de estado predecible y una interfaz moderna y fluida. 
+
+La estructura del código fuente se organiza de la siguiente manera:
+\begin{itemize}
+    \item \texttt{App.tsx}: Componente raíz que maneja el enrutamiento y la protección de vistas basadas en la sesión del usuario.
+    \item \texttt{ChatInterface.tsx}: Componente principal para el chat interactivo, la visualización de flujos Server-Sent Events (SSE) y la recogida de feedback.
+    \item \texttt{FeedbackList.tsx}: Vista administrativa de auditoría que recopila e ilustra el feedback negativo de los usuarios.
+    \item \texttt{UserManagement.tsx}: Componente administrativo para la visualización, ascenso, degradación y borrado de cuentas de usuario.
+    \item \texttt{api.ts}: Módulo utilitario que abstrae las llamadas a la API de FastAPI e inyecta dinámicamente el token JWT guardado en cookies.
+\end{itemize}
+
+\section{Autenticación y Persistencia con JWT}
+
+La autenticación se apoya en tokens JWT gestionados mediante cookies en el cliente (\texttt{js-cookie}). Al iniciar sesión con éxito en el endpoint \texttt{/login}, el frontend guarda el token del usuario y redirige al panel principal. Al cerrar sesión, la cookie se elimina, protegiendo las rutas privadas. Para las llamadas al backend, el utilitario \texttt{api.ts} añade automáticamente la cabecera \texttt{Authorization: Bearer <token>} a cada petición.
+
+\section{Interfaz del Chat y Consumo de SSE}
+
+El componente \texttt{ChatInterface.tsx} es el núcleo funcional para el usuario. Para evitar tiempos de espera aburridos, se implementó el streaming real de respuestas consumiendo el endpoint \texttt{/conversaciones/\{id\}/chat} a través de la API del navegador \texttt{fetch} y un lector de flujos (\texttt{ReadableStream}).
+
+El componente procesa dos tipos de eventos transmitidos por el backend:
+\begin{enumerate}
+    \item \textbf{status:} Eventos intermedios del agente (p. ej., \textit{"Pensando...", "Buscando en el portal de la US..."}). El frontend captura este estado y lo renderiza de inmediato en una sección animada bajo la última burbuja, reduciendo sustancialmente la latencia percibida por el usuario.
+    \item \textbf{data:} Fragmentos de texto generados por el LLM en tiempo real. El cliente los concatena de inmediato al cuerpo del mensaje activo.
+\end{enumerate}
+
+Para la visualización de la respuesta final, se utiliza el componente \texttt{ReactMarkdown}, mapeando elementos estándar a componentes personalizados de TailwindCSS para que las listas (\texttt{ul/ol}), los enlaces (\texttt{a}) y las negritas (\texttt{strong}) mantengan un estilo visual premium y uniforme.
+
+\section{Diseño del Feedback Loop en Interfaz}
+
+En cada mensaje del asistente, el frontend renderiza dos botones discretos para votar 👍 / 👎. Si el usuario hace clic en 👎 (no útil), la interfaz despliega inline una caja de texto con una animación de entrada suave para recoger su queja o comentario. Al hacer clic en enviar, el componente realiza una solicitud de tipo POST al backend registrando los campos de retroalimentación sin interrumpir el flujo del chat.
+
+\section{Panel de Auditoría y Administración}
+
+Los administradores tienen acceso a tres vistas avanzadas accesibles desde la barra lateral:
+\begin{itemize}
+    \item \textbf{Gestión de Usuarios:} Una tabla interactiva para buscar cuentas registradas, promover usuarios a administradores o eliminar perfiles en cascada de la base de datos.
+    \item \textbf{Auditoría de Feedback:} Renderizado por \texttt{FeedbackList.tsx}, presenta tarjetas de control con cada mensaje valorado con 👎. Utiliza \texttt{ReactMarkdown} para mostrar la respuesta exacta generada por el agente y etiquetas visuales para ilustrar qué PDFs sirvieron como referencia en Pinecone y qué queja exacta dejó el usuario.
+    \item \textbf{Ingesta de Documentos:} Área para subir nuevos PDFs de normativa, encolando el procesamiento asíncrono con LlamaParse mediante estados visuales de carga.
+\end{itemize}
 
 \chapter{Selección y configuración de modelos}
 \section{Evolución de la infraestructura de inferencia}
@@ -1034,6 +1091,28 @@ El proceso de evaluación para cada caso de prueba sigue este pipeline:
     \item El LLM juez evalúa la respuesta generada contra el contexto (Faithfulness), contra la pregunta (Relevancy) y contra el ground truth (Correctness).
     \item Los resultados se exportan a un archivo CSV para análisis posterior.
 \end{enumerate}
+
+\section{Observabilidad y Monitoreo con Langfuse}
+
+Para un desarrollo profesional, no basta con evaluar el sistema en local; es necesario monitorizar el comportamiento del agente en producción, registrando cada llamada a las APIs, la latencia de cada nodo y los costes de inferencia. 
+
+Para cubrir esta necesidad, integramos **Langfuse**, una plataforma de observabilidad de código abierto específica para aplicaciones basadas en LLMs. La integración en el backend se realiza de forma limpia mediante el callback handler oficial de Langfuse para LangChain. Cuando el agente LangGraph procesa una consulta:
+\begin{itemize}
+    \item Se registra la traza completa de la ejecución en el backend.
+    \item Se mide con precisión el tiempo de respuesta (latencia) de cada nodo (enrutador, recuperador, clasificadores y resolutores).
+    \item Se monitoriza el número de tokens consumidos en cada llamada a la API de Groq, lo que permite evaluar el coste económico en tiempo real.
+    \item Permite auditar el comportamiento del agente y depurar de forma interactiva en la consola de Langfuse si ocurre algún comportamiento inesperado o alucinación.
+\end{itemize}
+
+\section{Evaluación científica offline con Ragas}
+
+Además de la monitorización en tiempo real, implementamos un script de evaluación offline automatizado en \texttt{evaluar\_rag.py} basado en el framework **Ragas**. Este framework evalúa de manera científica la calidad del pipeline RAG midiendo dos métricas esenciales utilizando un LLM como juez independiente (\texttt{llama-3.3-70b-versatile}):
+\begin{enumerate}
+    \item \textbf{Faithfulness (Fidelidad):} Mide el porcentaje de afirmaciones en la respuesta que se pueden contrastar directamente con el contexto recuperado de los documentos de Pinecone, sirviendo como detector objetivo de alucinaciones.
+    \item \textbf{Answer Relevance (Relevancia de la respuesta):} Evalúa si la respuesta aborda directamente la pregunta formulada por el usuario o si introduce información irrelevante que no responde a su duda original.
+\end{enumerate}
+
+El script ejecuta un conjunto controlado de casos de prueba reales sobre la normativa de la US, compara las salidas con el ground truth definido y almacena las calificaciones en un informe formateado en CSV. Esto facilita el análisis estadístico directo de los datos experimentales para el TFG.
 
 %\chapter{Resultados}
 %\section{Precisión del enrutamiento}
@@ -1178,7 +1257,7 @@ Para llevar este sistema a un entorno real, la idea sería migrarlo a un servici
     \bibitem{groq_docs} Groq. LPU Inference Engine. Disponible en: \url{https://groq.com/}
     \bibitem{llamaparse_docs} LlamaIndex. LlamaParse Documentation. Disponible en: \url{https://docs.llamaindex.ai/}
     \bibitem{fastapi_docs} FastAPI. Modern web framework for building APIs. Disponible en: \url{https://fastapi.tiangolo.com/}
-    \bibitem{streamlit_docs} Streamlit. Framework for data apps. Disponible en: \url{https://docs.streamlit.io/}
+    \bibitem{react_docs} React Library. Documentation for building user interfaces. Disponible en: \url{https://react.dev/}
     \bibitem{docker_docs} Docker. Container platform documentation. Disponible en: \url{https://docs.docker.com/}
     \bibitem{vaswani2017} Vaswani, A. et al. (2017). Attention Is All You Need. \textit{Advances in Neural Information Processing Systems}.
     \bibitem{lewis2020} Lewis, P. et al. (2020). Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. \textit{NeurIPS 2020}.
