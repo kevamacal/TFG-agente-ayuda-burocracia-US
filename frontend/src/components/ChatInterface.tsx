@@ -60,7 +60,7 @@ export function ChatInterface({
   }
 
   return (
-    <div className="flex flex-1 flex-col bg-[#0d0e12]">
+    <div className="flex flex-1 flex-col bg-[#0d0e12] min-h-0">
       {/* Header */}
       <div className="flex h-16 items-center justify-between border-b border-border bg-[#090a0c] px-6">
         <h3 className="font-semibold text-white flex items-center space-x-2">
@@ -73,7 +73,7 @@ export function ChatInterface({
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0">
         {messages.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center text-center">
             <Bot size={36} className="text-gray-600 mb-4 animate-bounce" />

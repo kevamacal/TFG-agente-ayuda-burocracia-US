@@ -103,7 +103,7 @@ export default function Home() {
         onLogout={handleLogout}
       />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden min-h-0">
         {activeTab === "chat" && (
           <ChatInterface
             messages={chat.messages}

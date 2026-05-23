@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Users, UserPlus, Shield, Trash2, AlertCircle, CheckCircle } from "lucide-react";
 import Cookies from "js-cookie";
+import { ConfirmModal } from "./ConfirmModal";
 
 interface UserItem {
   id: number;
@@ -18,6 +19,8 @@ export function UserManagement({ currentUserEmail }: UserManagementProps) {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<{ id: number; email: string } | null>(null);
 
   // Create User form state
   const [newEmail, setNewEmail] = useState("");
@@ -78,10 +81,14 @@ export function UserManagement({ currentUserEmail }: UserManagementProps) {
     }
   };
 
-  const handleDeleteUser = async (id: number, email: string) => {
-    if (!token) return;
+  const confirmDeleteUser = (id: number, email: string) => {
     if (email === currentUserEmail) return; // Prevent self-deletion
-    if (!confirm(`¿Estás seguro de que deseas eliminar la cuenta de '${email}'?`)) return;
+    setUserToDelete({ id, email });
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteUser = async (id: number) => {
+    if (!token) return;
 
     try {
       const res = await fetch(`${API_URL}/admin/usuarios/${id}`, {
@@ -306,7 +313,7 @@ export function UserManagement({ currentUserEmail }: UserManagementProps) {
                         </button>
                         
                         <button
-                          onClick={() => handleDeleteUser(u.id, u.email)}
+                          onClick={() => confirmDeleteUser(u.id, u.email)}
                           disabled={isSelf}
                           className={`rounded-lg border border-border bg-[#0d0e12] p-2 text-accent transition-all ${
                             isSelf
@@ -328,6 +335,23 @@ export function UserManagement({ currentUserEmail }: UserManagementProps) {
         </div>
 
       </div>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setUserToDelete(null);
+        }}
+        onConfirm={() => {
+          if (userToDelete) {
+            handleDeleteUser(userToDelete.id);
+          }
+        }}
+        title="Eliminar cuenta de usuario"
+        message={`¿Estás seguro de que deseas eliminar permanentemente la cuenta de '${userToDelete?.email}'? Se borrará todo su historial y accesos.`}
+        confirmText="Eliminar"
+        isDestructive={true}
+      />
     </div>
   );
 }

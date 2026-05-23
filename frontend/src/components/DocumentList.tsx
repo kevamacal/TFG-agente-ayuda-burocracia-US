@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FileText, Trash2, Upload, AlertCircle, RefreshCw } from "lucide-react";
 import Cookies from "js-cookie";
+import { ConfirmModal } from "./ConfirmModal";
 
 interface DocumentItem {
   nombre: string;
@@ -21,6 +22,8 @@ export function DocumentList({ isAdmin }: DocumentListProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState("");
   const [uploadError, setUploadError] = useState("");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [docToDelete, setDocToDelete] = useState<string | null>(null);
 
   const token = Cookies.get("auth_token");
 
@@ -46,9 +49,13 @@ export function DocumentList({ isAdmin }: DocumentListProps) {
     }
   };
 
+  const confirmDeleteDoc = (nombre: string) => {
+    setDocToDelete(nombre);
+    setIsDeleteModalOpen(true);
+  };
+
   const handleDelete = async (nombre: string) => {
     if (!token) return;
-    if (!confirm(`¿Estás seguro de que deseas eliminar los vectores y el archivo '${nombre}'?`)) return;
 
     try {
       const encodedName = encodeURIComponent(nombre);
@@ -254,7 +261,7 @@ export function DocumentList({ isAdmin }: DocumentListProps) {
 
                   {isAdmin && (
                     <button
-                      onClick={() => handleDelete(doc.nombre)}
+                      onClick={() => confirmDeleteDoc(doc.nombre)}
                       className="rounded-lg border border-border/80 bg-[#0d0e12] p-2.5 text-accent hover:bg-accent hover:text-white transition-all shadow-sm"
                       title="Eliminar del vector store"
                     >
@@ -268,6 +275,23 @@ export function DocumentList({ isAdmin }: DocumentListProps) {
         </div>
 
       </div>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDocToDelete(null);
+        }}
+        onConfirm={() => {
+          if (docToDelete) {
+            handleDelete(docToDelete);
+          }
+        }}
+        title="Eliminar documento e indexación"
+        message={`¿Estás seguro de que deseas eliminar permanentemente el documento '${docToDelete}' y todos sus vectores indexados en Pinecone? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        isDestructive={true}
+      />
     </div>
   );
 }

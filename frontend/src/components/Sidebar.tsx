@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { MessageSquare, Files, Users, LogOut, Plus, Edit2, Trash2, Check, X, ThumbsDown } from "lucide-react";
 import { Conversation } from "../hooks/useChat";
+import { ConfirmModal } from "./ConfirmModal";
 
 interface SidebarProps {
   conversations: Conversation[];
@@ -31,6 +32,8 @@ export function Sidebar({
 }: SidebarProps) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<number | null>(null);
 
   const handleStartRename = (c: Conversation, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -196,9 +199,8 @@ export function Sidebar({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (confirm("¿Estás seguro de que deseas eliminar esta conversación?")) {
-                                  deleteConversation(c.id);
-                                }
+                                setConversationToDelete(c.id);
+                                setIsDeleteModalOpen(true);
                               }}
                               className="text-accent hover:text-red-400 p-1"
                               title="Eliminar chat"
@@ -233,6 +235,23 @@ export function Sidebar({
           <span>Cerrar Sesión</span>
         </button>
       </div>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setConversationToDelete(null);
+        }}
+        onConfirm={() => {
+          if (conversationToDelete !== null) {
+            deleteConversation(conversationToDelete);
+          }
+        }}
+        title="Eliminar conversación"
+        message="¿Estás seguro de que deseas eliminar esta conversación del historial? Esta acción no se puede deshacer."
+        confirmText="Eliminar"
+        isDestructive={true}
+      />
     </div>
   );
 }
