@@ -14,8 +14,22 @@ import os
 import shutil
 import json
 from services.ingestion import procesar_un_pdf, eliminar_vectores_de_pdf
+from services.profiling import actualizar_perfil_usuario
+
+from sqlalchemy import text
 
 models.Base.metadata.create_all(bind=engine)
+
+# Migración manual de nuevas columnas a tablas existentes si ya están creadas
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS perfil_metadata TEXT DEFAULT '{}';"))
+        conn.execute(text("ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS resumen_memoria TEXT;"))
+        conn.execute(text("ALTER TABLE mensajes ADD COLUMN IF NOT EXISTS feedback BOOLEAN;"))
+        conn.execute(text("ALTER TABLE mensajes ADD COLUMN IF NOT EXISTS feedback_comentario TEXT;"))
+    print("[main.py] Migración de base de datos completada exitosamente.")
+except Exception as e:
+    print(f"[main.py] Error al ejecutar migraciones de base de datos: {e}")
 
 app = FastAPI(title="API Asistente US")
 
@@ -143,6 +157,20 @@ def enviar_mensaje(
     mensajes_recientes = historial_db[-5:] if len(historial_db) > 5 else historial_db
     
     historial_langgraph = []
+    
+    # Inyectar perfil del usuario como mensaje de sistema inicial si existe
+    perfil_str = usuario_actual.perfil_metadata or "{}"
+    try:
+        perfil_metadata = json.loads(perfil_str)
+        if perfil_metadata:
+            perfil_formateado = "\n".join([f"- {k}: {v}" for k, v in perfil_metadata.items()])
+            historial_langgraph.append({
+                "role": "system", 
+                "content": f"INFORMACIÓN DEL USUARIO CONECTADO (Úsala para contextualizar tus respuestas si es relevante. Asume estos datos como ciertos sobre el usuario):\n{perfil_formateado}"
+            })
+    except Exception as e:
+        print(f"Error al decodificar perfil_metadata: {e}")
+
     if conv.resumen_memoria and len(historial_db) > 5:
         historial_langgraph.append({"role": "system", "content": f"Resumen de conversación antigua: {conv.resumen_memoria}"})
         
@@ -158,17 +186,46 @@ def enviar_mensaje(
     
     async def sse_generator():
         try:
-            # Ejecutar el agente para obtener el contexto y referencias, y la referencia del stream
-            estado_final = agente_router.invoke(estado_inicial)
-            referencias = estado_final.get("referencias", [])
-            contexto_rag = estado_final.get("contexto", "")
+            # Configurar observabilidad de Langfuse si las credenciales están presentes
+            config = {}
+            if os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY"):
+                try:
+                    from langfuse.callback import CallbackHandler
+                    langfuse_handler = CallbackHandler(
+                        public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+                        secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+                        host=os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
+                    )
+                    config["callbacks"] = [langfuse_handler]
+                    config["run_name"] = f"Chat RAG Asistente US - Conv {conv.id}"
+                except Exception as lf_err:
+                    print(f"Error al inicializar Langfuse callback: {lf_err}")
+
+            # Ejecutar el agente en pasos (streaming de nodos)
+            estado = estado_inicial.copy()
+            for update in agente_router.stream(estado_inicial, config=config, stream_mode="updates"):
+                node_name = list(update.keys())[0]
+                node_output = update[node_name]
+                estado.update(node_output)
+                
+                if node_name == "recuperador":
+                    yield f"event: status\ndata: {json.dumps({'message': 'Consultando base de conocimientos...'})}\n\n"
+                elif node_name == "busqueda_web":
+                    yield f"event: status\ndata: {json.dumps({'message': 'Buscando en el portal de la US...'})}\n\n"
+                elif node_name in ["procedimental", "calendario", "normativo", "baremo", "entrevistador", "rechazo_amable"]:
+                    yield f"event: status\ndata: {json.dumps({'message': 'Generando respuesta...'})}\n\n"
+                
+                await asyncio.sleep(0.01)
+
+            referencias = estado.get("referencias", [])
+            contexto_rag = estado.get("contexto", "")
             
             # Enviar metadatos iniciales
             yield f"event: metadata\ndata: {json.dumps({'referencias': referencias, 'contexto': contexto_rag})}\n\n"
             
             # Iterar y enviar tokens en tiempo real
             respuesta_texto = ""
-            for chunk in estado_final.get("stream", []):
+            for chunk in estado.get("stream", []):
                 respuesta_texto += chunk
                 yield f"event: token\ndata: {json.dumps({'token': chunk})}\n\n"
                 await asyncio.sleep(0.01) # Ceder control para streaming en tiempo real
@@ -188,6 +245,7 @@ def enviar_mensaje(
                 
             # Poda de contexto
             background_tasks.add_task(actualizar_resumen_memoria, conv.id)
+            background_tasks.add_task(actualizar_perfil_usuario, usuario_actual.id, chat_req.pregunta, respuesta_texto)
             
             yield "event: close\ndata: close\n\n"
             
@@ -280,12 +338,74 @@ def renombrar_conversacion(conversacion_id: int, conversacion: schemas.Conversac
     db.refresh(conv)
     return conv
 
+@app.post("/conversaciones/{conversacion_id}/mensajes/{mensaje_id}/feedback", response_model=schemas.MensajeResponse)
+def registrar_feedback_mensaje(
+    conversacion_id: int,
+    mensaje_id: int,
+    req: schemas.MensajeFeedbackUpdate,
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(get_usuario_actual)
+):
+    """Permite registrar o actualizar el feedback (positivo/negativo) y comentario de un mensaje"""
+    conv = db.query(models.Conversacion).filter(
+        models.Conversacion.id == conversacion_id,
+        models.Conversacion.usuario_id == usuario_actual.id
+    ).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversación no encontrada")
+        
+    msg = db.query(models.Mensaje).filter(
+        models.Mensaje.id == mensaje_id,
+        models.Mensaje.conversacion_id == conversacion_id
+    ).first()
+    if not msg:
+        raise HTTPException(status_code=404, detail="Mensaje no encontrado")
+        
+    msg.feedback = req.feedback
+    msg.feedback_comentario = req.feedback_comentario
+    db.commit()
+    db.refresh(msg)
+    return msg
+
 # --- ADMINISTRACIÓN ---
 
 def get_usuario_admin(usuario_actual: models.Usuario = Depends(get_usuario_actual)):
     if not usuario_actual.is_admin:
         raise HTTPException(status_code=403, detail="No autorizado. Solo administradores.")
     return usuario_actual
+
+@app.get("/admin/feedback/negativo")
+def listar_feedback_negativo(
+    admin: models.Usuario = Depends(get_usuario_admin),
+    db: Session = Depends(get_db)
+):
+    """Devuelve los mensajes valorados con feedback negativo junto con la pregunta previa (contexto de usuario)"""
+    mensajes_negativos = db.query(models.Mensaje).filter(
+        models.Mensaje.feedback == False,
+        models.Mensaje.rol == "assistant"
+    ).order_by(models.Mensaje.fecha_creacion.desc()).all()
+    
+    resultado = []
+    for msg in mensajes_negativos:
+        pregunta_previa = db.query(models.Mensaje).filter(
+            models.Mensaje.conversacion_id == msg.conversacion_id,
+            models.Mensaje.fecha_creacion < msg.fecha_creacion
+        ).order_by(models.Mensaje.fecha_creacion.desc()).first()
+        
+        pregunta_texto = pregunta_previa.contenido if pregunta_previa else "Desconocida"
+        
+        resultado.append({
+            "mensaje_id": msg.id,
+            "conversacion_id": msg.conversacion_id,
+            "pregunta_usuario": pregunta_texto,
+            "respuesta_asistente": msg.contenido,
+            "referencias": msg.referencias,
+            "feedback_comentario": msg.feedback_comentario,
+            "fecha_creacion": msg.fecha_creacion
+        })
+        
+    return resultado
+
 
 @app.post("/admin/ingestar", status_code=202)
 def ingestar_pdf(background_tasks: BackgroundTasks, file: UploadFile = File(...), admin: models.Usuario = Depends(get_usuario_admin)):
