@@ -1,8 +1,9 @@
 {
-    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+    "python.defaultInterpreterPath": "/home/kevinac/Documentos/TFG/TFG-agente-ayuda-burocracia-US/.venv/bin/python",
     "python.analysis.extraPaths": [
         "${workspaceFolder}/backend",
         "${workspaceFolder}/app"
     ],
-    "python.analysis.autoSearchPaths": true
+    "python.analysis.autoSearchPaths": true,
+    "python.useEnvironmentsExtension": false
 }
