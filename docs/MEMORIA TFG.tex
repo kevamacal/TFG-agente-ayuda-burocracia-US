@@ -26,6 +26,28 @@
     citecolor=black,
 }
 
+\lstset{
+    backgroundcolor=\color{gray!5},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=4,
+    frame=single,
+    rulecolor=\color{gray!30},
+    language=Python,
+    extendedchars=true,
+    literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+             {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+             {ñ}{{\~n}}1 {Ñ}{{\~N}}1 {¿}{{\textquestiondown}}1 {¡}{{\textexclamdown}}1
+             {⚠️}{{\textbf{[!]}}}3
+             {→}{{$\rightarrow$}}2 
+}
+
 \begin{document}
 
 % ============================================================
@@ -81,7 +103,7 @@ Para lidiar con este problema, en este trabajo se ha optado por implementar un s
 
 \section{Motivación}
 
-Creo que cualquier persona que haya pasado por una universidad grande sabe lo desesperante que puede llegar a ser encontrar un dato concreto entre la maraña de documentación institucional. En mi caso, como estudiante de la Universidad de Sevilla, he vivido en primera persona esa frustración más veces de las que me gustaría admitir: buscar un plazo de matrícula que aparece en un PDF de 80 páginas, intentar descifrar los criterios de un baremo de contratación o simplemente averiguar a qué ventanilla acudir para resolver un trámite. Y no soy el único: compañeros, profesores e incluso el propio personal administrativo se enfrentan a diario al mismo problema.
+Creo que cualquier persona que haya pasado por una universidad grande sabe lo desesperante que puede llegar a ser encontrar un dato concreto entre la gran cantidad de documentación institucional. En mi caso, como estudiante de la Universidad de Sevilla, he vivido esta situación que tanto me frustra más veces de las que me gustaría admitir: buscar un plazo de matrícula que aparece en un PDF de 80 páginas, intentar descifrar los criterios de un baremo de contratación o simplemente averiguar a qué ventanilla acudir para resolver un trámite. Y no soy el único: compañeros, profesores e incluso el propio personal administrativo se enfrentan a diario al mismo problema.
 
 Lo habitual cuando surge una duda administrativa es descargar varios PDFs extensos y poco manejables, preguntar en la secretaría de la facultad ---si es que coincide con el horario de atención--- o enviar un correo electrónico sabiendo que la respuesta puede tardar días. Este desgaste no lo sufre solo el usuario, que puede perder horas buscando algo que debería encontrar en minutos; también lo padece el Personal de Administración y Servicios (PAS), cuya jornada se consume en buena parte respondiendo las mismas dudas una y otra vez, dudas que teóricamente ya están resueltas en los documentos publicados.
 
@@ -108,7 +130,7 @@ Para poder alcanzar ese objetivo general, se han marcado una serie de hitos téc
               \item Nodo de rechazo para consultas fuera de dominio.
           \end{itemize}
 
-    \item \textbf{Diseño de un sistema dual RAG:} Construir una arquitectura capaz de separar el conocimiento normativo de las directrices de estilo y buenas prácticas cuando se atiende a un usuario
+    \item \textbf{Diseño de un sistema dual RAG:} Construir una arquitectura capaz de separar el conocimiento normativo de las directrices de estilo y buenas prácticas cuando se atiende a un usuario.
 
     \item \textbf{Minimizar el tiempo de respuesta:} Reducir los tiempos de respuesta a menos de veinte segundos combinando el uso de modelos pesados para generar la respuesta final con modelos livianos para las decisiones intermedias.
 
@@ -126,9 +148,10 @@ Conviene dejar claro desde el principio qué abarca este proyecto y qué queda f
     \item Una \textbf{interfaz web} desarrollada con Streamlit que permite la interacción con el agente en tiempo real.
     \item La \textbf{contenedorización} completa del sistema mediante Docker Compose.
     \item Una \textbf{evaluación cuantitativa} del sistema.
+    \item \textbf{Despliegue} en un entorno de producción con alta disponibilidad, como lo es Render
 \end{itemize}
 
-Queda fuera del alcance de este TFG el despliegue en un entorno de producción con alta disponibilidad, la integración con sistemas internos de la US (como SEVIUS o la Secretaría Virtual) y la creación de un sistema de retroalimentación de usuarios. Estas líneas, no obstante, se retoman como trabajo futuro en el capítulo final.
+Queda fuera del alcance de este TFG  la integración con sistemas internos de la US (como SEVIUS o la Secretaría Virtual) y la creación de un sistema de retroalimentación de usuarios. Estas líneas, no obstante, se retoman como trabajo futuro en el capítulo final.
 
 \section{Estructura del proyecto}
 
@@ -211,7 +234,7 @@ Si nos paramos a pensarlo, un LLM por sí solo funciona como una caja que recibe
 
 \subsection{Grafos de estado: LangGraph}
 
-Una vez decidido que íbamos a trabajar con agentes, hacía falta una herramienta que nos permitiera orquestar todo esto desde Python. Después de evaluar varias alternativas, se optó por LangGraph, una extensión de LangChain que modela el flujo de un agente como un grafo dirigido de estados. Cada operación se representa como un nodo del grafo, y las transiciones condicionales entre operaciones se definen como aristas.
+Una vez decidido que íbamos a trabajar con agentes, hacía falta una herramienta que nos permitiera orquestar todo esto desde Python. Después de evaluar varias alternativas, se optó por utlizar LangGraph, una extensión de LangChain que modela el flujo de un agente como un grafo dirigido de estados. Cada operación se representa como un nodo del grafo, y las transiciones condicionales entre operaciones se definen como aristas.
 Este planteamiento ofrece varias ventajas claras frente al esquema clásico de entrada/salida:
 
 \begin{itemize}
@@ -231,7 +254,7 @@ Lo que diferencia a este trabajo de esos enfoques clásicos es el salto de un mo
 
 \subsection{Lenguaje y Frameworks base}
 
-Como lenguaje principal se ha utilizado Python. La elección, siendo sincero, fue bastante natural: a día de hoy es prácticamente el estándar de facto en todo lo que rodea a la Inteligencia Artificial. Su ecosistema de bibliotecas es enorme y ofrece compatibilidad directa con las herramientas de orquestación que veremos a continuación (LangChain, LangGraph), además de con prácticamente cualquier librería de procesamiento de datos que se necesite.
+Como lenguaje principal se ha utilizado Python. La elección se realizó de manera muy natural, dado que a día de hoy se considera que es el estándar en todo lo que rodea a la Inteligencia Artificial. Su ecosistema de bibliotecas es enorme y ofrece compatibilidad directa con las herramientas de orquestación que veremos a continuación (LangChain, LangGraph), además de con prácticamente cualquier librería de procesamiento de datos que se necesite.
 
 Sobre esta base, el sistema se ha estructurado utilizando dos \textit{frameworks} principales, ambos orientados en cada una de las capas de nuestra aplicación (frontend/backend):
 \begin{itemize}
@@ -272,7 +295,33 @@ Para la persistencia de los datos, se plantearon diversas opciones, tales como M
     \item \textbf{Rendimiento y escalabilidad:} está diseñado para manejar grandes volúmenes de datos y cargas de trabajo pesadas, lo que le permite ser altamente escalable y eficiente en consultas complejas.
 \end{itemize}
 
-Para poder interaccionar con la base de datos desde el backend. aunque se valoró el uso de \textit{psycopg2}, la cual ofrece una gran velocidad a la hora de resolver tareas sencillas, se requería de un ORM (Object-Relational Mapping) más robusto. Finalmente, se optó por \textit{SQLAlchemy} dado que ofrece tanto el propio ORM como un \textit{SQL Expression Language}, facilitando enormemente la realización de consultas. Además, destaca por su facilidad para gestionar conexiones, migraciones y proteger el sistema frente a vulnerabilidades como la inyección SQL.
+Para poder interaccionar con la base de datos desde el backend, aunque se valoró el uso de \textit{psycopg2}, la cual ofrece una gran velocidad a la hora de resolver tareas sencillas, se requería de un ORM (Object-Relational Mapping) más robusto. Finalmente, se optó por \textit{SQLAlchemy} dado que ofrece tanto el propio ORM como un \textit{SQL Expression Language}, facilitando enormemente la realización de consultas. Además, destaca por su facilidad para gestionar conexiones, migraciones y proteger el sistema frente a vulnerabilidades como la inyección SQL.
+
+\subsection{Arquitectura de despliegue}
+
+Para poner el sistema a disposición de los usuarios finales en un entorno de producción real, se ha optado por una arquitectura de despliegue basada en la contenedorización y en servicios de plataforma en la nube (\textit{Platform as a Service} o PaaS). El objetivo principal de este planteamiento es simplificar la puesta en marcha, asegurar la escalabilidad del sistema y garantizar que la aplicación funcione en producción de la misma forma exacta en que lo hace en el entorno de desarrollo local.
+
+Las dos tecnologías clave que hacen esto posible son \textbf{Docker} y \textbf{Render}:
+
+\begin{itemize}
+    \item \textbf{Docker para la contenedorización:} En lugar de lidiar con las diferencias de configuración y dependencias entre servidores, cada componente del sistema (el \textit{frontend} en Streamlit y el \textit{backend} en FastAPI) se empaqueta en su propio contenedor Docker utilizando imágenes base ligeras de Python (\texttt{python:3.11-slim-bookworm}). Esto encapsula todo lo necesario para la ejecución ---desde las librerías del sistema hasta las dependencias de Python---, aislando las aplicaciones y eliminando por completo el clásico problema del ``en mi máquina funcionaba''.
+    
+    \item \textbf{Render para la infraestructura en la nube:} Render es una plataforma en la nube que destaca por su facilidad de uso e integración continua con GitHub. Permite desplegar aplicaciones web a partir de un \texttt{Dockerfile} de forma automatizada: cada vez que se sube un cambio al repositorio de producción, Render descarga el código, construye la imagen de Docker y despliega la nueva versión sin tiempo de caída.
+\end{itemize}
+
+En el entorno de producción, la arquitectura del sistema se distribuye de manera modular en tres servicios independientes dentro de la nube de Render:
+
+\begin{enumerate}
+    \item \textbf{Servicio de Backend (FastAPI):} Configurado como un \textit{Web Service} que expone los endpoints de la API. Se construye utilizando el archivo \texttt{Dockerfile} de la carpeta \texttt{/backend} y gestiona toda la lógica del agente LangGraph.
+    
+    \item \textbf{Servicio de Frontend (Streamlit):} Configurado como otro \textit{Web Service} público. Se compila a partir del \texttt{Dockerfile} de la raíz del proyecto y sirve la interfaz de usuario que consume la API del backend.
+    
+    \item \textbf{Base de Datos Gestionada (PostgreSQL):} En lugar de ejecutar PostgreSQL dentro de un contenedor autogestionado en producción, se utiliza un servicio de base de datos gestionada provisto directamente por Render. Esto garantiza copias de seguridad automáticas, alta disponibilidad y un rendimiento óptimo sin añadir complejidad de administración.
+\end{enumerate}
+
+Para conseguir que todos estos servicios funcionen de manera óptima, la configuración de la aplicación se gestiona enteramente mediante \textbf{variables de entorno}. Siguiendo las buenas prácticas del desarrollo de software moderno (\textit{Twelve-Factor App}), no se almacena ningún tipo de credencial o clave secreta en el código fuente ni dentro de las imágenes Docker. 
+
+En su lugar, Render permite inyectar estas variables en tiempo de ejecución de manera segura a través de su panel de administración. De esta forma, el \textit{backend} recibe las claves de acceso de los proveedores de servicios (\texttt{GROQ\_API\_KEY}, \texttt{COHERE\_API\_KEY}, \texttt{PINECONE\_API\_KEY} y \texttt{LLAMA\_CLOUD\_API\_KEY}), la clave secreta de firmado (\texttt{SECRET\_KEY}) y la dirección de conexión a la base de datos (\texttt{DATABASE\_URL}). Por su parte, el \textit{frontend} únicamente necesita conocer la URL pública de la API del backend (\texttt{API\_URL}) para poder enviarle las peticiones de los usuarios. Esta separación no solo protege la seguridad de nuestras credenciales, sino que dota al sistema de una enorme flexibilidad para cambiar de entorno o actualizar \textit{API keys} sin necesidad de recompilar una sola línea de código.
 % ============================================================
 % PARTE II: METODOLOGÍA Y PLANIFICACIÓN
 % ============================================================
@@ -285,122 +334,141 @@ Desde el primer momento tuve claro que un enfoque en cascada no iba a funcionar 
 
 En la práctica, cada iteración ha seguido el ciclo: análisis $\rightarrow$ diseño $\rightarrow$ implementación $\rightarrow$ pruebas $\rightarrow$ retroalimentación. Esto me permitió ir refinando componentes críticos como el pipeline de ingesta o la configuración de los modelos de lenguaje a medida que aprendía de los errores.
 
-\section{Metodología Scrum}
+\section{Metodología Scrum adaptada}
 
-Como marco de trabajo ágil se adoptó Scrum, aunque evidentemente hubo que adaptarlo a la realidad de un TFG individual. No tiene mucho sentido hacer una \textit{daily} contigo mismo, pero sí que resultó muy útil mantener la filosofía de sprints cortos, backlog priorizado y revisiones periódicas.
+Aunque Scrum está pensado para equipos multidisciplinares, sus principios básicos de flexibilidad y entrega incremental encajaban muy bien con el carácter de este proyecto. Lógicamente, no tenía sentido realizar reuniones de sincronización diarias (las tradicionales \textit{dailies}) al ser un único desarrollador. Por ello, decidí adaptar el marco de trabajo a un formato unipersonal, simplificando la gestión de tareas pero manteniendo la disciplina de sprints cortos de dos semanas y el enfoque en desarrollar incrementos de software que se pudieran probar.
 
-\subsection{Roles}
+La dinámica real consistió en estructurar el trabajo en torno a las tutorías periódicas con mis tutores del TFG. En cada reunión se actuaba de forma similar a una revisión de sprint: evaluábamos el progreso, detectábamos fallos de diseño y decidíamos las prioridades para el siguiente ciclo de desarrollo.
 
-Al ser un proyecto individual, los roles de Scrum se han repartido de la manera más lógica posible:
+\subsection{Roles del proyecto}
+
+Al tratarse de un TFG individual, los roles tradicionales de Scrum se adaptaron para reflejar la relación real entre el alumno y los directores:
 \begin{itemize}
-    \item \textbf{Product Owner:} Los tutores del TFG (José Enrique Sánchez López y Pablo Reina Jiménez), encargados de definir prioridades y validar que lo desarrollado tenía sentido.
-    \item \textbf{Scrum Master y Equipo de Desarrollo:} Yo mismo, Kevin Amador Calzadilla, que gestionaba el backlog, ejecutaba los sprints y hacía las retrospectivas (básicamente, pararme a pensar qué había ido bien y qué podía mejorar).
+    \item \textbf{Product Owner (Clientes):} Este papel fue asumido por mis tutores del TFG, José Enrique Sánchez López y Pablo Reina Jiménez. Como expertos en el dominio y directores del trabajo, se encargaban de priorizar qué funcionalidades eran prioritarias para el asistente, proponer la documentación de la US a ingestar y validar que las respuestas generadas por el agente conversacional fueran rigurosas y útiles.
+    \item \textbf{Scrum Master y Equipo de Desarrollo:} Yo mismo asumí estas funciones. Como desarrollador, me encargaba de codificar el frontend, el backend y configurar el pipeline RAG. Como Scrum Master, mi labor consistía en autoorganizar el trabajo, mantener al día el backlog y buscar soluciones rápidas a los bloqueos técnicos que surgían durante las pruebas locales.
 \end{itemize}
 
-\subsection{Artefactos}
+\subsection{Artefactos utilizados}
 
+Para llevar un control real del progreso sin sobrecargar el desarrollo con burocracia innecesaria, utilicé tres artefactos adaptados:
 \begin{itemize}
-    \item \textbf{Product Backlog:} Lista priorizada de funcionalidades y tareas técnicas, mantenida y actualizada de forma continua a lo largo del desarrollo.
-    \item \textbf{Sprint Backlog:} Subconjunto de tareas seleccionadas para cada sprint de dos semanas.
-    \item \textbf{Incremento:} Cada sprint concluye con una versión funcional del sistema que integra las nuevas funcionalidades desarrolladas.
+    \item \textbf{Backlog del Producto:} Una lista dinámica con las funcionalidades y mejoras que queríamos para el asistente. Esta lista varió enormemente a lo largo del proyecto a medida que nos topábamos con limitaciones de hardware o problemas de precisión en las respuestas del modelo.
+    \item \textbf{Backlog del Sprint:} Las tareas concretas seleccionadas para realizarse entre tutorías (por ejemplo, implementar la comunicación entre backend y base de datos relacional, o pulir la visualización del chat).
+    \item \textbf{Incremento:} La versión ejecutable y probada del software al final de cada ciclo. El objetivo fue que el asistente tuviera siempre una base estable y funcional sobre la que añadir la siguiente mejora.
 \end{itemize}
 
-\subsection{Ceremonias}
+\subsection{Dinámica de trabajo y reuniones}
 
-Las ceremonias se adaptaron al formato individual: al inicio de cada sprint me sentaba a planificar qué tareas abordaría en las dos semanas siguientes, y al finalizar revisaba los avances con los tutores y hacía una retrospectiva personal para identificar qué mejorar en el siguiente ciclo.
-
-\section{Herramientas de gestión}
-
+Las ceremonias clásicas de Scrum se simplificaron para adaptarse al contexto académico de tutorías:
 \begin{itemize}
-    \item \textbf{Control de versiones:} Git con repositorio alojado en GitHub.
-    \item \textbf{Gestión de tareas:} Seguimiento manual del backlog y los sprints mediante documentación propia del alumno.
-    \item \textbf{Entorno de desarrollo:} Visual Studio Code con extensiones para Python, LaTeX y Docker.
-    \item \textbf{Contenedorización:} Docker y Docker Compose para la reproducibilidad del entorno.
+    \item \textbf{Planificación del Sprint:} Al comienzo de cada ciclo de dos semanas, definía los objetivos técnicos concretos a desarrollar en base a las recomendaciones e ideas surgidas en la tutoría previa.
+    \item \textbf{Revisión y Retrospectiva:} En cada reunión con los tutores presentaba el incremento de software y probábamos juntos el comportamiento del agente. Esto nos servía para identificar qué partes (como la extracción de tablas de los PDFs o el diseño de los nodos en LangGraph) no estaban funcionando bien y debían replantearse de cara al siguiente sprint.
 \end{itemize}
 
-\chapter{Planificación}
-\section{Definición de sprints}
+\section{Herramientas de gestión y desarrollo}
 
-El trabajo se organizó en sprints de dos semanas, cada uno con un hito principal bien definido. A continuación se muestra cómo se distribuyeron:
+Para dar soporte a esta metodología de trabajo y asegurar la reproducibilidad del entorno de desarrollo, utilicé las siguientes herramientas:
+\begin{itemize}
+    \item \textbf{Control de versiones:} Git como herramienta local y GitHub como repositorio remoto, lo que me permitió mantener un historial ordenado de cambios y proteger el código de pérdidas accidentales.
+    \item \textbf{Gestión de tareas:} En lugar de usar herramientas corporativas complejas, organicé el backlog a través de listas de tareas priorizadas y notas vinculadas directamente con las actas de reuniones de tutoría.
+    \item \textbf{Entorno de desarrollo:} Visual Studio Code, configurado con extensiones específicas para Python (depuración y tipado), Docker (para el control de los contenedores locales) y LaTeX (para la redacción de la memoria).
+    \item \textbf{Entorno de ejecución local:} Docker y Docker Compose, esenciales para levantar de manera consistente y en pocos segundos el backend, frontend y la base de datos PostgreSQL, asegurando la reproducibilidad del entorno en cualquier máquina.
+\end{itemize}
+
+\chapter{Planificación y desviaciones}
+\section{Definición estimada de sprints}
+
+Para estructurar las 20 semanas de duración estimadas para el desarrollo del TFG, se organizó el cronograma de trabajo en 10 sprints de dos semanas cada uno. La siguiente tabla describe los hitos principales que se plantearon en cada uno de estos bloques temporales:
 
 \begin{table}[H]
     \centering
-    \caption{Planificación de sprints del proyecto}
+    \caption{Planificación inicial estimada de sprints del proyecto}
     \begin{tabular}{@{}clp{8cm}@{}}
         \toprule
-        \textbf{Sprint} & \textbf{Periodo} & \textbf{Hito principal}                                      \\
+        \textbf{Sprint} & \textbf{Periodo} & \textbf{Hito principal objetivo}                                      \\
         \midrule
-        1               & Semanas 1--2     & Investigación del estado del arte y definición de requisitos \\
-        2               & Semanas 3--4     & Pipeline de ingesta: extracción de PDFs y fragmentación      \\
-        3               & Semanas 5--6     & Implementación del RAG básico con Pinecone y Cohere          \\
-        4               & Semanas 7--8     & Diseño e implementación del grafo LangGraph                  \\
-        5               & Semanas 9--10    & Desarrollo del backend FastAPI y modelo de datos             \\
-        6               & Semanas 11--12   & Desarrollo del frontend Streamlit                            \\
-        7               & Semanas 13--14   & Migración a Groq y optimización de latencia                  \\
-        8               & Semanas 15--16   & Contenedorización con Docker Compose                         \\
-        9               & Semanas 17--18   & Evaluación y validación del sistema                          \\
-        10              & Semanas 19--20   & Redacción de la memoria y documentación final                \\
+        1               & Semanas 1--2     & Investigación del estado del arte, selección de APIs y requisitos.    \\
+        2               & Semanas 3--4     & Pipeline de ingesta: extracción semántica de PDFs oficiales.          \\
+        3               & Semanas 5--6     & Conexión del RAG básico: embeddings de Cohere y Pinecone.             \\
+        4               & Semanas 7--8     & Diseño lógico y programación del grafo de estados en LangGraph.       \\
+        5               & Semanas 9--10    & Desarrollo del backend FastAPI y diseño del modelo de datos.         \\
+        6               & Semanas 11--12   & Creación de la interfaz de chat en Streamlit.                         \\
+        7               & Semanas 13--14   & Migración a la API de Groq para la optimización de latencias.        \\
+        8               & Semanas 15--16   & Contenedorización de todos los servicios locales con Docker Compose.  \\
+        9               & Semanas 17--18   & Batería de pruebas de validación y evaluación cuantitativa.           \\
+        10              & Semanas 19--20   & Redacción final de la memoria y preparación de la defensa.            \\
         \bottomrule
     \end{tabular}
 \end{table}
 
 \section{Diagrama de Gantt}
 
-Para visualizar mejor la distribución temporal de las tareas y sus dependencias, se ha elaborado un diagrama de Gantt que refleja el cronograma seguido durante las 20 semanas de desarrollo.
+Para visualizar mejor la distribución en el tiempo de las tareas y comprender el solapamiento de las fases de desarrollo con la documentación y las pruebas, se ha elaborado un diagrama de Gantt. 
 
-\textit{Nota: Inserta aquí la imagen de tu diagrama de Gantt. Puedes usar el siguiente bloque como plantilla:}
+Este diagrama (representado en la Figura~\ref{fig:gantt}) actúa como una estimación del cronograma lógico seguido. Aunque en el día a día el desarrollo real fue dinámico e interactivo debido al ensayo y error, el Gantt sirve como marco de referencia para entender los plazos teóricos del proyecto.
 
 \begin{figure}[H]
     \centering
-    % Descomentar y ajustar el nombre del archivo cuando tengas la imagen
-    % \includegraphics[width=1\textwidth]{diagrama_gantt.png}
-    \caption{Diagrama de Gantt de la planificación del TFG}
+    \includegraphics[width=1\textwidth]{diagrama_gantt.png}
+    \caption{Diagrama de Gantt de la planificación estimada del TFG}
     \label{fig:gantt}
 \end{figure}
 
 \section{Estimación de esfuerzo}
 
-Se estima una dedicación media de 15--20 horas semanales durante 20 semanas, totalizando aproximadamente 300--400 horas de trabajo. La distribución aproximada del esfuerzo por área es:
+Se planificó una dedicación media de entre 15 y 20 horas semanales durante las 20 semanas del proyecto, estimando un total acumulado de unas 350 horas de trabajo real. La distribución del tiempo según las distintas actividades del proyecto se desglosó de la siguiente forma aproximada:
 
 \begin{itemize}
-    \item Investigación y estado del arte: 15\%
-    \item Diseño e implementación del pipeline RAG: 25\%
-    \item Desarrollo del agente (LangGraph): 20\%
-    \item Backend y frontend: 15\%
-    \item Evaluación y validación: 10\%
-    \item Documentación y memoria: 15\%
+    \item \textbf{Investigación teórica y estado del arte:} 15\% del tiempo (lectura de artículos sobre RAG, agentes conversacionales y documentación de APIs).
+    \item \textbf{Desarrollo del pipeline RAG e ingesta:} 25\% del tiempo (pruebas de extracción de PDFs, vectorización y almacenamiento).
+    \item \textbf{Orquestación del agente inteligente (LangGraph):} 20\% del tiempo (definición de nodos, transiciones condicionales y prompts de enrutamiento).
+    \item \textbf{Backend y Frontend:} 15\% del tiempo (creación de la API de FastAPI, base de datos relacional e interfaz de chat con Streamlit).
+    \item \textbf{Evaluación y validación:} 10\% del tiempo (baterías de pruebas para evaluar la fiabilidad de las respuestas).
+    \item \textbf{Redacción de la memoria y documentación:} 15\% del tiempo (documentación técnica y redacción de este documento).
 \end{itemize}
 
 \section{Análisis de riesgos}
 
-A lo largo del ciclo de vida del proyecto, se han identificado diversos riesgos que podrían comprometer la planificación o la calidad del sistema. Para cada uno de ellos se ha evaluado su probabilidad de ocurrencia y su impacto en el proyecto, definiendo estrategias de mitigación proactivas.
+Para evitar que el desarrollo se estancara por problemas técnicos imprevistos, se realizó un análisis de riesgos inicial evaluando su probabilidad e impacto y definiendo medidas paliativas concretas:
 
 \begin{table}[H]
     \centering
-    \caption{Matriz de análisis de riesgos del proyecto}
+    \caption{Matriz de riesgos del proyecto y sus estrategias de mitigación}
     \begin{tabular}{@{}p{4.5cm}ccp{5.5cm}@{}}
         \toprule
-        \textbf{Riesgo}                                       & \textbf{Probabilidad} & \textbf{Impacto} & \textbf{Mitigación}                                             \\
+        \textbf{Riesgo identificado}                          & \textbf{Prob.} & \textbf{Imp.} & \textbf{Estrategia de mitigación planteada}                     \\
         \midrule
-        Límite de tokens en APIs gratuitas (Groq, LlamaParse) & Alta                  & Alto             & Estrategia multi-modelo con modelos ligeros para tareas simples \\
-        Alucinaciones del LLM                                 & Media                 & Alto             & Temperatura baja (0.1) y RAG estricto con fuentes verificables  \\
-        Mala fragmentación de tablas en PDFs                  & Alta                  & Medio            & Migración a LlamaParse con prompts especializados               \\
-        Latencia excesiva en respuestas                       & Media                 & Medio            & Migración de endpoints de HuggingFace a Groq (LPUs)             \\
-        Pérdida de contexto en conversaciones largas          & Baja                  & Bajo             & Implementación de ventana deslizante y resumen de memoria       \\
-        Curva de aprendizaje de LangGraph                     & Media                 & Medio            & Asignación de tiempo extra en los primeros sprints de diseño    \\
+        Límites de cuota gratuitos en APIs (Groq, LlamaParse)  & Alta           & Alto          & Diseñar un sistema multi-modelo usando LLMs ligeros.            \\
+        Alucinaciones e invenciones en respuestas del agente   & Media          & Alto          & Forzar temperatura baja (0.1) y RAG estricto con fuentes.       \\
+        Pérdida de estructura en tablas complejas de los PDFs  & Alta           & Medio         & Migración a LlamaParse con prompts específicos de extracción.   \\
+        Latencias excesivas de inferencia en tiempo de chat    & Media          & Medio         & Uso de hardware optimizado (LPUs de Groq) para inferencia rápida.\\
+        Pérdida de contexto en chats muy prolongados           & Baja           & Bajo          & Implementación de memoria de ventana y compresión por resúmenes. \\
+        Curva de aprendizaje del framework LangGraph           & Media          & Medio         & Reservar margen de tiempo en los primeros sprints de diseño.    \\
         \bottomrule
     \end{tabular}
     \label{tab:riesgos}
 \end{table}
+
+\section{Desviaciones sobre la planificación inicial}
+
+En un proyecto centrado en la integración de Inteligencia Artificial y modelos de lenguaje, la teoría rara vez coincide al 100\% con la práctica. La naturaleza exploratoria del desarrollo hizo que el cronograma real sufriera variaciones significativas respecto a la planificación estimada en el Gantt, destacando tres desviaciones principales:
+
+\begin{itemize}
+    \item \textbf{Cambio en la infraestructura de inferencia (Sprints 4 y 7):} Inicialmente, la intención era que todo el sistema funcionara en local utilizando modelos de código abierto (como Llama 3.1 8B) a través de Ollama. Sin embargo, al probar las primeras ejecuciones del agente LangGraph, los tiempos de respuesta superaban con creces el minuto por consulta debido a la falta de potencia de hardware local. Esto obligó a cambiar el rumbo técnico a mitad del proyecto para migrar todas las llamadas de inferencia a la API en la nube de Groq.
+    
+    \item \textbf{Reestructuración del pipeline de ingesta (Sprints 2 y 3):} La fragmentación estándar de los documentos oficiales (normativas de matrícula o guías de viaje) rompía por completo las tablas y los anexos, lo que provocaba que el asistente diera respuestas erróneas sobre plazos y cuantías de dinero. Tuvimos que detener el plan de desarrollo previsto para investigar tecnologías de extracción avanzada, migrando primero a Docling y finalmente a LlamaParse. El proceso de solucionar el problema del "doble splitter" (donde un formateador secundario rompía de nuevo las tablas de LlamaParse) consumió casi dos semanas completas que no estaban contempladas originalmente.
+    
+    \item \textbf{Gestión de cuotas y depuración de la memoria:} El testing del agente consumió rápidamente los límites de tokens diarios de las capas gratuitas de las APIs. Esto provocó parones forzados en el desarrollo y obligó a implementar a toda prisa la funcionalidad de compresión y resumen de memoria histórica mediante tareas en segundo plano en FastAPI, con el fin de ahorrar tokens en cada turno de chat.
+\end{itemize}
 
 \section{Estimación de costes}
 
 Aunque este proyecto es puramente académico, resulta interesante hacer el ejercicio de estimar cuánto costaría si se tratase de un encargo profesional real desarrollado por un ingeniero de software junior. He dividido la estimación en tres partidas: personal, recursos materiales y costes indirectos.
 
 \subsection{Costes de personal}
-Tomando como referencia la estimación de 400 horas de dedicación calculada en la sección anterior, y asumiendo un coste por hora estándar para un perfil de desarrollador junior de 15 €/hora, el coste de personal asciende a:
+Tomando como referencia la estimación de 350 horas de dedicación calculada en la sección anterior, y asumiendo un coste por hora estándar para un perfil de desarrollador junior de 15 €/hora, el coste de personal asciende a:
 \begin{itemize}
-    \item \textbf{Desarrollador Junior:} 400 horas $\times$ 15 €/hora = 6.000 €
+    \item \textbf{Desarrollador Junior:} 350 horas $\times$ 15 €/hora = 5.250 €
 \end{itemize}
 
 \subsection{Costes de hardware y software}
@@ -425,15 +493,15 @@ Sumando todas las partidas anteriores, obtenemos el coste total estimado del pro
         \toprule
         \textbf{Concepto}                 & \textbf{Coste estimado (€)} \\
         \midrule
-        Costes de Personal                & 6.000,00                    \\
+        Costes de Personal                & 5.250,00                    \\
         Costes de Hardware (Amortización) & 125,00                      \\
         Costes de Software y APIs         & 0,00                        \\
         Costes Indirectos                 & 100,00                      \\
         \midrule
-        \textbf{Base Imponible}           & \textbf{6.225,00}           \\
-        IVA (21\%)                        & 1.307,25                    \\
+        \textbf{Base Imponible}           & \textbf{5.475,00}           \\
+        IVA (21\%)                        & 1.1149,75                    \\
         \midrule
-        \textbf{Total Presupuesto}        & \textbf{7.532,25}           \\
+        \textbf{Total Presupuesto}        & \textbf{6.624,75}           \\
         \bottomrule
     \end{tabular}
     \label{tab:presupuesto}
@@ -543,6 +611,13 @@ El modelo relacional del sistema se compone de tres entidades principales implem
 
 Las relaciones incluyen eliminación en cascada: al eliminar un usuario se eliminan sus conversaciones, y al eliminar una conversación se eliminan sus mensajes.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{modelo_de_datos.png}
+    \caption{Modelo de datos del sistema}
+    \label{fig:modelo_datos}
+\end{figure}
+
 \subsection{Endpoints de la API REST}
 
 \begin{table}[H]
@@ -587,6 +662,13 @@ El flujo general del grafo es:
     \item \textbf{Nodo final $\rightarrow$ END:} Genera la respuesta y finaliza.
 \end{enumerate}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{diagrama_estados_version_final.png}
+    \caption{Versión final diagrama de estados}
+    \label{fig:diag_estados_final}
+\end{figure}
+
 \subsection{Nodo Estado Inicial}
 Formatea el historial de mensajes de la conversación en un formato legible (``rol: contenido'') que será utilizado por los prompts de los nodos posteriores.
 
@@ -625,11 +707,11 @@ Genera una respuesta educada y empática indicando al usuario que su consulta no
 El sistema implementa dos niveles de RAG paralelos:
 
 \begin{itemize}
-    \item \textbf{RAG de conocimiento normativo:} La base de datos vectorial en Pinecone contiene los fragmentos de los 15 documentos oficiales de la US (normativas de matrícula, baremos de contratación, calendarios académicos, guías de viajes, etc.).
+    \item \textbf{RAG de conocimiento normativo:} La base de datos vectorial en Pinecone contiene los fragmentos de los documentos oficiales de la US (normativas de matrícula, baremos de contratación, calendarios académicos, guías de viajes, etc.).
     \item \textbf{RAG de buenas prácticas:} Los prompts de cada nodo resolutor incorporan directrices de estilo, formato y tono que guían la generación de respuestas cercanas al usuario sin sacrificar el rigor técnico.
 \end{itemize}
 
-De esta forma, el contenido factual proviene exclusivamente de los documentos oficiales, mientras que la forma y estructura de la respuesta se define mediante las instrucciones embebidas en los templates de cada nodo.
+De esta forma, el contenido proviene exclusivamente de los documentos oficiales, mientras que la forma y estructura de la respuesta se define mediante las instrucciones embebidas en los templates de cada nodo.
 
 \section{Diseño del frontend (Streamlit)}
 
@@ -724,6 +806,63 @@ Se utiliza el modelo \texttt{embed-multilingual-v3.0} de Cohere para generar emb
 Los vectores se almacenan en un índice denominado \texttt{index-tfg} en Pinecone. La subida se realiza por lotes de 100 fragmentos para evitar timeouts y respetar los límites de la API. Cada vector almacena como metadata el nombre del documento fuente y el número de página, información que posteriormente se utiliza para generar las referencias en las respuestas.
 
 \chapter{Implementación del agente}
+
+\section{Evolución de la estructura del agente (grafo de estados)}
+
+El diseño final del agente conversacional no surgió de manera inmediata; fue el resultado de un proceso iterativo de desarrollo y depuración a lo largo de varios sprints. Durante el diseño del flujo lógico en LangGraph, la arquitectura del grafo de estados evolucionó a través de tres fases preliminares antes de consolidar el diseño definitivo de ocho nodos que se utiliza actualmente.
+
+\subsection{Primera aproximación: Pipeline RAG lineal (Versión 1)}
+
+Al comenzar el desarrollo del agente, opté por la aproximación más directa y sencilla: un flujo lineal clásico de generación aumentada por recuperación. Esta primera versión constaba únicamente de dos nodos principales conectados en serie:
+\begin{itemize}
+    \item \textbf{Nodo Recuperador:} Recibía la consulta directa del usuario, realizaba la conversión a embedding y recuperaba los fragmentos más relevantes de la base de datos vectorial en Pinecone.
+    \item \textbf{Nodo Resultor (Generador):} Tomaba la pregunta original junto con los fragmentos recuperados y redactaba la respuesta final que se entregaba al usuario.
+\end{itemize}
+
+Esta estructura inicial (representada en la Figura~\ref{fig:diag_v1}) pecaba de ser extremadamente ingenua. Al no disponer de mecanismos de control, el sistema intentaba responder a cualquier tipo de entrada. Si un usuario saludaba o introducía una consulta completamente ajena al ámbito universitario (por ejemplo, preguntas de cultura general o de ocio), el recuperador igualmente forzaba una búsqueda en la base de datos de normativas de la Universidad de Sevilla. Esto no solo generaba un consumo absurdo de cuota de API, sino que obligaba al modelo generador a alucinar o inventar respuestas para intentar casar textos legales con preguntas fuera de contexto.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{diagrama_estados_v1.png}
+    \caption{Primera versión del flujo del agente (RAG lineal básico)}
+    \label{fig:diag_v1}
+\end{figure}
+
+\subsection{Segunda aproximación: Incorporación de control y enrutamiento (Versión 2)}
+
+Para mitigar las limitaciones de la primera versión, implementé una estructura más sofisticada orientada a la gestión de intenciones. Introduje un enrutador lógico que permitía derivar la ejecución hacia tres nodos especializados según el tipo de interacción, aunque todos ellos seguían estando precedidos por el paso de recuperación:
+\begin{itemize}
+    \item \textbf{Nodo Rechazo Amable:} Diseñado para declinar de forma educada y empática las consultas detectadas fuera de dominio.
+    \item \textbf{Nodo Consultor (Entrevistador):} Encargado de solicitar aclaraciones y realizar preguntas de seguimiento en caso de detectar ambigüedades en la consulta del usuario.
+    \item \textbf{Nodo Resultor (Generador):} Responsable de dar la respuesta final cuando la información era suficiente y pertinente.
+\end{itemize}
+
+En esta segunda iteración (ver Figura~\ref{fig:diag_v2}), el nodo recuperador se ejecutaba siempre al inicio del flujo, alimentando el estado compartido antes de que el clasificador decidiera el camino a tomar. Aunque esto solucionó el problema de las alucinaciones al permitir que el nodo de rechazo interceptara preguntas irrelevantes, introdujo una ineficiencia crítica de latencia y coste. Si el usuario enviaba un simple saludo (como "Hola") o una pregunta fuera de ámbito, el sistema realizaba de todos modos la llamada a la API de Cohere para generar el embedding y la consulta a Pinecone de manera innecesaria. El proceso completo tardaba varios segundos de más solo para acabar devolviendo un rechazo o un saludo básico.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{diagrama_estados_v2.png}
+    \caption{Segunda versión del flujo con enrutamiento posterior a la recuperación}
+    \label{fig:diag_v2}
+\end{figure}
+
+\subsection{Tercera aproximación: Recuperación condicional (Versión 3)}
+
+Para resolver el problema de rendimiento detectado en la segunda versión, reestructuré las conexiones del grafo de estados en una tercera versión que optimizaba el momento en el que se invocaba al recuperador.
+
+En esta arquitectura (representada en la Figura~\ref{fig:diag_v3}), el flujo inicial ya no pasaba obligatoriamente por el recuperador. En su lugar, el sistema evaluaba en primer lugar si la consulta correspondía al dominio del agente. Si la entrada era ajena a la universidad, el flujo se desviaba de inmediato al nodo de \texttt{rechazo\_amable}, terminando la ejecución de forma instantánea sin realizar ninguna llamada de embedding ni búsqueda en base de datos. El nodo recuperador se reubicó de manera condicional, situándose única y exclusivamente en el camino hacia los nodos de \texttt{consultor} y \texttt{resultor}, que eran los que realmente requerían el contexto de la base de conocimiento normativa.
+
+Esta versión supuso un salto de calidad enorme en cuanto a eficiencia y reducción de latencia en consultas básicas. Sin embargo, seguíamos teniendo un problema de precisión en el nodo \texttt{resultor}. Al haber un único nodo encargado de generar todas las respuestas correctas, su prompt del sistema se volvió extremadamente complejo y extenso. Tenía que contemplar directrices para redactar plazos temporales, explicar normativas académicas áridas, desglosar pasos administrativos de matrícula y construir tablas complejas para baremos de contratación. La contradicción interna entre estas instrucciones causaba que, a menudo, el modelo olvidase aplicar el formato adecuado (como usar tablas en baremos o listas numeradas en trámites).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{diagrama_estados_v3.png}
+    \caption{Tercera versión con recuperación condicionada a la relevancia de la consulta}
+    \label{fig:diag_v3}
+\end{figure}
+
+Esta limitación fue el detonante para diseñar la \textbf{versión final del agente} detallada en el Capítulo 6 (ver Figura~\ref{fig:diag_estados_final}). En ella, eliminamos el nodo \texttt{resultor} genérico y lo dividimos en cuatro resolutores especializados por categorías (Procedimental, Calendario, Normativo y Baremo), precedidos por un clasificador de intenciones, lo que permitió segmentar los prompts y asegurar un formato impecable para cada tipo de respuesta.
+
 \section{Esquema de estado (StateSchema)}
 
 El estado compartido entre todos los nodos del grafo se define mediante un \texttt{TypedDict} de Python con los siguientes campos:
@@ -769,7 +908,8 @@ El proceso de búsqueda se ejecuta en tres etapas con instrumentación de tiempo
 
 \subsection{Reranking con Cohere}
 
-El reranking con el modelo \texttt{rerank-v4.0-pro} de Cohere implementa un \texttt{ContextualCompressionRetriever} que actúa como una segunda capa de filtrado. Recibe los 12 documentos candidatos y los reordena según su relevancia semántica respecto a la consulta, seleccionando únicamente los 4 mejores (\texttt{top\_n=4}). Esto mejora significativamente la precisión del contexto inyectado al LLM.
+El reranking con el modelo \texttt{rerank-v4.0-pro} de Cohere implementa un \\
+\texttt{ContextualCompressionRetriever} que actúa como una segunda capa de filtrado. Recibe los 12 documentos candidatos y los reordena según su relevancia semántica respecto a la consulta, seleccionando únicamente los 4 mejores (\texttt{top\_n=4}). Esto mejora significativamente la precisión del contexto inyectado al LLM.
 
 \section{Gestión de memoria conversacional}
 \subsection{Ventana deslizante de mensajes}
@@ -846,7 +986,7 @@ De todos los parámetros con los que experimenté, la \texttt{temperature} fue s
 \chapter{Estrategia de evaluación}
 \section{Dataset de evaluación}
 
-Para poder evaluar el sistema de forma rigurosa, diseñé un dataset con 34 preguntas que cubren todos los nodos del agente. La idea era simular consultas reales que podría hacer un estudiante, un profesor o un candidato a una plaza. Las preguntas se distribuyeron de la siguiente manera:
+Para poder evaluar el sistema de forma rigurosa, diseñé un dataset con 50 preguntas que cubren todos los nodos del agente. La idea era simular consultas reales que podría hacer un estudiante, un profesor o un candidato a una plaza. Las preguntas se distribuyeron de la siguiente manera:
 
 \begin{table}[H]
     \centering
@@ -855,14 +995,14 @@ Para poder evaluar el sistema de forma rigurosa, diseñé un dataset con 34 preg
         \toprule
         \textbf{Categoría} & \textbf{N.º de preguntas} \\
         \midrule
-        Calendario         & 8                         \\
-        Procedimental      & 7                         \\
-        Normativo          & 7                         \\
-        Baremo             & 5                         \\
-        Consulta (ambigua) & 2                         \\
-        Rechazo            & 5                         \\
+        Calendario         & 13                         \\
+        Procedimental      & 8                         \\
+        Normativo          & 8                         \\
+        Baremo             & 10                         \\
+        Consulta (ambigua) & 8                         \\
+        Rechazo            & 8                         \\
         \midrule
-        \textbf{Total}     & \textbf{34}               \\
+        \textbf{Total}     & \textbf{50}               \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -895,72 +1035,72 @@ El proceso de evaluación para cada caso de prueba sigue este pipeline:
     \item Los resultados se exportan a un archivo CSV para análisis posterior.
 \end{enumerate}
 
-\chapter{Resultados}
-\section{Precisión del enrutamiento}
+%\chapter{Resultados}
+%\section{Precisión del enrutamiento}
 
-Uno de los resultados que más me sorprendió fue la fiabilidad del sistema a la hora de clasificar las intenciones del usuario. Al asignar el rol de enrutador a Llama 3.1 8B con una temperatura de 0.0, conseguimos decisiones prácticamente deterministas en milisegundos. El nodo de rechazo, en particular, funcionó de forma especialmente consistente, interceptando sin problemas las preguntas que se salían de la temática universitaria.
+%Uno de los resultados que más me sorprendió fue la fiabilidad del sistema a la hora de clasificar las intenciones del usuario. Al asignar el rol de enrutador a Llama 3.1 8B con una temperatura de 0.0, conseguimos decisiones prácticamente deterministas en milisegundos. El nodo de rechazo, en particular, funcionó de forma especialmente consistente, interceptando sin problemas las preguntas que se salían de la temática universitaria.
 
-\textit{Nota: Completa la siguiente tabla con los resultados numéricos de tus evaluaciones una vez hayas ejecutado los tests finales. Es muy recomendable incluir gráficos de barras o pastel visualizando estos resultados.}
+%\textit{Nota: Completa la siguiente tabla con los resultados numéricos de tus evaluaciones una vez hayas ejecutado los tests finales. Es muy recomendable incluir gráficos de barras o pastel visualizando estos resultados.}
 
-\begin{table}[H]
-    \centering
-    \caption{Resultados de la precisión de enrutamiento}
-    \begin{tabular}{@{}lcc@{}}
-        \toprule
-        \textbf{Categoría} & \textbf{Casos de Prueba} & \textbf{Aciertos (\%)} \\
-        \midrule
-        Procedimental      & 7                        & X\%                    \\
-        Calendario         & 8                        & X\%                    \\
-        Normativo          & 7                        & X\%                    \\
-        Baremo             & 5                        & X\%                    \\
-        Rechazo            & 5                        & X\%                    \\
-        Ambigüedad         & 2                        & X\%                    \\
-        \midrule
-        \textbf{Total}     & \textbf{34}              & \textbf{XX.X\%}        \\
-        \bottomrule
-    \end{tabular}
-    \label{tab:routing_results}
-\end{table}
+%\begin{table}[H]
+%    \centering
+%    \caption{Resultados de la precisión de enrutamiento}
+%    \begin{tabular}{@{}lcc@{}}
+%        \toprule
+%        \textbf{Categoría} & \textbf{Casos de Prueba} & \textbf{Aciertos (\%)} \\
+%        \midrule
+%        Procedimental      & 7                        & X\%                    \\
+%        Calendario         & 8                        & X\%                    \\
+%        Normativo          & 7                        & X\%                    \\
+%        Baremo             & 5                        & X\%                    \\
+%        Rechazo            & 5                        & X\%                    \\
+%        Ambigüedad         & 2                        & X\%                    \\
+%        \midrule
+%        \textbf{Total}     & \textbf{34}              & \textbf{XX.X\%}        \\
+%        \bottomrule
+%    \end{tabular}
+%    \label{tab:routing_results}
+%\end{table}
 
-\section{Análisis de fidelidad (Faithfulness)}
+%\section{Análisis de fidelidad (Faithfulness)}
 
-En general, el agente se ciñó bastante bien al contexto recuperado, lo que resulta lógico si tenemos en cuenta que la temperatura estaba configurada a 0.1 y que los prompts incluían instrucciones explícitas para no inventar nada. Los pocos casos con menor puntuación coincidieron con consultas donde el contexto recuperado era solo parcialmente relevante, y el modelo ---quizá por inercia--- rellenaba los huecos con información general que sonaba plausible pero que no estaba en los documentos.
+%En general, el agente se ciñó bastante bien al contexto recuperado, lo que resulta lógico si tenemos en cuenta que la temperatura estaba configurada a 0.1 y que los prompts incluían instrucciones explícitas para no inventar nada. Los pocos casos con menor puntuación coincidieron con consultas donde el contexto recuperado era solo parcialmente relevante, y el modelo ---quizá por inercia--- rellenaba los huecos con información general que sonaba plausible pero que no estaba en los documentos.
 
-\section{Análisis de relevancia}
+%\section{Análisis de relevancia}
 
-La relevancia de las respuestas fue consistentemente alta, especialmente en los nodos procedimental y calendario donde las instrucciones de formato (pasos numerados, fechas en negrita) facilitan respuestas directas y accionables.
+%La relevancia de las respuestas fue consistentemente alta, especialmente en los nodos procedimental y calendario donde las instrucciones de formato (pasos numerados, fechas en negrita) facilitan respuestas directas y accionables.
 
-\section{Análisis de corrección}
+%\section{Análisis de corrección}
 
-La corrección frente al \textit{ground truth} fue la métrica más variable, y tiene su explicación: algunos \textit{ground truths} los redacté de forma genérica (por ejemplo, ``el plazo de matrícula está en septiembre''), mientras que el agente, al tener acceso directo a los documentos, proporcionaba datos mucho más específicos (fechas exactas, artículos concretos). Paradójicamente, en algunos casos el agente era más preciso que mi propio \textit{ground truth}.
+%La corrección frente al \textit{ground truth} fue la métrica más variable, y tiene su explicación: algunos \textit{ground truths} los redacté de forma genérica (por ejemplo, ``el plazo de matrícula está en septiembre''), mientras que el agente, al tener acceso directo a los documentos, proporcionaba datos mucho más específicos (fechas exactas, artículos concretos). Paradójicamente, en algunos casos el agente era más preciso que mi propio \textit{ground truth}.
 
-\section{Comparativa: entorno local vs Groq}
+%\section{Comparativa: entorno local vs Groq}
 
-\begin{table}[H]
-    \centering
-    \caption{Comparativa entre entorno local y Groq}
-    \begin{tabular}{@{}lcc@{}}
-        \toprule
-        \textbf{Aspecto}           & \textbf{Local (Llama 3.1 8B)} & \textbf{Groq (Llama 3.3 70B)} \\
-        \midrule
-        Latencia por nodo          & $>$10 segundos                & $<$1 segundo                  \\
-        Precisión en clasificación & Alta                          & Alta                          \\
-        Razonamiento complejo      & Limitado                      & Superior                      \\
-        Flujos multi-turno         & Finalizan abruptamente        & Fluidos y naturales           \\
-        Coste                      & Gratuito (hardware propio)    & Gratuito (cuotas limitadas)   \\
-        Escalabilidad              & No viable                     & Viable                        \\
-        \bottomrule
-    \end{tabular}
-\end{table}
+%\begin{table}[H]
+%    \centering
+%    \caption{Comparativa entre entorno local y Groq}
+%    \begin{tabular}{@{}lcc@{}}
+%        \toprule
+%        \textbf{Aspecto}           & \textbf{Local (Llama 3.1 8B)} & \textbf{Groq (Llama 3.3 70B)} \\
+%        \midrule
+%        Latencia por nodo          & $>$10 segundos                & $<$1 segundo                  \\
+%        Precisión en clasificación & Alta                          & Alta                          \\
+%        Razonamiento complejo      & Limitado                      & Superior                      \\
+%        Flujos multi-turno         & Finalizan abruptamente        & Fluidos y naturales           \\
+%        Coste                      & Gratuito (hardware propio)    & Gratuito (cuotas limitadas)   \\
+%        Escalabilidad              & No viable                     & Viable                        \\
+%        \bottomrule
+%    \end{tabular}
+%\end{table}
 
-La migración a Groq fue, sin duda, el punto de inflexión del proyecto. Lo que antes era un prototipo con el que tenías que armarte de paciencia para cada consulta, se transformó en un sistema que respondía en menos de 10 segundos de extremo a extremo.
+%La migración a Groq fue, sin duda, el punto de inflexión del proyecto. Lo que antes era un prototipo con el que tenías que armarte de paciencia para cada consulta, se transformó en un sistema que respondía en menos de 10 segundos de extremo a extremo.
 
-\section{Evaluación del retriever (Hit Rate)}
+%\section{Evaluación del retriever (Hit Rate)}
 
-Más allá de la generación de texto, es vital evaluar el motor de búsqueda. Para ello, medimos la métrica \textit{Hit Rate}, que indica la capacidad de la base de datos vectorial (Pinecone) para incluir el documento exacto que responde a la consulta dentro del top-4 de resultados devueltos al modelo.
+%Más allá de la generación de texto, es vital evaluar el motor de búsqueda. Para ello, medimos la métrica \textit{Hit Rate}, que indica la capacidad de la base de datos vectorial (Pinecone) para incluir el documento exacto que responde a la consulta dentro del top-4 de resultados devueltos al modelo.
 
-\textit{Nota: Añade aquí los porcentajes de Hit Rate obtenidos en tus pruebas de recuperación. Si tienes una gráfica de "Hit Rate vs. Top-K", este es el lugar ideal para insertarla.}
-
+%\textit{Nota: Añade aquí los porcentajes de Hit Rate obtenidos en tus pruebas de recuperación. Si tienes una gráfica de "Hit Rate vs. Top-K", este es el lugar ideal para insertarla.}
+%
 % \begin{figure}[H]
 %     \centering
 %     \includegraphics[width=0.7\textwidth]{hit_rate_chart.png}
@@ -979,11 +1119,11 @@ Más allá de la generación de texto, es vital evaluar el motor de búsqueda. P
 Mirando hacia atrás, creo que el proyecto ha cumplido de forma satisfactoria los objetivos que se plantearon al inicio:
 
 \begin{itemize}
-    \item \textbf{Ingesta semántica:} Se ha desarrollado un pipeline capaz de procesar 15 documentos oficiales de la US, preservando tablas, jerarquías y notas al pie mediante LlamaParse.
+    \item \textbf{Ingesta semántica:} Se ha desarrollado un pipeline capaz de procesar documentos oficiales de la US, preservando tablas, jerarquías y notas al pie mediante LlamaParse.
     \item \textbf{Enrutamiento inteligente:} El agente LangGraph clasifica correctamente las consultas y las dirige al nodo especializado correspondiente, con una alta precisión de enrutamiento.
     \item \textbf{Sistema Dual RAG:} Se ha implementado la separación entre conocimiento normativo (Pinecone) y directrices de estilo (prompts), logrando respuestas técnicamente correctas con un tono cercano al usuario.
     \item \textbf{Latencia optimizada:} La migración a Groq y la estrategia multi-modelo han reducido los tiempos de respuesta por debajo del umbral de 20 segundos establecido.
-    \item \textbf{Validación:} Se ha evaluado el sistema con 34 casos de prueba utilizando el paradigma LLM-as-Judge.
+    \item \textbf{Validación:} Se ha evaluado el sistema con 50 casos de prueba utilizando el paradigma LLM-as-Judge.
 \end{itemize}
 
 \section{Lecciones aprendidas}
@@ -1050,15 +1190,245 @@ Para llevar este sistema a un entorno real, la idea sería migrarlo a un servici
 % ============================================================
 \appendix
 
-\chapter{Batería de validación completa}
-A continuación, se detalla la lista exhaustiva de los 34 casos de prueba utilizados para someter al agente a evaluación, incluyendo la consulta simulada, la categoría esperada y la salida obtenida.
+%\chapter{Batería de validación completa}
+%A continuación, se detalla la lista exhaustiva de los 34 casos de prueba utilizados para someter al agente a evaluación, incluyendo la consulta simulada, la categoría esperada y la salida obtenida.
 
-\textit{Nota: Aquí deberás pegar o importar el archivo CSV/JSON con tus 34 preguntas. Puedes formatearlo como una tabla \texttt{longtable} o una lista numerada.}
+%\textit{Nota: Aquí deberás pegar o importar el archivo CSV/JSON con tus 34 preguntas. Puedes formatearlo como una tabla \texttt{longtable} o una lista numerada.}
 
 \chapter{Prompts del sistema}
 Para asegurar la reproducibilidad de los resultados, se adjuntan en este anexo los prompts exactos (plantillas de sistema) utilizados en los distintos nodos de LangGraph.
 
-\textit{Nota: Pega aquí el contenido de tu archivo \texttt{templates.py} utilizando el entorno \texttt{lstlisting} para formatearlo como código.}
+
+\begin{lstlisting}[language=Python, stringstyle=\color{black}]
+PROMPT_DETECCION = """
+        Dada la siguiente pregunta de un usuario y el contexto normativo, determina si la pregunta se encuentra dentro de los documentos que se te han proporcionado.
+        Debes tener en cuenta que los usuarios en ocasiones se dirigen a la universidad de sevilla como la us.
+        
+        INSTRUCCIONES CLAVE:
+        1. POSIBLES RESPUESTAS: Unicamente podrás responder con "recuperador" o "rechazo_amable".
+        2. CRITERIOS PARA "recuperador": Si la pregunta del usuario tiene relación con temas burocráticos universitarios relacionados con la universidad de sevilla (ejemplo: plazos de matrícula, requisitos para solicitar becas, etc.).
+        3. CRITERIOS PARA "rechazo_amable": Si la pregunta del usuario no tiene relación con temas burocráticos universitarios, o si claramente no se puede responder con la información del contexto (ejemplo: preguntas sobre eventos culturales, vida en el campus, etc.).
+        4. RECORDATORIO: UNICAMENTE RESPONDER CON UNA DE LAS DOS PALABRAS CLAVE ("recuperador" o "rechazo_amable") según los criterios anteriores. NO EXPLICAR TU DECISIÓN, SOLO DEVOLVER LA PALABRA CLAVE CORRESPONDIENTE.
+        
+        HISTORIAL DE CONVERSACIÓN:
+        {historial}
+        
+        PREGUNTA DEL USUARIO:
+        {question}
+        
+        RESPUESTA DEL ASISTENTE:
+        """
+        
+PROMPT_CUESTIONA_AGENTE = """
+        Eres un experto consultor de la Universidad de Sevilla.
+        Tu único objetivo es decidir si el flujo debe ir a "entrevistador" o a "resultor".
+
+        REGLA DE ORO ESTRICTA Y ABSOLUTA:
+        Analiza el final del "Historial de conversación". Si la ÚLTIMA intervención del Asistente fue una pregunta pidiendo más datos (ej: terminaba con signo de interrogación), ESTÁ ESTRICTAMENTE PROHIBIDO DEVOLVER "entrevistador". Debes devolver OBLIGATORIAMENTE "resultor", independientemente de si la respuesta del usuario está incompleta o no. ¡PROHIBIDO HACER DOS PREGUNTAS SEGUIDAS AL USUARIO!
+
+        CRITERIOS PARA "entrevistador":
+        - Es una consulta NUEVA (o el asistente no ha preguntado nada justo antes), el contexto indica explícitamente que falta un dato CLAVE para aplicar distintas reglas, y no es posible dar la información de las dos opciones a la vez.
+
+        CRITERIOS PARA "resultor":
+        - El usuario acaba de responder a una pregunta tuya (aplica la Regla de Oro).
+        - O el contexto tiene información suficiente para dar la respuesta directa.
+        - O se pueden explicar todos los casos posibles ("Si tu caso es X pasa esto, si es Y pasa lo otro").
+        - O EN CASO DE DUDA entre las dos opciones.
+
+        TU RESPUESTA DEBE SER ÚNICAMENTE UNA DE ESTAS DOS PALABRAS (en minúsculas, sin puntos ni texto extra):
+        entrevistador
+        resultor
+
+        Historial de conversación:
+        {historial}
+        
+        Contexto Recuperado:
+        {context}
+        
+        Pregunta del usuario:
+        {question}
+
+        Salida:
+        """
+        
+PROMPT_REFORMULACION = """
+        Dada la siguiente conversación y la última intervención/pregunta del usuario, reformula su intervención 
+        para que sea una pregunta/afirmación independiente que contenga todo el contexto (sujetos, trámites, datos previos aclarados, etc.).
+        Es CRÍTICO que la pregunta reformulada mantenga todos los datos y aclaraciones que el usuario ha dado en el historial.
+        NO respondas a la pregunta, SOLO devuelve la pregunta reformulada. Si ya es clara por sí sola, devuélvela tal cual integrando sus respuestas.
+
+        Historial de conversación:
+        {historial}
+
+        Pregunta del usuario: {question}
+
+        Pregunta reformulada:
+        """
+        
+PROMPT_CONSULTA_USUARIO = """
+        Eres el Asistente Experto de Atención al Estudiante y Soporte de la Universidad de Sevilla.
+        El sistema ha detectado que la consulta del usuario es ambigua o le faltan datos para darle la resolución definitiva según la normativa.
+
+        INSTRUCCIONES CLAVE Y ORDEN DE RESPUESTA:
+        1. RESPUESTA GENERAL (OBLIGATORIA): Basándote en el contexto recuperado, debes ofrecer SIEMPRE primero una respuesta informativa y cordial que oriente al usuario explicando las opciones generales que contempla la normativa.
+        2. PREGUNTA ACLARATORIA (AL FINAL): Justo después de tu explicación general, haz UNA ÚNICA pregunta directa para obtener el dato exacto que te falta (ej: si es grado o máster, si es primera matrícula, etc.).
+        
+        REGLAS ESTRICTAS:
+        - Asume que el usuario es de la US. NUNCA preguntes por su vinculación.
+        - NO inventes normativas ni supongas datos que no están en el contexto.
+        - Revisa el historial: NO vuelvas a preguntar un dato que el usuario ya haya proporcionado.
+
+        HISTORIAL DE CONVERSACIÓN:
+        {historial}
+
+        CONTEXTO NORMATIVO RECUPERADO:
+        {context}
+
+        PREGUNTA ACTUAL DEL USUARIO:
+        {question}
+
+        TU RESPUESTA (Explicación general primero + Pregunta aclaratoria al final):
+        """
+        
+        
+PROMPT_RECHAZO_AMABLE = """
+        Eres un Asistente de Atención al Estudiante y Soporte de la Universidad de Sevilla.
+        Tu objetivo en este momento es indicar amablemente al usuario que no puedes ayudarle con su consulta, porque no es una duda burocrática o no se puede resolver con la información del contexto.
+        INSTRUCCIONES CLAVE:
+        1. DIAGNÓSTICO: Si la pregunta del usuario no tiene relación con temas burocráticos universitarios, o si claramente no se puede responder con la información del contexto (ejemplo: preguntas sobre eventos culturales, vida en el campus, etc.), debes indicar amablemente que no puedes ayudar con esa consulta.
+        2. EXPLICACIÓN: Explica brevemente por qué no puedes ayudarle (ejemplo: "Lamento no poder ayudarte con esa consulta, ya que no está relacionada con trámites o normativas universitarias...").
+        3. SUGERENCIA: Si es posible, sugiere al usuario dónde puede encontrar más información o a quién puede dirigirse para su consulta (ejemplo: "Te recomendaría contactar con el departamento de vida universitaria para este tipo de dudas...").
+        4. TONO: Educado, empático y resolutivo. NO inventES información ni trates de responder a la consulta si no es una duda burocrática o no se puede resolver con el contexto.
+        
+        HISTORIAL DE CONVERSACIÓN:
+        {historial}
+
+        CONTEXTO NORMATIVO RECUPERADO:
+        {context}
+
+        PREGUNTA ACTUAL DEL USUARIO:
+        {question}
+
+        RESPUESTA DEL ASISTENTE:
+        """
+        
+PROMPT_CLASIFICADOR =  """
+        Eres un enrutador experto de la Universidad de Sevilla.
+        Tu trabajo es clasificar la consulta del usuario en una de estas 4 categorías según EL TIPO DE RESPUESTA QUE NECESITA:
+        
+        - 'procedimental': El usuario necesita instrucciones PASO A PASO para completar un trámite (matricularse, anular matrícula, liquidar un viaje, solicitar algo).
+        - 'calendario': El usuario pregunta por FECHAS, PLAZOS o PERIODOS concretos (cuándo empieza algo, hasta cuándo puede hacer algo).
+        - 'normativo': El usuario pregunta por REGLAS, REQUISITOS LEGALES o DERECHOS (qué dice la normativa, qué requisitos hay, qué artículo aplica).
+        - 'baremo': El usuario pregunta sobre PUNTUACIONES, MÉRITOS, CRITERIOS DE EVALUACIÓN o CÁLCULO DE NOTAS en procesos de selección.
+        
+        EJEMPLOS:
+        Pregunta: "¿Cuáles son los pasos para anular mi matrícula?" → procedimental
+        Pregunta: "¿Cuándo es el último día para matricularse?" → calendario
+        Pregunta: "¿Cuántos créditos puedo matricular como máximo?" → normativo
+        Pregunta: "¿Cómo se calculan los puntos de experiencia docente?" → baremo
+        Pregunta: "¿Qué documentos necesito para liquidar un viaje?" → procedimental
+        Pregunta: "¿Cuándo empiezan los exámenes de junio?" → calendario
+        Pregunta: "¿Qué requisitos hay para el reconocimiento de créditos?" → normativo
+        Pregunta: "¿Qué puntuación mínima se requiere para superar la fase de oposición?" → baremo
+        
+        Respuestas válidas: 'procedimental', 'calendario', 'normativo', 'baremo'. Responde ÚNICAMENTE con la palabra clave exacta, sin puntos finales, comillas, ni explicaciones extra.
+        
+        Historial de conversación:
+        {historial}
+        
+        Pregunta del usuario: {question}
+
+        Categoría:
+        """
+        
+PROMPT_RESULTOR_PROCEDIMENTAL =  """
+        Eres un asistente de la Universidad de Sevilla (US) especializado en guiar a los usuarios a través de trámites administrativos (matrículas, viajes, etc.).
+
+        Basándote en el contexto proporcionado, explica de forma CLARA, ESTRUCTURADA y PASO A PASO cómo realizar el trámite.
+
+        INSTRUCCIONES:
+        1. Utiliza listas numeradas (1., 2., 3.) para los pasos secuenciales.
+        2. Resalta en **negrita** los nombres de plataformas web (ej. SEVIUS, Secretaría Virtual), nombres de impresos y documentos requeridos.
+        3. Si hay advertencias importantes o requisitos previos, ponlos al principio bajo un encabezado "⚠️ Requisitos Previos".
+
+        Historial de conversación:
+        {historial}
+        
+        Contexto recuperado:
+        {context}
+
+        Pregunta del usuario sobre el procedimiento:
+        {question}
+
+        Instrucciones paso a paso:
+        """
+
+
+PROMPT_RESULTOR_CALENDARIO = """
+        Eres un asistente de la Universidad de Sevilla (US) especializado en el calendario académico y administrativo.
+
+        Basándote en el contexto proporcionado, responde a la pregunta del usuario prestando especial atención a las FECHAS, PLAZOS y PERIODOS. 
+
+        INSTRUCCIONES:
+        1. PRECISIÓN: Sé extremadamente preciso con los días, meses y años. No inventes ninguna fecha que no esté en el contexto. Si el contexto no especifica el año, indícalo.
+        2. CLARIDAD: Resalta las fechas clave en **negrita** para que sean fáciles de localizar.
+        3. FORMATO LIBRE: Elige el formato que mejor se adapte a la respuesta (un párrafo, una lista con viñetas, o una tabla si realmente hay muchos datos tabulares). No fuerces tablas cuando una lista o un párrafo es más claro.
+        4. CONTEXTO ADICIONAL: Si hay condiciones especiales, plazos extraordinarios o excepciones, menciónalas brevemente.
+
+        Historial de conversación:
+        {historial}
+        
+        Contexto recuperado:
+        {context}
+
+        Pregunta del usuario sobre plazos/fechas:
+        {question}
+
+        Respuesta:
+        """
+
+
+PROMPT_RESULTOR_NORMATIVO = """
+        Eres un asistente legal y normativo de la Universidad de Sevilla (US).
+
+        Basándote en el contexto proporcionado, explica la normativa aplicable a la duda del usuario de forma comprensible, pero manteniendo el rigor formal.
+        Si el contexto menciona artículos específicos, normativas concretas o resoluciones rectorales, cítalos en tu respuesta para dar validez a la información.
+        
+        Historial de conversación:
+        {historial}
+
+        Contexto:
+        {context}
+
+        Pregunta del usuario sobre la normativa:
+        {question}
+
+        Explicación normativa:
+        """
+
+
+PROMPT_RESULTOR_BAREMO = """
+        Eres un asistente de la Universidad de Sevilla (US) experto en procesos de evaluación, baremación de méritos y contratación.
+
+        Basándote en el contexto proporcionado, detalla cómo se calculan los puntos, cuáles son los criterios de evaluación o los requisitos mínimos.
+
+        INSTRUCCIONES DE FORMATO:
+        1. Utiliza una tabla Markdown para mostrar los criterios de evaluación siempre que sea posible. Columnas sugeridas: "Criterio" | "Detalles".
+        2. Desglosa los apartados puntuables claramente.
+        3. Si existen requisitos mínimos excluyentes, menciónalas en una lista con viñetas al principio de tu respuesta.
+
+        Historial de conversación:
+        {historial}
+
+        Contexto:
+        {context}
+
+        Pregunta del usuario sobre baremación/evaluación:
+        {question}
+
+        Criterios de evaluación y puntuación:
+        """
+\end{lstlisting}
 
 \chapter{Uso de la Inteligencia Artificial}
 En cumplimiento con las directrices académicas, se declara el uso de modelos de lenguaje para la asistencia en la generación de código LaTeX y el refactor de scripts de evaluación.
