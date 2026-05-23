@@ -624,27 +624,42 @@ Las relaciones incluyen eliminación en cascada: al eliminar un usuario se elimi
     \caption{Endpoints principales de la API}
     \begin{tabular}{@{}llp{7cm}@{}}
         \toprule
-        \textbf{Método} & \textbf{Ruta}                   & \textbf{Descripción}                          \\
+        \textbf{Método} & \textbf{Ruta}                                   & \textbf{Descripción}                          \\
         \midrule
-        POST            & /registro                       & Registro de nuevo usuario                     \\
-        POST            & /login                          & Autenticación con email/contraseña            \\
-        GET             & /me                             & Datos del usuario autenticado                 \\
-        GET             & /conversaciones                 & Lista de conversaciones del usuario           \\
-        POST            & /conversaciones                 & Crear nueva conversación                      \\
-        GET             & /conversaciones/\{id\}/mensajes & Historial de mensajes                         \\
-        POST            & /conversaciones/\{id\}/chat     & Enviar mensaje y obtener respuesta del agente \\
-        PUT             & /conversaciones/\{id\}          & Renombrar conversación                        \\
-        DELETE          & /conversaciones/\{id\}          & Eliminar conversación                         \\
-        POST            & /admin/ingestar                 & Subir PDF para ingesta (solo admin)           \\
+        POST            & /registro                                       & Registro de nuevo usuario                     \\
+        POST            & /login                                          & Autenticación con email/contraseña            \\
+        GET             & /me                                             & Datos del usuario autenticado                 \\
+        GET             & /conversaciones                                 & Lista de conversaciones del usuario           \\
+        POST            & /conversaciones                                 & Crear nueva conversación                      \\
+        GET             & /conversaciones/\{id\}/mensajes                 & Historial de mensajes                         \\
+        POST            & /conversaciones/\{id\}/chat                     & Enviar mensaje y obtener respuesta del agente \\
+        POST            & /conversaciones/\{id\}/mensajes/\{mid\}/feedback & Enviar valoración 👍/👎 y comentario         \\
+        PUT             & /conversaciones/\{id\}                          & Renombrar conversación                        \\
+        DELETE          & /conversaciones/\{id\}                          & Eliminar conversación                         \\
+        GET             & /admin/feedback/negativo                        & Listar feedback 👎 y referencias (Admin)      \\
+        POST            & /admin/ingestar                                 & Subir e indexar archivo PDF (Admin)           \\
+        DELETE          & /admin/documentos                               & Borrar base de datos vectorial (Admin)        \\
+        GET             & /admin/usuarios                                 & Listar cuentas de usuarios (Admin)            \\
+        DELETE          & /admin/usuarios/\{id\}                          & Eliminar cuenta de usuario (Admin)            \\
+        PUT             & /admin/usuarios/\{id\}/admin                    & Conceder/revocar rol de admin (Admin)         \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-\subsection{Autenticación y autorización (JWT)}
+\subsection{Autenticación, Autorización y Roles}
 
-El sistema implementa autenticación basada en tokens JWT (\textit{JSON Web Tokens}) con el algoritmo HS256. Los tokens tienen una validez de 7 días. El flujo es: el usuario envía sus credenciales al endpoint \texttt{/login}, el servidor verifica la contraseña contra el hash bcrypt almacenado en la base de datos, y si es correcta, genera un token JWT que el cliente incluirá en la cabecera \texttt{Authorization} de las solicitudes posteriores.
+El sistema implementa un control de accesos basado en tokens JWT (\textit{JSON Web Tokens}) firmado mediante el algoritmo simétrico HS256. Al iniciar sesión, el servidor valida las credenciales y devuelve el token, el cual expira a los 7 días. El cliente envía este token en la cabecera HTTP de autorización para cualquier operación.
 
-Para las rutas de administración (como \texttt{/admin/ingestar}), se añade una capa adicional que verifica el campo \texttt{is\_admin} del usuario autenticado.
+A nivel de base de datos, implementamos roles diferenciados mediante la columna booleana \texttt{is\_admin} en la tabla de usuarios. Esto habilita dos niveles de permisos:
+\begin{itemize}
+    \item \textbf{Rol de Usuario:} Permite registrarse, iniciar sesión, crear conversaciones de chat y enviar feedback sobre las respuestas.
+    \item \textbf{Rol de Administrador:} Otorga acceso a todos los endpoints bajo la ruta raíz \texttt{/admin}. Esto habilita las funciones críticas de:
+    \begin{enumerate}
+        \item \textbf{Gestión de Usuarios:} Listar todos los perfiles de usuario de la plataforma, eliminar cuentas y promover o degradar cuentas concediendo el rol de administrador.
+        \item \textbf{Gestión de Documentos:} Ingestar nuevos PDFs con las normativas de la US o vaciar la base de datos vectorial de Pinecone mediante la llamada a \texttt{DELETE /admin/documentos}.
+        \item \textbf{Auditoría de Feedback:} Inspeccionar las valoraciones negativas recibidas para corregir el RAG.
+    \end{enumerate}
+\end{itemize}
 
 \section{Diseño del agente conversacional}
 \subsection{Grafo de estados (LangGraph)}
