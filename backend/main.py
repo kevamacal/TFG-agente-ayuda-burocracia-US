@@ -8,7 +8,7 @@ from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks, Up
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
-from utils.config import config_light_llm 
+from utils.config import config_light_llm
 from database import SessionLocal
 import os
 import shutil
@@ -190,16 +190,11 @@ def enviar_mensaje(
             config = {}
             if os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY"):
                 try:
-                    from langfuse.callback import CallbackHandler
-                    langfuse_handler = CallbackHandler(
-                        public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
-                        secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
-                        host=os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
-                    )
-                    config["callbacks"] = [langfuse_handler]
+                    from services.rag import asistente_rag
+                    config["callbacks"] = asistente_rag.callbacks
                     config["run_name"] = f"Chat RAG Asistente US - Conv {conv.id}"
                 except Exception as lf_err:
-                    print(f"Error al inicializar Langfuse callback: {lf_err}")
+                    print(f"Error al configurar Langfuse callback: {lf_err}")
 
             # Ejecutar el agente en pasos (streaming de nodos)
             estado = estado_inicial.copy()

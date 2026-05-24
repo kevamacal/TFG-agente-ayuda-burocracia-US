@@ -11,6 +11,7 @@ pydantic[email]
 langgraph
 langchain-huggingface
 langchain-core
+langchain
 langchain-community
 langchain-pinecone
 langchain-cohere

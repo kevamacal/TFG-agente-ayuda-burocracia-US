@@ -3,6 +3,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from templates.templates import *
 
+import os
 from utils.config import format_docs, config_classifier_llm, config_light_llm, config_llm
 from langchain_pinecone import PineconeVectorStore
 from utils.config import settings
@@ -11,6 +12,42 @@ import datetime
 
 class AsistenteRAG:
     def __init__(self):
+        # Inicializar callbacks globales de Langfuse si las credenciales están presentes
+        self.callbacks = []
+        if os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY"):
+            try:
+                # Puente de compatibilidad para Langfuse v2.x con Langchain moderno
+                import sys, types
+                if 'langchain.callbacks' not in sys.modules:
+                    langchain_callbacks_base = types.ModuleType('langchain.callbacks.base')
+                    import langchain_core.callbacks.base
+                    langchain_callbacks_base.BaseCallbackHandler = langchain_core.callbacks.base.BaseCallbackHandler
+                    sys.modules['langchain.callbacks'] = types.ModuleType('langchain.callbacks')
+                    sys.modules['langchain.callbacks.base'] = langchain_callbacks_base
+                if 'langchain.schema.agent' not in sys.modules:
+                    langchain_schema_agent = types.ModuleType('langchain.schema.agent')
+                    import langchain_core.agents
+                    langchain_schema_agent.AgentAction = langchain_core.agents.AgentAction
+                    langchain_schema_agent.AgentFinish = langchain_core.agents.AgentFinish
+                    sys.modules['langchain.schema'] = types.ModuleType('langchain.schema')
+                    sys.modules['langchain.schema.agent'] = langchain_schema_agent
+                if 'langchain.schema.document' not in sys.modules:
+                    langchain_schema_document = types.ModuleType('langchain.schema.document')
+                    import langchain_core.documents
+                    langchain_schema_document.Document = langchain_core.documents.Document
+                    sys.modules['langchain.schema.document'] = langchain_schema_document
+
+                from langfuse.callback import CallbackHandler
+                langfuse_handler = CallbackHandler(
+                    public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+                    secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+                    host=os.getenv("LANGFUSE_HOST", "http://langfuse:3000")
+                )
+                self.callbacks = [langfuse_handler]
+                print("✅ Langfuse CallbackHandler inicializado globalmente en AsistenteRAG")
+            except Exception as lf_err:
+                print(f"❌ Error al inicializar Langfuse globalmente en AsistenteRAG: {lf_err}")
+
         self.llm = config_llm()
         self.light_llm = config_light_llm()
         self.classifier_llm = config_classifier_llm()
@@ -50,7 +87,7 @@ class AsistenteRAG:
             pregunta_busqueda = self.chain_reformulacion.invoke({
                 "historial": historial_formateado,
                 "question": pregunta
-            })
+            }, config={"callbacks": self.callbacks})
         else:
             pregunta_busqueda = pregunta
         
@@ -132,7 +169,7 @@ class AsistenteRAG:
         decision = self.chain_deteccion.invoke({
             "question": pregunta_reformulada, 
             "historial": historial_formateado,
-        }).strip().lower()
+        }, config={"callbacks": self.callbacks}).strip().lower()
         if "rechazo_amable" in decision: return "rechazo_amable"
         if "recuperador" in decision: return "recuperador"
         return "recuperador"
@@ -146,7 +183,7 @@ class AsistenteRAG:
         res = self.chain_evaluador.invoke({
             "question": pregunta_reformulada, 
             "context": contexto_reducido
-        }).strip().lower()
+        }, config={"callbacks": self.callbacks}).strip().lower()
         
         print(f"🧐 [EVALUATOR] Relevancia evaluada: '{res}'")
         if "suficiente" in res:
@@ -160,7 +197,7 @@ class AsistenteRAG:
         decision = self.chain_clasificacion.invoke({
             "question": pregunta_reformulada, 
             "historial": historial_formateado
-        }).strip().lower()
+        }, config={"callbacks": self.callbacks}).strip().lower()
         if "procedimental" in decision: return "procedimental"
         if "calendario" in decision: return "calendario"
         if "baremo" in decision: return "baremo"
@@ -176,6 +213,6 @@ class AsistenteRAG:
         
         cadena_activa = self.cadenas_respuesta.get(tipo_respuesta, self.cadenas_respuesta["normativo"])
         
-        return cadena_activa.stream(inputs)
+        return cadena_activa.stream(inputs, config={"callbacks": self.callbacks})
     
 asistente_rag = AsistenteRAG()
