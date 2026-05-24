@@ -145,7 +145,7 @@ Conviene dejar claro desde el principio qué abarca este proyecto y qué queda f
     \item El desarrollo de un \textbf{backend API REST} capaz de gestionar las peticiones de usuarios, el historial de conversaciones y toda la lógica del agente.
     \item La implementación de un \textbf{agente conversacional} basado en LangGraph con capacidad de enrutamiento inteligente y recuperación semántica de documentos.
     \item Un \textbf{pipeline de ingesta} que procesa documentos PDF oficiales de la US y los almacena como vectores en Pinecone.
-    \item Una \textbf{interfaz web} SPA moderna e interactiva desarrollada con React y TypeScript, estilizada con TailwindCSS y optimizada para una navegación fluida.
+    \item Una \textbf{interfaz web} moderna e interactiva desarrollada con Next.js (React) y TypeScript, estilizada con TailwindCSS y optimizada para una navegación fluida.
     \item La \textbf{contenedorización} completa del sistema mediante Docker Compose.
     \item Una \textbf{evaluación cuantitativa} del sistema.
     \item \textbf{Despliegue} en un entorno de producción con alta disponibilidad, como lo es Render
@@ -160,7 +160,7 @@ Para que la lectura de este documento resulte lo más fluida posible, se ha orga
 \begin{itemize}
     \item \textbf{Parte I: Introducción y Conceptos.} Se expone la motivación del trabajo, los objetivos perseguidos y se realiza un repaso por el estado del arte de las tecnologías implicadas, incluyendo los LLMs, sistemas RAG y arquitecturas agénticas.
     \item \textbf{Parte II: Metodología y Planificación.} Describe el ciclo de vida elegido para el proyecto, detallando la adaptación del marco de trabajo Scrum y proporcionando el desglose temporal de las tareas.
-    \item \textbf{Parte III: Análisis y Diseño.} Desglosa los requisitos funcionales y no funcionales, e introduce la arquitectura del sistema tanto a nivel conceptual (LangGraph) como de servicios (FastAPI, React + TypeScript, bases de datos).
+    \item \textbf{Parte III: Análisis y Diseño.} Desglosa los requisitos funcionales y no funcionales, e introduce la arquitectura del sistema tanto a nivel conceptual (LangGraph) como de servicios (FastAPI, Next.js (React) + TypeScript, bases de datos).
     \item \textbf{Parte IV: Implementación.} Profundiza en los detalles técnicos del desarrollo: cómo se resolvieron los problemas de ingesta de documentos, la orquestación del agente y los desafíos surgidos con los LLM y su latencia.
     \item \textbf{Parte V: Evaluación y Validación.} Muestra los resultados obtenidos tras someter al agente a una exhaustiva batería de pruebas, utilizando un LLM como juez para evaluar su rigor y fiabilidad.
     \item \textbf{Parte VI: Conclusiones y Trabajo Futuro.} Recopila las reflexiones finales, valorando si se cumplieron los objetivos iniciales, y plantea posibles vías para continuar mejorando el sistema.
@@ -259,7 +259,7 @@ Como lenguaje principal se ha utilizado Python. La elección se realizó de mane
 Sobre esta base, el sistema se ha estructurado utilizando dos \textit{frameworks} principales, ambos orientados en cada una de las capas de nuestra aplicación (frontend/backend):
 \begin{itemize}
     \item \textbf{FastAPI (Backend):} para la implementación de la lógica del servidor y la exposición de servicios mediante una API REST y streaming por Server-Sent Events (SSE). Esta tecnología destaca por su alto rendimiento y su soporte nativo ante operaciones asíncronas, característica crítica para gestionar de manera eficiente las llamadas a los modelos de lenguaje y a la base de datos vectorial sin bloquear el hilo principal.
-    \item \textbf{React y TypeScript (Frontend):} para la interfaz de usuario. Aunque inicialmente se planteó usar Streamlit por su rapidez de prototipado, pronto se requirió un nivel superior de interactividad, modularidad y control estético. La transición a una aplicación de página única (SPA) desarrollada en React con TypeScript y TailwindCSS permitió separar limpiamente el cliente del servidor, implementar controles avanzados de sesión por cookies JWT, mostrar estados intermedios del agente a través de eventos en tiempo real, e integrar un panel de feedback y auditoría interactivo sin recargas invasivas de página.
+    \item \textbf{Next.js y TypeScript (Frontend):} para la interfaz de usuario. Aunque inicialmente se planteó usar Streamlit por su rapidez de prototipado, pronto se requirió un nivel superior de interactividad, modularidad y control estético. La transición a una aplicación desarrollada en Next.js (basado en React) con TypeScript y TailwindCSS permitió separar limpiamente el cliente del servidor, implementar controles avanzados de sesión por cookies JWT, mostrar estados intermedios del agente a través de eventos en tiempo real, e integrar un panel de feedback y auditoría interactivo sin recargas invasivas de página.
 \end{itemize}
 
 \subsection{Orquestación y Lógica Agéntica}
@@ -303,7 +303,8 @@ Para poner el sistema a disposición de los usuarios finales en un entorno de pr
 
 Las dos tecnologías clave que hacen esto posible son \textbf{Docker} y \textbf{Render}:
 
-    \item \textbf{Docker para la contenedorización:} En lugar de lidiar con las diferencias de configuración y dependencias entre servidores, cada componente del sistema (el \textit{frontend} en React y el \textit{backend} en FastAPI) se empaqueta en su propio contenedor Docker utilizando imágenes base estables (como \texttt{node:18-alpine} para el cliente frontend y \texttt{python:3.11-slim-bookworm} para el servidor API backend). Esto encapsula todo lo necesario para la ejecución, aislando las aplicaciones y eliminando por completo el clásico problema del ``en mi máquina funcionaba''.
+\begin{itemize}
+    \item \textbf{Docker para la contenedorización:} En lugar de lidiar con las diferencias de configuración y dependencias entre servidores, cada componente del sistema (el \textit{frontend} en Next.js (React) y el \textit{backend} en FastAPI) se empaqueta en su propio contenedor Docker utilizando imágenes base estables (como \texttt{node:18-alpine} para el cliente frontend y \texttt{python:3.11-slim-bookworm} para el servidor API backend). Esto encapsula todo lo necesario para la ejecución, aislando las aplicaciones y eliminando por completo el clásico problema del ``en mi máquina funcionaba''.
     
     \item \textbf{Render para la infraestructura en la nube:} Render es una plataforma en la nube que destaca por su facilidad de uso e integración continua con GitHub. Permite desplegar aplicaciones web a partir de un \texttt{Dockerfile} de forma automatizada: cada vez que se sube un cambio al repositorio de producción, Render descarga el código, construye la imagen de Docker y despliega la nueva versión sin tiempo de caída.
 \end{itemize}
@@ -313,7 +314,7 @@ En el entorno de producción, la arquitectura del sistema se distribuye de maner
 \begin{enumerate}
     \item \textbf{Servicio de Backend (FastAPI):} Configurado como un \textit{Web Service} que expone los endpoints de la API. Se construye utilizando el archivo \texttt{Dockerfile} de la carpeta \texttt{/backend} y gestiona toda la lógica del agente LangGraph.
     
-    \item \textbf{Servicio de Frontend (React):} Configurado como otro \textit{Web Service} público. Se compila a partir del \texttt{Dockerfile} de la carpeta \texttt{/frontend} y sirve la interfaz de usuario de tipo SPA (Single Page Application) que consume la API del backend.
+    \item \textbf{Servicio de Frontend (Next.js):} Configurado como otro \textit{Web Service} público. Se compila a partir del \texttt{Dockerfile} de la carpeta \texttt{/frontend} y sirve la interfaz de usuario que consume la API del backend.
     
     \item \textbf{Base de Datos Gestionada (PostgreSQL):} En lugar de ejecutar PostgreSQL dentro de un contenedor autogestionado en producción, se utiliza un servicio de base de datos gestionada provisto directamente por Render. Esto garantiza copias de seguridad automáticas, alta disponibilidad y un rendimiento óptimo sin añadir complejidad de administración.
 \end{enumerate}
@@ -391,7 +392,7 @@ Para estructurar las 20 semanas de duración estimadas para el desarrollo del TF
         3               & Semanas 5--6     & Conexión del RAG básico: embeddings de Cohere y Pinecone.             \\
         4               & Semanas 7--8     & Diseño lógico y programación del grafo de estados en LangGraph.       \\
         5               & Semanas 9--10    & Desarrollo del backend FastAPI y diseño del modelo de datos.         \\
-        6               & Semanas 11--12   & Creación de la interfaz modular de chat en React.                     \\
+        6               & Semanas 11--12   & Creación de la interfaz modular de chat en Next.js(React).                     \\
         7               & Semanas 13--14   & Migración a la API de Groq para la optimización de latencias.        \\
         8               & Semanas 15--16   & Contenedorización de todos los servicios locales con Docker Compose.  \\
         9               & Semanas 17--18   & Batería de pruebas de validación y evaluación cuantitativa.           \\
@@ -421,7 +422,7 @@ Se planificó una dedicación media de entre 15 y 20 horas semanales durante las
     \item \textbf{Investigación teórica y estado del arte:} 15\% del tiempo (lectura de artículos sobre RAG, agentes conversacionales y documentación de APIs).
     \item \textbf{Desarrollo del pipeline RAG e ingesta:} 25\% del tiempo (pruebas de extracción de PDFs, vectorización y almacenamiento).
     \item \textbf{Orquestación del agente inteligente (LangGraph):} 20\% del tiempo (definición de nodos, transiciones condicionales y prompts de enrutamiento).
-    \item \textbf{Backend y Frontend:} 15\% del tiempo (creación de la API de FastAPI, base de datos relacional e interfaz modular de chat en React con TypeScript).
+    \item \textbf{Backend y Frontend:} 15\% del tiempo (creación de la API de FastAPI, base de datos relacional e interfaz modular de chat en Next.js (React) con TypeScript).
     \item \textbf{Evaluación y validación:} 10\% del tiempo (baterías de pruebas para evaluar la fiabilidad de las respuestas).
     \item \textbf{Redacción de la memoria y documentación:} 15\% del tiempo (documentación técnica y redacción de este documento).
 \end{itemize}
@@ -450,7 +451,7 @@ Para evitar que el desarrollo se estancara por problemas técnicos imprevistos, 
 
 \section{Desviaciones sobre la planificación inicial}
 
-En un proyecto centrado en la integración de Inteligencia Artificial y modelos de lenguaje, la teoría rara vez coincide al 100\% con la práctica. La naturaleza exploratoria del desarrollo hizo que el cronograma real sufriera variaciones significativas respecto a la planificación estimada en el Gantt, destacando tres desviaciones principales:
+En un proyecto centrado en la integración de Inteligencia Artificial y modelos de lenguaje, la teoría rara vez coincide al 100\% con la práctica. La naturaleza exploratoria del desarrollo hizo que el cronograma real sufriera variaciones significativas respecto a la planificación estimada en el Gantt, destacando cuatro desviaciones principales:
 
 \begin{itemize}
     \item \textbf{Cambio en la infraestructura de inferencia (Sprints 4 y 7):} Inicialmente, la intención era que todo el sistema funcionara en local utilizando modelos de código abierto (como Llama 3.1 8B) a través de Ollama. Sin embargo, al probar las primeras ejecuciones del agente LangGraph, los tiempos de respuesta superaban con creces el minuto por consulta debido a la falta de potencia de hardware local. Esto obligó a cambiar el rumbo técnico a mitad del proyecto para migrar todas las llamadas de inferencia a la API en la nube de Groq.
@@ -458,6 +459,8 @@ En un proyecto centrado en la integración de Inteligencia Artificial y modelos 
     \item \textbf{Reestructuración del pipeline de ingesta (Sprints 2 y 3):} La fragmentación estándar de los documentos oficiales (normativas de matrícula o guías de viaje) rompía por completo las tablas y los anexos, lo que provocaba que el asistente diera respuestas erróneas sobre plazos y cuantías de dinero. Tuvimos que detener el plan de desarrollo previsto para investigar tecnologías de extracción avanzada, migrando primero a Docling y finalmente a LlamaParse. El proceso de solucionar el problema del "doble splitter" (donde un formateador secundario rompía de nuevo las tablas de LlamaParse) consumió casi dos semanas completas que no estaban contempladas originalmente.
     
     \item \textbf{Gestión de cuotas y depuración de la memoria:} El testing del agente consumió rápidamente los límites de tokens diarios de las capas gratuitas de las APIs. Esto provocó parones forzados en el desarrollo y obligó a implementar a toda prisa la funcionalidad de compresión y resumen de memoria histórica mediante tareas en segundo plano en FastAPI, con el fin de ahorrar tokens en cada turno de chat.
+    
+    \item \textbf{Reconstrucción de la interfaz frontend (Sprints 5 y 6):} Inicialmente se contempló el uso de Streamlit para el desarrollo rápido del frontend. No obstante, al avanzar en los requisitos de interactividad, control estético personalizado y la necesidad de gestionar sesiones de usuario mediante cookies JWT, flujos Server-Sent Events (SSE) interactivos y un panel de administración avanzado, Streamlit demostró limitaciones de modularidad y escalabilidad. Esto forzó a pivotar la arquitectura del cliente hacia Next.js (React) con TypeScript. Reconstruir la interfaz desde cero supuso un esfuerzo extra de desarrollo y una curva de aprendizaje no prevista que desplazó ligeramente el calendario de integración.
 \end{itemize}
 
 \section{Estimación de costes}
@@ -473,7 +476,7 @@ Tomando como referencia la estimación de 350 horas de dedicación calculada en 
 \subsection{Costes de hardware y software}
 \begin{itemize}
     \item \textbf{Hardware:} Se ha empleado un equipo informático portátil valorado en 1.200 €. Considerando un periodo de amortización de 4 años, y dado que el proyecto ha durado 5 meses, la cuota de amortización imputable al proyecto es de aproximadamente 125 €.
-    \item \textbf{Software y APIs:} El desarrollo se ha apoyado mayoritariamente en herramientas de código abierto (Python, React, FastAPI, Docker). Los servicios de IA y bases de datos vectoriales (Groq, Cohere, Pinecone, LlamaParse) se han utilizado en su capa gratuita (\textit{Free Tier'}), por lo que el coste directo en este apartado es de 0 €. Sin embargo, en un entorno de producción, los costes de inferencia y almacenamiento escalarían según el uso.
+    \item \textbf{Software y APIs:} El desarrollo se ha apoyado mayoritariamente en herramientas de código abierto (Python, Next.js (React), FastAPI, Docker). Los servicios de IA y bases de datos vectoriales (Groq, Cohere, Pinecone, LlamaParse) se han utilizado en su capa gratuita (\textit{Free Tier'}), por lo que el coste directo en este apartado es de 0 €. Sin embargo, en un entorno de producción, los costes de inferencia y almacenamiento escalarían según el uso.
 \end{itemize}
 
 \subsection{Costes indirectos}
@@ -584,7 +587,7 @@ Los principales casos de uso identificados son:
 El sistema sigue una arquitectura de microservicios contenedorizados orquestados mediante Docker Compose. Los tres servicios principales son:
 
 \begin{itemize}
-    \item \textbf{Frontend (React + TypeScript):} Interfaz web SPA (Single Page Application) que se comunica con el backend vía HTTP REST y Server-Sent Events (SSE). Puerto 8501.
+    \item \textbf{Frontend (Next.js + TypeScript):} Interfaz web que se comunica con el backend vía HTTP REST y Server-Sent Events (SSE). Puerto 8501.
     \item \textbf{Backend (FastAPI):} API REST que gestiona la autenticación, las conversaciones y orquesta el agente LangGraph. Puerto 8000.
     \item \textbf{Base de datos (PostgreSQL 15):} Almacena usuarios, conversaciones y mensajes. Puerto 5432.
 \end{itemize}
@@ -622,26 +625,26 @@ Las relaciones incluyen eliminación en cascada: al eliminar un usuario se elimi
 \begin{table}[H]
     \centering
     \caption{Endpoints principales de la API}
-    \begin{tabular}{@{}llp{7cm}@{}}
+    \begin{tabular}{@{}lp{5.3cm}p{7.5cm}@{}}
         \toprule
         \textbf{Método} & \textbf{Ruta}                                   & \textbf{Descripción}                          \\
         \midrule
-        POST            & /registro                                       & Registro de nuevo usuario                     \\
-        POST            & /login                                          & Autenticación con email/contraseña            \\
-        GET             & /me                                             & Datos del usuario autenticado                 \\
-        GET             & /conversaciones                                 & Lista de conversaciones del usuario           \\
-        POST            & /conversaciones                                 & Crear nueva conversación                      \\
-        GET             & /conversaciones/\{id\}/mensajes                 & Historial de mensajes                         \\
-        POST            & /conversaciones/\{id\}/chat                     & Enviar mensaje y obtener respuesta del agente \\
-        POST            & /conversaciones/\{id\}/mensajes/\{mid\}/feedback & Enviar valoración 👍/👎 y comentario         \\
-        PUT             & /conversaciones/\{id\}                          & Renombrar conversación                        \\
-        DELETE          & /conversaciones/\{id\}                          & Eliminar conversación                         \\
-        GET             & /admin/feedback/negativo                        & Listar feedback 👎 y referencias (Admin)      \\
-        POST            & /admin/ingestar                                 & Subir e indexar archivo PDF (Admin)           \\
-        DELETE          & /admin/documentos                               & Borrar base de datos vectorial (Admin)        \\
-        GET             & /admin/usuarios                                 & Listar cuentas de usuarios (Admin)            \\
-        DELETE          & /admin/usuarios/\{id\}                          & Eliminar cuenta de usuario (Admin)            \\
-        PUT             & /admin/usuarios/\{id\}/admin                    & Conceder/revocar rol de admin (Admin)         \\
+        POST            & \texttt{/registro}                               & Registro de nuevo usuario                     \\
+        POST            & \texttt{/login}                                  & Autenticación con email/contraseña            \\
+        GET             & \texttt{/me}                                     & Datos del usuario autenticado                 \\
+        GET             & \texttt{/conversaciones}                         & Lista de conversaciones del usuario           \\
+        POST            & \texttt{/conversaciones}                         & Crear nueva conversación                      \\
+        GET             & \texttt{/conversaciones/\allowbreak\{\allowbreak{}id\}/\allowbreak{}mensajes} & Historial de mensajes                         \\
+        POST            & \texttt{/conversaciones/\allowbreak\{\allowbreak{}id\}/\allowbreak{}chat}     & Enviar mensaje y obtener respuesta del agente \\
+        POST            & \texttt{/conversaciones/\allowbreak\{\allowbreak{}id\}/\allowbreak{}mensajes/\allowbreak\{\allowbreak{}mid\}/\allowbreak{}feedback} & Enviar valoración y comentario         \\
+        PUT             & \texttt{/conversaciones/\allowbreak\{\allowbreak{}id\}}                          & Renombrar conversación                        \\
+        DELETE          & \texttt{/conversaciones/\allowbreak\{\allowbreak{}id\}}                          & Eliminar conversación                         \\
+        GET             & \texttt{/admin/\allowbreak{}feedback/\allowbreak{}negativo}                      & Listar feedback negativo y referencias (Admin)      \\
+        POST            & \texttt{/admin/ingestar}                         & Subir e indexar archivo PDF (Admin)           \\
+        DELETE          & \texttt{/admin/documentos}                       & Borrar base de datos vectorial (Admin)        \\
+        GET             & \texttt{/admin/usuarios}                         & Listar cuentas de usuarios (Admin)            \\
+        DELETE          & \texttt{/admin/usuarios/\allowbreak\{\allowbreak{}id\}}                          & Eliminar cuenta de usuario (Admin)            \\
+        PUT             & \texttt{/admin/usuarios/\allowbreak\{\allowbreak{}id\}/\allowbreak{}admin}      & Conceder/revocar rol de admin (Admin)         \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -727,16 +730,16 @@ El sistema implementa dos niveles de RAG paralelos:
 
 De esta forma, el contenido proviene exclusivamente de los documentos oficiales, mientras que la forma y estructura de la respuesta se define mediante las instrucciones embebidas en los templates de cada nodo.
 
-\section{Diseño del frontend (React + TypeScript)}
+\section{Diseño del frontend (Next.js + TypeScript)}
 
-La interfaz web se ha diseñado como una aplicación de página única (SPA) modular estructurada en cinco áreas principales:
+La interfaz web se ha diseñado como una aplicación modular estructurada en cinco áreas principales:
 
 \begin{itemize}
     \item \textbf{Pantalla de autenticación:} Interfaz de acceso y registro interactiva. La sesión del usuario se mantiene de forma segura mediante una cookie JWT, lo que evita la necesidad de volver a autenticarse al recargar la página.
     \item \textbf{Barra lateral de navegación (Sidebar):} Contiene la lista histórica de conversaciones del usuario (con opciones rápidas para crear chats, renombrarlos o eliminarlos) y, si el usuario tiene privilegios de administrador, acceso a los paneles de gestión documental y auditoría de feedback.
-    \item \textbf{Área de chat interactivo:} Globo del chat que implementa animaciones de entrada, burbujas de conversación diferenciadas por colores y un renderizador de Markdown que visualiza negritas, listas y enlaces de manera legible.
+    \item \textbf{Área de chat interactivo:} Área del chat que implementa animaciones de entrada, burbujas de conversación diferenciadas por colores y un renderizador de Markdown que visualiza negritas, listas y enlaces de manera legible.
     \item \textbf{Canal de visualización de estados del agente (SSE):} Indicadores de estado dinámicos que muestran el paso lógico por el que transiciona el agente LangGraph en el backend (por ejemplo, cuando evalúa documentos o realiza búsquedas externas).
-    \item \textbf{Sistema de Feedback e Inline Comments:} Botones de 👍 / 👎 integrados de manera discreta al final de cada respuesta del asistente. Al votar negativamente, se despliega una caja de texto simple para recopilar de forma directa el motivo del descontento del usuario.
+    \item \textbf{Sistema de Feedback e Inline Comments:} Botones de feedback positivo y negativo integrados de manera discreta al final de cada respuesta del asistente. Al votar negativamente, se despliega una caja de texto simple para recopilar de forma directa el motivo del descontento del usuario.
     \item \textbf{Panel de Auditoría de Feedback (Admin):} Una vista dedicada que organiza de forma visual las quejas recopiladas, permitiendo que los administradores analicen qué pregunta originó el fallo, qué respondió el asistente, qué comentario dejó el usuario y qué fragmentos de Pinecone se consultaron.
 \end{itemize}
 
@@ -756,7 +759,7 @@ El sistema se despliega mediante un archivo \texttt{docker-compose.yml} que defi
 \begin{itemize}
     \item \textbf{db:} Contenedor PostgreSQL 15 con volumen persistente (\texttt{postgres\_data}) para la durabilidad de los datos. Se expone en el puerto 5434 del host.
     \item \textbf{backend:} Contenedor con la aplicación FastAPI, que se construye desde el directorio \texttt{./backend}. Depende del servicio \texttt{db} y se expone en el puerto 8000.
-    \item \textbf{frontend:} Contenedor con la aplicación React, construido desde el directorio \texttt{./frontend}. Se conecta al backend mediante la URL interna \texttt{http://backend:8000} (o resolviéndose dinámicamente en el cliente) y se expone en el puerto 8501 del host.
+    \item \textbf{frontend:} Contenedor con la aplicación Next.js, construido desde el directorio \texttt{./frontend}. Se conecta al backend mediante la URL interna \texttt{http://backend:8000} (o resolviéndose dinámicamente en el cliente) y se expone en el puerto 8501 del host.
 \end{itemize}
 
 \subsection{Configuración de red y variables de entorno}
@@ -977,17 +980,17 @@ Al abrir una nueva conversación o continuar una existente, el backend recupera 
 
 \chapter{Implementación del frontend}
 
-\section{Arquitectura del Cliente SPA (React y Vite)}
+\section{Arquitectura del Cliente (Next.js y React)}
 
-El frontend original basado en Streamlit se reconstruyó por completo como una aplicación de página única (SPA) modular bajo el ecosistema de **React** y **Vite**, asegurando tiempos de carga inmediatos, una gestión de estado predecible y una interfaz moderna y fluida. 
+El frontend original basado en Streamlit se reconstruyó por completo como una aplicación modular bajo el ecosistema de **Next.js** y **React**, asegurando tiempos de carga inmediatos, una gestión de estado predecible y una interfaz moderna y fluida. 
 
 La estructura del código fuente se organiza de la siguiente manera:
 \begin{itemize}
-    \item \texttt{App.tsx}: Componente raíz que maneja el enrutamiento y la protección de vistas basadas en la sesión del usuario.
+    \item \texttt{src/app/page.tsx}: Componente y controlador raíz de la aplicación que maneja la verificación de sesión del usuario y el renderizado condicional de las vistas principales.
     \item \texttt{ChatInterface.tsx}: Componente principal para el chat interactivo, la visualización de flujos Server-Sent Events (SSE) y la recogida de feedback.
     \item \texttt{FeedbackList.tsx}: Vista administrativa de auditoría que recopila e ilustra el feedback negativo de los usuarios.
     \item \texttt{UserManagement.tsx}: Componente administrativo para la visualización, ascenso, degradación y borrado de cuentas de usuario.
-    \item \texttt{api.ts}: Módulo utilitario que abstrae las llamadas a la API de FastAPI e inyecta dinámicamente el token JWT guardado en cookies.
+    \item \texttt{src/utils/api.ts}: Módulo utilitario que abstrae la URL de conexión del backend.
 \end{itemize}
 
 \section{Autenticación y Persistencia con JWT}
@@ -1008,14 +1011,14 @@ Para la visualización de la respuesta final, se utiliza el componente \texttt{R
 
 \section{Diseño del Feedback Loop en Interfaz}
 
-En cada mensaje del asistente, el frontend renderiza dos botones discretos para votar 👍 / 👎. Si el usuario hace clic en 👎 (no útil), la interfaz despliega inline una caja de texto con una animación de entrada suave para recoger su queja o comentario. Al hacer clic en enviar, el componente realiza una solicitud de tipo POST al backend registrando los campos de retroalimentación sin interrumpir el flujo del chat.
+En cada mensaje del asistente, el frontend renderiza dos botones discretos para votar. Si el usuario hace clic en el botón que indica que la respuesta no es útil, la interfaz despliega inline una caja de texto con una animación de entrada suave para recoger su queja o comentario. Al hacer clic en enviar, el componente realiza una solicitud de tipo POST al backend registrando los campos de retroalimentación sin interrumpir el flujo del chat.
 
 \section{Panel de Auditoría y Administración}
 
 Los administradores tienen acceso a tres vistas avanzadas accesibles desde la barra lateral:
 \begin{itemize}
     \item \textbf{Gestión de Usuarios:} Una tabla interactiva para buscar cuentas registradas, promover usuarios a administradores o eliminar perfiles en cascada de la base de datos.
-    \item \textbf{Auditoría de Feedback:} Renderizado por \texttt{FeedbackList.tsx}, presenta tarjetas de control con cada mensaje valorado con 👎. Utiliza \texttt{ReactMarkdown} para mostrar la respuesta exacta generada por el agente y etiquetas visuales para ilustrar qué PDFs sirvieron como referencia en Pinecone y qué queja exacta dejó el usuario.
+    \item \textbf{Auditoría de Feedback:} Renderizado por \texttt{FeedbackList.tsx}, presenta tarjetas de control con cada mensaje valorado con feedback negativo. Utiliza \texttt{ReactMarkdown} para mostrar la respuesta exacta generada por el agente y etiquetas visuales para ilustrar qué PDFs sirvieron como referencia en Pinecone y qué queja exacta dejó el usuario.
     \item \textbf{Ingesta de Documentos:} Área para subir nuevos PDFs de normativa, encolando el procesamiento asíncrono con LlamaParse mediante estados visuales de carga.
 \end{itemize}
 
