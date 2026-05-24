@@ -510,21 +510,6 @@ def eliminar_documento_admin(nombre: str = Query(..., description="Nombre del do
             print(f"Archivo eliminado de static: {ruta_archivo}")
         except Exception as e:
             print(f"Error eliminando archivo físico {ruta_archivo}: {e}")
-            
-    # 3. Eliminar archivo de la carpeta Documentos_US
-    source_dirs = [
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "Documentos_US")),
-        "/Documentos_US"
-    ]
-    for sdir in source_dirs:
-        alt_path = os.path.join(sdir, nombre)
-        if os.path.exists(alt_path):
-            try:
-                os.remove(alt_path)
-                print(f"Archivo eliminado de {sdir}: {alt_path}")
-            except Exception as e:
-                print(f"Error al eliminar archivo de {sdir}: {e}")
-                
     return {"mensaje": f"Documento '{nombre}' y sus vectores eliminados con éxito."}
 
 def seed_admin_user():

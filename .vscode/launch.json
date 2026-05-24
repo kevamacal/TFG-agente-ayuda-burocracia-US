@@ -28,15 +28,5 @@
             "cwd": "${workspaceFolder}/app",
             "console": "integratedTerminal"
         }
-    ],
-    "compounds": [
-        {
-            "name": "Fullstack: Streamlit + FastAPI",
-            "configurations": [
-                "Backend: FastAPI",
-                "Frontend: Streamlit"
-            ],
-            "stopAll": true
-        }
     ]
 }

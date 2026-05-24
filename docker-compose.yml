@@ -13,8 +13,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   backend:
-    build: 
-      context: ./backend 
+    build:
+      context: ./backend
     container_name: asistente_us_backend
     restart: always
     ports:
@@ -26,11 +26,9 @@ services:
       - .env
     depends_on:
       - db
-    volumes:
-      - ./Documentos_US:/Documentos_US
 
   frontend:
-    build: 
+    build:
       context: ./frontend
     container_name: asistente_us_frontend
     restart: always
@@ -38,8 +36,6 @@ services:
       - "8501:8501"
     environment:
       - API_URL=http://backend:8000
-    env_file:
-      - .env
     depends_on:
       - backend
 
@@ -67,8 +63,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@langfuse_db:5432/langfuse
       - NEXTAUTH_URL=http://localhost:3000
-      - NEXTAUTH_SECRET=my_ultra_secret_nextauth_string_for_local_tfg
-      - SALT=my_ultra_secret_salt_string_for_local_tfg
+      - NEXTAUTH_SECRET={NEXTAUTH_SECRET}
+      - SALT={NEXTAUTH_SALT}
 
 volumes:
   postgres_data:
