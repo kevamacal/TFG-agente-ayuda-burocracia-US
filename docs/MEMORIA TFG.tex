@@ -743,7 +743,7 @@ La interfaz web se ha diseñado como una aplicación modular estructurada en cin
     \item \textbf{Panel de Auditoría de Feedback (Admin):} Una vista dedicada que organiza de forma visual las quejas recopiladas, permitiendo que los administradores analicen qué pregunta originó el fallo, qué respondió el asistente, qué comentario dejó el usuario y qué fragmentos de Pinecone se consultaron.
 \end{itemize}
 
-El diseño visual adopta una estética premium oscura basada en una paleta HSL optimizada (\texttt{\#0D0E12} para fondos principales, \texttt{\#171A21} para tarjetas y componentes de panel) combinada con tipografía moderna \textit{Inter} y transiciones de micro-animaciones en botones y modales que hacen hover con el color granate corporativo de la Universidad de Sevilla (\texttt{\#9D1C34}).
+El diseño visual adopta una estética premium adaptativa (con soporte para modo claro y oscuro) basada en variables CSS semánticas integradas con TailwindCSS. Por defecto, la aplicación detecta el esquema de color preferido del dispositivo del usuario (a través de la media query \texttt{prefers-color-scheme}) para inicializar el tema correspondiente. Adicionalmente, el usuario dispone de un selector manual en la barra lateral para alternar entre temas en caliente, cuya preferencia se guarda de forma persistente en el \texttt{localStorage} del navegador. Las paletas de colores están diseñadas para garantizar altos ratios de contraste y legibilidad, manteniendo en todo momento la identidad de la marca mediante transiciones suaves de micro-animaciones en botones, iconos y modales que hacen hover con el color granate corporativo de la Universidad de Sevilla (\texttt{\#9D1C34}).
 
 % ============================================================
 % PARTE IV: IMPLEMENTACIÓN
@@ -922,7 +922,7 @@ Cada nodo resolutor cuenta con un prompt especializado que define el formato, to
 
 En el diseño original, el sistema confiaba ciegamente en la búsqueda densa basada en embeddings vectoriales. Sin embargo, en un contexto burocrático universitario, esto presenta problemas. Las consultas que incluyen nombres específicos de trámites, siglas institucionales (como UVUS, automatrícula, baremación de contratos) o códigos de reglamentos a veces se diluyen en el espacio latente del modelo de embeddings, devolviendo fragmentos temáticamente cercanos pero sin el término exacto requerido.
 
-Para solucionar esto, decidí implementar un motor de **Búsqueda Híbrida a nivel de aplicación**. Dado que nuestro índice de Pinecone es denso y no queríamos duplicar ni reestructurar el índice entero en producción, opté por una estrategia de fusión:
+Para solucionar esto, decidí implementar un motor de \textbf{Búsqueda Híbrida a nivel de aplicación}. Dado que nuestro índice de Pinecone es denso y no queríamos duplicar ni reestructurar el índice entero en producción, opté por una estrategia de fusión:
 \begin{enumerate}
     \item \textbf{Recuperación densa:} Realizamos una consulta vectorial en Pinecone utilizando la pregunta reformulada del usuario y el modelo de embeddings \texttt{embed-multilingual-v3.0} de Cohere, solicitando los 18 candidatos más cercanos ($k=18$).
     \item \textbf{Recuperación léxica (Sparse):} En paralelo, en el backend, realizamos una búsqueda por palabra clave exacta usando una indexación y puntuación por frecuencia de términos (lexical search) sobre los fragmentos locales del documento. Esto puntúa los fragmentos que contienen los términos exactos de la consulta reformulada.
@@ -955,7 +955,7 @@ Al enviar el primer mensaje de una conversación con título ``Nueva conversaci�
 
 Uno de los principales riesgos de los sistemas RAG tradicionales es la falta de información útil dentro de los documentos almacenados. Si el usuario pregunta algo que no está en la base de datos de PDFs (por ejemplo, plazos específicos de automatrícula del curso vigente que aún no se han subido), el agente respondería típicamente que "no dispone de esa información", o peor, podría alucinar.
 
-Para mitigar esto, implementamos un flujo de **Corrective RAG (CRAG)** en LangGraph. Después de recuperar los documentos de Pinecone, insertamos un nodo clasificador de relevancia. Este evaluador utiliza el LLM para analizar la concordancia entre los fragmentos recuperados y la pregunta reformulada del usuario, clasificando el contexto en:
+Para mitigar esto, implementamos un flujo de \textbf{Corrective RAG (CRAG)} en LangGraph. Después de recuperar los documentos de Pinecone, insertamos un nodo clasificador de relevancia. Este evaluador utiliza el LLM para analizar la concordancia entre los fragmentos recuperados y la pregunta reformulada del usuario, clasificando el contexto en:
 \begin{itemize}
     \item \textbf{Suficiente:} Los fragmentos responden directamente a la pregunta. El flujo continúa hacia el nodo resolutor correspondiente.
     \item \textbf{Insuficiente:} Los fragmentos recuperados no contienen la respuesta a la consulta. En este caso, el grafo transiciona a un nodo especializado de \texttt{busqueda\_web}.
@@ -963,11 +963,11 @@ Para mitigar esto, implementamos un flujo de **Corrective RAG (CRAG)** en LangGr
 
 En el nodo de \texttt{busqueda\_web}, realizamos una consulta utilizando la API de DuckDuckGo restringida de forma estricta a la URL oficial de la Universidad de Sevilla (\texttt{site:us.es}). El agente descarga los extractos de la web oficial en tiempo real, los procesa y los añade al contexto del prompt para que el LLM pueda redactar una respuesta precisa con información del portal oficial.
 
-Para que la experiencia de usuario sea fluida y transparente, el backend transmite eventos intermedios mediante **Server-Sent Events (SSE)** con el estado de ejecución (por ejemplo, \textit{"Información interna insuficiente. Buscando en el portal de la US..."}), informando al usuario de qué está ocurriendo en cada paso y reduciendo la latencia percibida.
+Para que la experiencia de usuario sea fluida y transparente, el backend transmite eventos intermedios mediante \textbf{Server-Sent Events (SSE)} con el estado de ejecución (por ejemplo, \textit{"Información interna insuficiente. Buscando en el portal de la US..."}), informando al usuario de qué está ocurriendo en cada paso y reduciendo la latencia percibida.
 
 \section{Perfilado Dinámico y Memoria Persistente de Usuario}
 
-Para evitar que el asistente se comporte de manera impersonal, desarrollamos un mecanismo de **perfilado dinámico y memoria persistente** que se ejecuta en segundo plano.
+Para evitar que el asistente se comporte de manera impersonal, desarrollamos un mecanismo de \textbf{perfilado dinámico y memoria persistente} que se ejecuta en segundo plano.
 
 En la base de datos PostgreSQL, agregamos una columna \texttt{perfil\_metadata} (tipo texto con estructura JSON) en la tabla de usuarios. Al finalizar cada interacción de chat, en lugar de ralentizar el flujo de respuesta del usuario, disparamos una tarea en segundo plano mediante \texttt{BackgroundTasks} de FastAPI:
 \begin{enumerate}
@@ -982,7 +982,7 @@ Al abrir una nueva conversación o continuar una existente, el backend recupera 
 
 \section{Arquitectura del Cliente (Next.js y React)}
 
-El frontend original basado en Streamlit se reconstruyó por completo como una aplicación modular bajo el ecosistema de **Next.js** y **React**, asegurando tiempos de carga inmediatos, una gestión de estado predecible y una interfaz moderna y fluida. 
+El frontend original basado en Streamlit se reconstruyó por completo como una aplicación modular bajo el ecosistema de  \textbf{Next.js} y \textbf{React}, asegurando tiempos de carga inmediatos, una gestión de estado predecible y una interfaz moderna y fluida. 
 
 La estructura del código fuente se organiza de la siguiente manera:
 \begin{itemize}
@@ -1020,6 +1020,17 @@ Los administradores tienen acceso a tres vistas avanzadas accesibles desde la ba
     \item \textbf{Gestión de Usuarios:} Una tabla interactiva para buscar cuentas registradas, promover usuarios a administradores o eliminar perfiles en cascada de la base de datos.
     \item \textbf{Auditoría de Feedback:} Renderizado por \texttt{FeedbackList.tsx}, presenta tarjetas de control con cada mensaje valorado con feedback negativo. Utiliza \texttt{ReactMarkdown} para mostrar la respuesta exacta generada por el agente y etiquetas visuales para ilustrar qué PDFs sirvieron como referencia en Pinecone y qué queja exacta dejó el usuario.
     \item \textbf{Ingesta de Documentos:} Área para subir nuevos PDFs de normativa, encolando el procesamiento asíncrono con LlamaParse mediante estados visuales de carga.
+\end{itemize}
+
+\section{Implementación de Modo Claro y Oscuro Adaptativo}
+
+Para dotar al frontend de una accesibilidad visual avanzada, se implementó un sistema de modos de color dinámicos (modo claro y oscuro) mediante TailwindCSS configurado bajo la estrategia de clase (\texttt{darkMode: 'class'}). Esto permite que todos los componentes modifiquen sus colores globales y bordes de forma coherente mediante la presencia de la clase \texttt{dark} en la etiqueta raíz del documento (\texttt{<html>}).
+
+La implementación técnica consta de los siguientes pilares:
+\begin{itemize}
+    \item \textbf{Variables CSS semánticas:} En el archivo \texttt{globals.css} se definieron los tokens de color del sistema de diseño (tales como \texttt{--color-background}, \texttt{--color-sidebar}, \texttt{--color-text-main}, \texttt{--color-border}, etc.) para ambos esquemas cromáticos, facilitando que Tailwind los referencie de manera dinámica sin necesidad de duplicar clases condicionales en el código.
+    \item \textbf{Detección y persistencia de preferencias:} En el componente raíz \texttt{page.tsx}, mediante un gancho de efecto (\texttt{useEffect}), la aplicación consulta en primer lugar si existe una preferencia previa guardada en el almacenamiento del navegador (\texttt{localStorage}). Si no existe, recurre a la consulta de medios \texttt{(prefers-\allowbreak color-\allowbreak scheme: \allowbreak dark)} mediante el método \texttt{window.\allowbreak matchMedia()} para alinear el tema de inicio con la configuración del sistema operativo del dispositivo del cliente.
+    \item \textbf{Control de alternancia interactivo:} En la barra lateral (\texttt{Sidebar.tsx}), junto a los botones de navegación y cierre de sesión, se añadió un botón intuitivo con iconos adaptativos (\texttt{Sun} y \texttt{Moon} de \texttt{lucide-react}) para alternar el tema en tiempo de ejecución. Al pulsarse, se actualiza el estado de la aplicación, se guarda la nueva configuración en \texttt{localStorage} y se añade/elimina la clase \texttt{dark} en el objeto raíz \texttt{document.documentElement}.
 \end{itemize}
 
 \chapter{Selección y configuración de modelos}
@@ -1070,7 +1081,7 @@ Para poder evaluar el sistema de forma rigurosa, diseñé un dataset con 50 preg
         \toprule
         \textbf{Categoría} & \textbf{N.º de preguntas} \\
         \midrule
-        Calendario         & 13                         \\
+        Calendario         & 8                         \\
         Procedimental      & 8                         \\
         Normativo          & 8                         \\
         Baremo             & 10                         \\
@@ -1114,7 +1125,7 @@ El proceso de evaluación para cada caso de prueba sigue este pipeline:
 
 Para un desarrollo profesional, no basta con evaluar el sistema en local; es necesario monitorizar el comportamiento del agente en producción, registrando cada llamada a las APIs, la latencia de cada nodo y los costes de inferencia. 
 
-Para cubrir esta necesidad, integramos **Langfuse**, una plataforma de observabilidad de código abierto específica para aplicaciones basadas en LLMs. La integración en el backend se realiza de forma limpia mediante el callback handler oficial de Langfuse para LangChain. Cuando el agente LangGraph procesa una consulta:
+Para cubrir esta necesidad, integramos \textbf{Langfuse}, una plataforma de observabilidad de código abierto específica para aplicaciones basadas en LLMs. La integración en el backend se realiza de forma limpia mediante el callback handler oficial de Langfuse para LangChain. Cuando el agente LangGraph procesa una consulta:
 \begin{itemize}
     \item Se registra la traza completa de la ejecución en el backend.
     \item Se mide con precisión el tiempo de respuesta (latencia) de cada nodo (enrutador, recuperador, clasificadores y resolutores).
@@ -1124,7 +1135,7 @@ Para cubrir esta necesidad, integramos **Langfuse**, una plataforma de observabi
 
 \section{Evaluación científica offline con Ragas}
 
-Además de la monitorización en tiempo real, implementamos un script de evaluación offline automatizado en \texttt{evaluar\_rag.py} basado en el framework **Ragas**. Este framework evalúa de manera científica la calidad del pipeline RAG midiendo dos métricas esenciales utilizando un LLM como juez independiente (\texttt{llama-3.3-70b-versatile}):
+Además de la monitorización en tiempo real, implementamos un script de evaluación offline automatizado en \texttt{evaluar\_rag.py} basado en el framework \textbf{Ragas}. Este framework evalúa de manera científica la calidad del pipeline RAG midiendo dos métricas esenciales utilizando un LLM como juez independiente (\texttt{llama-3.3-70b-versatile}):
 \begin{enumerate}
     \item \textbf{Faithfulness (Fidelidad):} Mide el porcentaje de afirmaciones en la respuesta que se pueden contrastar directamente con el contexto recuperado de los documentos de Pinecone, sirviendo como detector objetivo de alucinaciones.
     \item \textbf{Answer Relevance (Relevancia de la respuesta):} Evalúa si la respuesta aborda directamente la pregunta formulada por el usuario o si introduce información irrelevante que no responde a su duda original.
@@ -1298,16 +1309,17 @@ Para asegurar la reproducibilidad de los resultados, se adjuntan en este anexo l
 
 \begin{lstlisting}[language=Python, stringstyle=\color{black}]
 PROMPT_DETECCION = """
-        Dada la siguiente pregunta de un usuario y el contexto normativo, determina si la pregunta se encuentra dentro de los documentos que se te han proporcionado.
+        Dada la siguiente pregunta de un usuario, determina si su intencion es realizar una consulta o tramite que pueda estar relacionado con el ambito universitario de la Universidad de Sevilla (US).
         Debes tener en cuenta que los usuarios en ocasiones se dirigen a la universidad de sevilla como la us.
         
         INSTRUCCIONES CLAVE:
-        1. POSIBLES RESPUESTAS: Unicamente podrás responder con "recuperador" o "rechazo_amable".
-        2. CRITERIOS PARA "recuperador": Si la pregunta del usuario tiene relación con temas burocráticos universitarios relacionados con la universidad de sevilla (ejemplo: plazos de matrícula, requisitos para solicitar becas, etc.).
-        3. CRITERIOS PARA "rechazo_amable": Si la pregunta del usuario no tiene relación con temas burocráticos universitarios, o si claramente no se puede responder con la información del contexto (ejemplo: preguntas sobre eventos culturales, vida en el campus, etc.).
-        4. RECORDATORIO: UNICAMENTE RESPONDER CON UNA DE LAS DOS PALABRAS CLAVE ("recuperador" o "rechazo_amable") según los criterios anteriores. NO EXPLICAR TU DECISIÓN, SOLO DEVOLVER LA PALABRA CLAVE CORRESPONDIENTE.
+        1. POSIBLES RESPUESTAS: Unicamente podras responder con "recuperador" o "rechazo_amable".
+        2. CRITERIOS PARA "recuperador" (PERMISIVO): Clasifica aqui cualquier pregunta relacionada con tramites academicos, matricula, plazos, becas, normativas de evaluacion, baremos de contratacion, liquidacion de viajes de investigacion, solicitudes, convalidaciones, calendarios lectivos o cualquier consulta sobre el funcionamiento de la US.
+        3. CRITERIOS PARA "rechazo_amable" (ESTRICTO): Clasifica aqui UNICAMENTE preguntas que no tengan absolutamente ninguna relacion con la universidad (ejemplo: recetas de cocina, recomendaciones de series de ocio, resultados deportivos internacionales, consultas de programacion de ordenadores generales, chistes, etc.).
+        4. REGLA DE ORO: En caso de cualquier duda o ambiguedad, prioriza SIEMPRE clasificar como "recuperador" para permitir que el motor de RAG e indexacion de Pinecone busque la informacion en los documentos reales.
+        5. RECORDATORIO: UNICAMENTE RESPONDER CON UNA DE LAS DOS PALABRAS CLAVE ("recuperador" o "rechazo_amable") segun los criterios anteriores. NO EXPLICAR TU DECISION, SOLO DEVOLVER LA PALABRA CLAVE CORRESPONDIENTE.
         
-        HISTORIAL DE CONVERSACIÓN:
+        HISTORIAL DE CONVERSACION:
         {historial}
         
         PREGUNTA DEL USUARIO:

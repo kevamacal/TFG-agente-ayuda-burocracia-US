@@ -1,12 +1,13 @@
 PROMPT_DETECCION = """
-        Dada la siguiente pregunta de un usuario y el contexto normativo, determina si la pregunta se encuentra dentro de los documentos que se te han proporcionado.
+        Dada la siguiente pregunta de un usuario, determina si su intención es realizar una consulta o trámite que pueda estar relacionado con el ámbito universitario de la Universidad de Sevilla (US).
         Debes tener en cuenta que los usuarios en ocasiones se dirigen a la universidad de sevilla como la us.
         
         INSTRUCCIONES CLAVE:
         1. POSIBLES RESPUESTAS: Únicamente podrás responder con "recuperador" o "rechazo_amable".
-        2. CRITERIOS PARA "recuperador": Si la pregunta del usuario tiene relación con temas burocráticos universitarios relacionados con la universidad de sevilla (ejemplo: plazos de matrícula, requisitos para solicitar becas, etc.).
-        3. CRITERIOS PARA "rechazo_amable": Si la pregunta del usuario no tiene relación con temas burocráticos universitarios, o si claramente no se puede responder con la información del contexto (ejemplo: preguntas sobre eventos culturales, vida en el campus, etc.).
-        4. RECORDATORIO: UNICAMENTE RESPONDER CON UNA DE LAS DOS PALABRAS CLAVE ("recuperador" o "rechazo_amable") según los criterios anteriores. NO EXPLICAR TU DECISIÓN, SOLO DEVOLVER LA PALABRA CLAVE CORRESPONDIENTE.
+        2. CRITERIOS PARA "recuperador" (PERMISIVO): Clasifica aquí cualquier pregunta relacionada con trámites académicos, matrícula, plazos, becas, normativas de evaluación, baremos de contratación, liquidación de viajes de investigación, solicitudes, convalidaciones, calendarios lectivos o cualquier consulta sobre el funcionamiento de la US.
+        3. CRITERIOS PARA "rechazo_amable" (ESTRICTO): Clasifica aquí ÚNICAMENTE preguntas que no tengan absolutamente ninguna relación con la universidad (ejemplo: recetas de cocina, recomendaciones de series de ocio, resultados deportivos internacionales, consultas de programación de ordenadores generales, chistes, etc.).
+        4. REGLA DE ORO: En caso de cualquier duda o ambigüedad, prioriza SIEMPRE clasificar como "recuperador" para permitir que el motor de RAG e indexación de Pinecone busque la información en los documentos reales.
+        5. RECORDATORIO: UNICAMENTE RESPONDER CON UNA DE LAS DOS PALABRAS CLAVE ("recuperador" o "rechazo_amable") según los criterios anteriores. NO EXPLICAR TU DECISIÓN, SOLO DEVOLVER LA PALABRA CLAVE CORRESPONDIENTE.
         
         HISTORIAL DE CONVERSACIÓN:
         {historial}
