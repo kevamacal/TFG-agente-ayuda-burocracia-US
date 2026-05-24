@@ -10,6 +10,13 @@ from utils.config import settings
 from langchain_classic.retrievers.contextual_compression import ContextualCompressionRetriever
 import datetime
 
+class StreamWrapper:
+    def __init__(self, generator):
+        self.generator = generator
+
+    def __repr__(self):
+        return f"<StreamWrapper generator={self.generator}>"
+
 class AsistenteRAG:
     def __init__(self):
         # Inicializar callbacks globales de Langfuse si las credenciales están presentes
@@ -213,6 +220,7 @@ class AsistenteRAG:
         
         cadena_activa = self.cadenas_respuesta.get(tipo_respuesta, self.cadenas_respuesta["normativo"])
         
-        return cadena_activa.stream(inputs, config={"callbacks": self.callbacks})
+        raw_stream = cadena_activa.stream(inputs, config={"callbacks": self.callbacks})
+        return StreamWrapper(raw_stream)
     
 asistente_rag = AsistenteRAG()

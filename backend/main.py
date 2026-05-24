@@ -220,7 +220,9 @@ def enviar_mensaje(
             
             # Iterar y enviar tokens en tiempo real
             respuesta_texto = ""
-            for chunk in estado.get("stream", []):
+            stream_obj = estado.get("stream")
+            generator = stream_obj.generator if hasattr(stream_obj, "generator") else stream_obj or []
+            for chunk in generator:
                 respuesta_texto += chunk
                 yield f"event: token\ndata: {json.dumps({'token': chunk})}\n\n"
                 await asyncio.sleep(0.01) # Ceder control para streaming en tiempo real
