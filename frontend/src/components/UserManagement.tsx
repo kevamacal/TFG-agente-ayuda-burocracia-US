@@ -156,16 +156,16 @@ export function UserManagement({ currentUserEmail }: UserManagementProps) {
   }, []);
 
   return (
-    <div className="flex flex-1 flex-col bg-[#0d0e12] p-8 overflow-y-auto">
+    <div className="flex flex-1 flex-col bg-background text-textMain p-8 overflow-y-auto">
       <div className="mx-auto w-full max-w-4xl space-y-8 animate-fade-in">
         
         {/* Title */}
         <div>
-          <h2 className="text-2xl font-bold text-white flex items-center space-x-2">
+          <h2 className="text-2xl font-bold text-textMain flex items-center space-x-2">
             <Users size={24} className="text-accent" />
             <span>👥 Administración de Usuarios</span>
           </h2>
-          <p className="mt-1 text-sm text-gray-400">
+          <p className="mt-1 text-sm text-textMuted">
             Control de cuentas registradas y asignación de permisos administrativos del sistema.
           </p>
         </div>
@@ -175,35 +175,35 @@ export function UserManagement({ currentUserEmail }: UserManagementProps) {
           
           {/* Create User Panel */}
           <div className="md:col-span-1 rounded-xl border border-border bg-sidebar p-6 shadow-lg h-fit">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-4 flex items-center space-x-2">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-textMuted mb-4 flex items-center space-x-2">
               <UserPlus size={16} />
               <span>Registrar Usuario</span>
             </h3>
             
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-textMuted">
                   Correo electrónico
                 </label>
                 <input
                   type="email"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-[#0d0e12] px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-accent"
+                  className="mt-1 w-full rounded-lg border border-border bg-inputBg px-3.5 py-2.5 text-xs text-textMain placeholder-textMuted focus:outline-none focus:border-accent"
                   placeholder="usuario@us.es"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-textMuted">
                   Contraseña
                 </label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-[#0d0e12] px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-accent"
+                  className="mt-1 w-full rounded-lg border border-border bg-inputBg px-3.5 py-2.5 text-xs text-textMain placeholder-textMuted focus:outline-none focus:border-accent"
                   placeholder="••••••••"
                   required
                 />
@@ -215,9 +215,9 @@ export function UserManagement({ currentUserEmail }: UserManagementProps) {
                   id="isAdminCheckbox"
                   checked={newIsAdmin}
                   onChange={(e) => setNewIsAdmin(e.target.checked)}
-                  className="rounded border-border bg-[#0d0e12] text-accent focus:ring-accent"
+                  className="rounded border-border bg-inputBg text-accent focus:ring-accent"
                 />
-                <label htmlFor="isAdminCheckbox" className="text-xs font-semibold text-gray-300 cursor-pointer">
+                <label htmlFor="isAdminCheckbox" className="text-xs font-semibold text-textMain cursor-pointer">
                   Hacer Administrador
                 </label>
               </div>
@@ -248,7 +248,7 @@ export function UserManagement({ currentUserEmail }: UserManagementProps) {
 
           {/* User List Panel */}
           <div className="md:col-span-2 space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 px-1">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-textMuted px-1">
               Usuarios Registrados
             </h3>
 
@@ -259,7 +259,7 @@ export function UserManagement({ currentUserEmail }: UserManagementProps) {
             )}
 
             {users.length === 0 && !loading && !error ? (
-              <div className="rounded-xl border border-border bg-sidebar p-8 text-center text-gray-500">
+              <div className="rounded-xl border border-border bg-sidebar p-8 text-center text-textMuted">
                 Cargando listado...
               </div>
             ) : (
@@ -283,7 +283,7 @@ export function UserManagement({ currentUserEmail }: UserManagementProps) {
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center space-x-2">
-                          <h4 className="truncate text-sm font-semibold text-white" title={u.email}>
+                          <h4 className="truncate text-sm font-semibold text-textMain" title={u.email}>
                             {u.email}
                           </h4>
                           {isSelf && (
@@ -292,7 +292,7 @@ export function UserManagement({ currentUserEmail }: UserManagementProps) {
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-textMuted mt-1">
                           {u.is_admin ? "🛡️ Administrador" : "👤 Usuario estándar"} • Creado: {dateStr}
                         </p>
                       </div>
@@ -303,10 +303,10 @@ export function UserManagement({ currentUserEmail }: UserManagementProps) {
                           disabled={isSelf}
                           className={`rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition-all ${
                             isSelf
-                              ? "opacity-30 cursor-not-allowed text-gray-600"
+                              ? "opacity-30 cursor-not-allowed text-textMuted"
                               : u.is_admin
-                              ? "bg-[#0d0e12] text-gray-300 hover:text-white"
-                              : "bg-[#0d0e12] text-accent hover:bg-accent hover:text-white"
+                              ? "bg-background text-textMuted hover:text-textMain hover:bg-hover"
+                              : "bg-background text-accent hover:bg-accent hover:text-white"
                           }`}
                         >
                           {u.is_admin ? "Quitar Admin" : "Hacer Admin"}
@@ -315,9 +315,9 @@ export function UserManagement({ currentUserEmail }: UserManagementProps) {
                         <button
                           onClick={() => confirmDeleteUser(u.id, u.email)}
                           disabled={isSelf}
-                          className={`rounded-lg border border-border bg-[#0d0e12] p-2 text-accent transition-all ${
+                          className={`rounded-lg border border-border bg-background p-2 text-accent transition-all ${
                             isSelf
-                              ? "opacity-30 cursor-not-allowed text-gray-600 border-gray-800"
+                              ? "opacity-30 cursor-not-allowed text-textMuted border-border"
                               : "hover:bg-accent hover:text-white"
                           }`}
                           title="Eliminar usuario"

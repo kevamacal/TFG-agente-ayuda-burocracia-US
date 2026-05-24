@@ -79,7 +79,7 @@ export function LoginScreen({ onLoginSuccess }: LoginProps) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#090a0c] px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-sidebar p-8 shadow-2xl animate-fade-in">
         {/* Glow effect */}
         <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-accent/20 blur-3xl"></div>
@@ -91,20 +91,20 @@ export function LoginScreen({ onLoginSuccess }: LoginProps) {
             alt="Logo US"
             className="mb-4 h-16 w-auto object-contain filter brightness-110"
           />
-          <h2 className="text-2xl font-bold tracking-tight text-white">
+          <h2 className="text-2xl font-bold tracking-tight text-textMain">
             Asistente Académico
           </h2>
-          <p className="mt-1 text-sm text-gray-400">
+          <p className="mt-1 text-sm text-textMuted">
             Universidad de Sevilla
           </p>
         </div>
 
         {/* Tab switch */}
-        <div className="mt-8 flex rounded-lg bg-[#0d0e12] p-1 border border-border">
+        <div className="mt-8 flex rounded-lg bg-inputBg p-1 border border-border">
           <button
             type="button"
             className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-              !isRegister ? "bg-accent text-white" : "text-gray-400 hover:text-white"
+              !isRegister ? "bg-accent text-white" : "text-textMuted hover:text-textMain"
             }`}
             onClick={() => {
               setIsRegister(false);
@@ -117,7 +117,7 @@ export function LoginScreen({ onLoginSuccess }: LoginProps) {
           <button
             type="button"
             className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-              isRegister ? "bg-accent text-white" : "text-gray-400 hover:text-white"
+              isRegister ? "bg-accent text-white" : "text-textMuted hover:text-textMain"
             }`}
             onClick={() => {
               setIsRegister(true);
@@ -131,28 +131,28 @@ export function LoginScreen({ onLoginSuccess }: LoginProps) {
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-textMuted">
               Correo electrónico
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-[#0d0e12] px-4 py-3 text-sm text-white placeholder-gray-500 transition-all focus:border-accent focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-border bg-inputBg px-4 py-3 text-sm text-textMain placeholder-gray-500 transition-all focus:border-accent focus:outline-none"
               placeholder="usuario@us.es"
               required
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-textMuted">
               Contraseña
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-[#0d0e12] px-4 py-3 text-sm text-white placeholder-gray-500 transition-all focus:border-accent focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-border bg-inputBg px-4 py-3 text-sm text-textMain placeholder-gray-500 transition-all focus:border-accent focus:outline-none"
               placeholder="••••••••"
               required
             />

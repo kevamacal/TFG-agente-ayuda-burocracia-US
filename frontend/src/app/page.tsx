@@ -16,8 +16,30 @@ export default function Home() {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("chat");
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
 
   const chat = useChat();
+
+  useEffect(() => {
+    // Detect initial theme
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "light" || savedTheme === "dark") {
+      setTheme(savedTheme);
+      document.documentElement.classList.toggle("dark", savedTheme === "dark");
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const initialTheme = prefersDark ? "dark" : "light";
+      setTheme(initialTheme);
+      document.documentElement.classList.toggle("dark", prefersDark);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setTheme(newTheme);
+    localStorage.setItem("theme", newTheme);
+    document.documentElement.classList.toggle("dark", newTheme === "dark");
+  };
 
   const checkAuth = async () => {
     const token = Cookies.get("auth_token");
@@ -88,7 +110,7 @@ export default function Home() {
 
   // Authenticated Dashboard Layout
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background">
+    <div className="flex h-screen w-screen overflow-hidden bg-background text-textMain font-sans">
       <Sidebar
         conversations={chat.conversations}
         activeConversationId={chat.activeConversationId}
@@ -101,6 +123,8 @@ export default function Home() {
         isAdmin={isAdmin}
         userEmail={userEmail}
         onLogout={handleLogout}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       <div className="flex flex-1 flex-col overflow-hidden min-h-0">

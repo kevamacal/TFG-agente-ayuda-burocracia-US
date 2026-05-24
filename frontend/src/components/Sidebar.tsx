@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MessageSquare, Files, Users, LogOut, Plus, Edit2, Trash2, Check, X, ThumbsDown } from "lucide-react";
+import { MessageSquare, Files, Users, LogOut, Plus, Edit2, Trash2, Check, X, ThumbsDown, Sun, Moon } from "lucide-react";
 import { Conversation } from "../hooks/useChat";
 import { ConfirmModal } from "./ConfirmModal";
 
@@ -15,6 +15,8 @@ interface SidebarProps {
   isAdmin: boolean;
   userEmail: string | null;
   onLogout: () => void;
+  theme: "light" | "dark";
+  onToggleTheme: () => void;
 }
 
 export function Sidebar({
@@ -29,6 +31,8 @@ export function Sidebar({
   isAdmin,
   userEmail,
   onLogout,
+  theme,
+  onToggleTheme,
 }: SidebarProps) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -65,10 +69,10 @@ export function Sidebar({
             className="h-10 w-auto filter brightness-110"
           />
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+            <p className="text-xs font-semibold uppercase tracking-wider text-textMuted">
               Conectado como
             </p>
-            <p className="truncate text-sm font-medium text-white" title={userEmail || ""}>
+            <p className="truncate text-sm font-medium text-textMain" title={userEmail || ""}>
               {userEmail || "Usuario"}
             </p>
           </div>
@@ -81,7 +85,7 @@ export function Sidebar({
             className={`flex w-full items-center space-x-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
               activeTab === "chat"
                 ? "bg-accent text-white"
-                : "text-gray-400 hover:bg-[#1f222d] hover:text-white"
+                : "text-textMuted hover:bg-hover hover:text-textMain"
             }`}
           >
             <MessageSquare size={18} />
@@ -93,7 +97,7 @@ export function Sidebar({
             className={`flex w-full items-center space-x-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
               activeTab === "documents"
                 ? "bg-accent text-white"
-                : "text-gray-400 hover:bg-[#1f222d] hover:text-white"
+                : "text-textMuted hover:bg-hover hover:text-textMain"
             }`}
           >
             <Files size={18} />
@@ -107,11 +111,11 @@ export function Sidebar({
                 className={`flex w-full items-center space-x-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
                   activeTab === "users"
                     ? "bg-accent text-white"
-                    : "text-gray-400 hover:bg-[#1f222d] hover:text-white"
+                    : "text-textMuted hover:bg-hover hover:text-textMain"
                 }`}
               >
                 <Users size={18} />
-                <span>Administrar Usuarios</span>
+                <span>Usuarios</span>
               </button>
 
               <button
@@ -119,7 +123,7 @@ export function Sidebar({
                 className={`flex w-full items-center space-x-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
                   activeTab === "feedback"
                     ? "bg-accent text-white"
-                    : "text-gray-400 hover:bg-[#1f222d] hover:text-white"
+                    : "text-textMuted hover:bg-hover hover:text-textMain"
                 }`}
               >
                 <ThumbsDown size={18} />
@@ -135,12 +139,12 @@ export function Sidebar({
         {activeTab === "chat" ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between px-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+              <span className="text-xs font-bold uppercase tracking-wider text-textMuted">
                 Chats Recientes
               </span>
               <button
                 onClick={createConversation}
-                className="flex items-center space-x-1 rounded bg-[#0d0e12] border border-border p-1.5 text-xs text-accent hover:text-white hover:bg-accent transition-all"
+                className="flex items-center space-x-1 rounded bg-background border border-border p-1.5 text-xs text-accent hover:text-white hover:bg-accent transition-all"
                 title="Nuevo chat"
               >
                 <Plus size={14} />
@@ -158,8 +162,8 @@ export function Sidebar({
                     onClick={() => !isEditing && setActiveConversationId(c.id)}
                     className={`group relative flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium cursor-pointer transition-all ${
                       isActive
-                        ? "bg-[#1f222d] text-white border-l-4 border-accent"
-                        : "text-gray-400 hover:bg-[#14161f] hover:text-white"
+                        ? "bg-hover text-textMain border-l-4 border-accent"
+                        : "text-textMuted hover:bg-hover hover:text-textMain"
                     }`}
                   >
                     {isEditing ? (
@@ -168,7 +172,7 @@ export function Sidebar({
                           type="text"
                           value={editTitle}
                           onChange={(e) => setEditTitle(e.target.value)}
-                          className="w-full rounded border border-border bg-[#0d0e12] px-2 py-1 text-xs text-white focus:outline-none focus:border-accent"
+                          className="w-full rounded border border-border bg-background px-2 py-1 text-xs text-textMain focus:outline-none focus:border-accent"
                           autoFocus
                         />
                         <button
@@ -188,10 +192,10 @@ export function Sidebar({
                       <>
                         <span className="truncate pr-8">{c.titulo}</span>
                         {isActive && (
-                          <div className="absolute right-2 hidden space-x-1 group-hover:flex bg-[#1f222d] pl-2">
+                          <div className="absolute right-2 hidden space-x-1 group-hover:flex bg-hover pl-2">
                             <button
                               onClick={(e) => handleStartRename(c, e)}
-                              className="text-gray-400 hover:text-white p-1"
+                              className="text-textMuted hover:text-textMain p-1"
                               title="Renombrar chat"
                             >
                               <Edit2 size={12} />
@@ -218,21 +222,29 @@ export function Sidebar({
           </div>
         ) : (
           <div className="flex h-full items-center justify-center text-center px-4">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-textMuted">
               Navega entre pestañas para ver las herramientas de administración y listado de conocimiento.
             </p>
           </div>
         )}
       </div>
 
-      {/* Logout button */}
-      <div className="p-4 border-t border-border bg-[#0b0c10]">
+      {/* Theme toggle & Logout buttons */}
+      <div className="p-4 border-t border-border bg-header flex space-x-2">
+        <button
+          onClick={onToggleTheme}
+          className="flex flex-1 items-center justify-center space-x-2 rounded-lg border border-border bg-background px-3 py-2.5 text-sm font-medium text-textMuted transition-all hover:bg-hover hover:text-textMain"
+          title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+        >
+          {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          <span>{theme === "dark" ? "Claro" : "Oscuro"}</span>
+        </button>
         <button
           onClick={onLogout}
-          className="flex w-full items-center justify-center space-x-2 rounded-lg border border-border bg-[#0d0e12] px-4 py-2.5 text-sm font-medium text-gray-400 transition-all hover:bg-accent hover:text-white"
+          className="flex flex-1 items-center justify-center space-x-2 rounded-lg border border-border bg-background px-3 py-2.5 text-sm font-medium text-textMuted transition-all hover:bg-accent hover:text-white"
         >
           <LogOut size={16} />
-          <span>Cerrar Sesión</span>
+          <span>Salir</span>
         </button>
       </div>
 

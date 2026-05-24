@@ -33,12 +33,12 @@ export function ConfirmModal({
       />
       
       {/* Modal Container */}
-      <div className="relative w-full max-w-md transform overflow-hidden rounded-2xl border border-border bg-[#14161f] p-6 shadow-2xl transition-all duration-300 animate-fade-in">
+      <div className="relative w-full max-w-md transform overflow-hidden rounded-2xl border border-border bg-cardLighter p-6 shadow-2xl transition-all duration-300 animate-fade-in">
         
         {/* Close Button (X) */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-lg p-1 text-gray-400 hover:bg-border/30 hover:text-white transition-all"
+          className="absolute right-4 top-4 rounded-lg p-1 text-textMuted hover:bg-hover hover:text-textMain transition-all"
         >
           <X size={18} />
         </button>
@@ -52,10 +52,10 @@ export function ConfirmModal({
           </div>
           
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-white leading-6">
+            <h3 className="text-lg font-bold text-textMain leading-6">
               {title}
             </h3>
-            <p className="mt-2 text-sm text-gray-400 leading-relaxed">
+            <p className="mt-2 text-sm text-textMuted leading-relaxed">
               {message}
             </p>
           </div>
@@ -66,7 +66,7 @@ export function ConfirmModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-gray-300 hover:bg-[#1f222d] hover:text-white transition-all focus:outline-none"
+            className="rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-textMuted hover:bg-hover hover:text-textMain transition-all focus:outline-none"
           >
             {cancelText}
           </button>

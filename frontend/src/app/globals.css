@@ -3,9 +3,43 @@
 @tailwind utilities;
 
 :root {
+  --color-background: #f8f9fa;
+  --color-sidebar: #ffffff;
+  --color-card: #ffffff;
+  --color-card-lighter: #f1f3f5;
+  --color-border: #dee2e6;
+  --color-header: #e9ecef;
+  --color-hover: #e9ecef;
+  --color-text-main: #1a1a1a;
+  --color-text-muted: #5e5e6e;
+  --color-input-bg: #f1f3f5;
+  --foreground-rgb: 26, 26, 26;
+  --background-start-rgb: 248, 249, 250;
+  --background-end-rgb: 233, 236, 239;
+  
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
+  --scrollbar-track: rgba(0, 0, 0, 0.03);
+}
+
+.dark {
+  --color-background: #0d0e12;
+  --color-sidebar: #15171e;
+  --color-card: #1b1d26;
+  --color-card-lighter: #14161f;
+  --color-border: #292c3a;
+  --color-header: #090a0c;
+  --color-hover: #1f222d;
+  --color-text-main: #f8f9fa;
+  --color-text-muted: #9ea2b6;
+  --color-input-bg: #0d0e12;
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 13, 14, 18;
   --background-end-rgb: 9, 10, 12;
+  
+  --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.4);
+  --scrollbar-track: rgba(255, 255, 255, 0.03);
 }
 
 body {
@@ -27,18 +61,18 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--scrollbar-track);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--scrollbar-thumb);
   border-radius: 5px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--scrollbar-thumb-hover);
   border: 2px solid transparent;
   background-clip: padding-box;
 }
@@ -46,7 +80,7 @@ body {
 /* Support for Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.03);
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
 /* Micro-animations */

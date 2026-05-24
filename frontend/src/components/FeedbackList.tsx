@@ -48,24 +48,24 @@ export function FeedbackList() {
   }, []);
 
   return (
-    <div className="flex flex-1 flex-col bg-[#0d0e12] p-8 overflow-y-auto">
+    <div className="flex flex-1 flex-col bg-background text-textMain p-8 overflow-y-auto">
       <div className="mx-auto w-full max-w-5xl space-y-8 animate-fade-in">
         
         {/* Title */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white flex items-center space-x-2">
+            <h2 className="text-2xl font-bold text-textMain flex items-center space-x-2">
               <Frown size={24} className="text-accent" />
               <span>👎 Feedback Negativo y Reportes</span>
             </h2>
-            <p className="mt-1 text-sm text-gray-400">
+            <p className="mt-1 text-sm text-textMuted">
               Listado de respuestas valoradas negativamente por los usuarios para auditoría y mejora del RAG.
             </p>
           </div>
           <button
             onClick={fetchFeedback}
             disabled={loading}
-            className="flex items-center space-x-2 rounded-lg border border-border bg-sidebar px-4 py-2 text-sm font-semibold text-gray-300 hover:text-white transition-all disabled:opacity-50"
+            className="flex items-center space-x-2 rounded-lg border border-border bg-sidebar px-4 py-2 text-sm font-semibold text-textMuted hover:text-textMain transition-all disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             <span>Refrescar</span>
@@ -79,7 +79,7 @@ export function FeedbackList() {
         )}
 
         {feedbackItems.length === 0 && !loading && !error ? (
-          <div className="rounded-xl border border-border bg-sidebar p-8 text-center text-gray-500">
+          <div className="rounded-xl border border-border bg-sidebar p-8 text-center text-textMuted">
             No hay reportes de feedback negativo registrados. ¡El asistente está respondiendo bien!
           </div>
         ) : (
@@ -110,7 +110,7 @@ export function FeedbackList() {
                   className="rounded-xl border border-border bg-sidebar p-6 shadow-md space-y-4 hover:border-accent/15 transition-all"
                 >
                   {/* Top info row */}
-                  <div className="flex flex-wrap items-center justify-between text-xs text-gray-500 border-b border-border/40 pb-3 gap-2">
+                  <div className="flex flex-wrap items-center justify-between text-xs text-textMuted border-b border-border/40 pb-3 gap-2">
                     <div className="flex items-center space-x-4">
                       <span className="flex items-center space-x-1">
                         <Calendar size={12} />
@@ -123,29 +123,29 @@ export function FeedbackList() {
 
                   {/* Q & A Section */}
                   <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-lg bg-[#0d0e12] border border-border/70 p-4 space-y-1.5">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center space-x-1.5">
+                    <div className="rounded-lg bg-inputBg border border-border/70 p-4 space-y-1.5">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-textMuted flex items-center space-x-1.5">
                         <MessageSquare size={12} className="text-accent" />
                         <span>Pregunta del Usuario</span>
                       </h4>
-                      <p className="text-sm text-gray-200 whitespace-pre-wrap">{item.pregunta_usuario}</p>
+                      <p className="text-sm text-textMain whitespace-pre-wrap">{item.pregunta_usuario}</p>
                     </div>
 
-                    <div className="rounded-lg bg-[#0d0e12] border border-border/70 p-4 space-y-1.5">
+                    <div className="rounded-lg bg-inputBg border border-border/70 p-4 space-y-1.5">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-red-400 flex items-center space-x-1.5">
                         <Frown size={12} />
                         <span>Respuesta Evaluada</span>
                       </h4>
-                      <div className="text-sm text-gray-300 leading-relaxed">
+                      <div className="text-sm text-textMain leading-relaxed">
                         <ReactMarkdown
                           components={{
                             p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
                             ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-2 pl-1 space-y-0.5" {...props} />,
                             ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-2 pl-1 space-y-0.5" {...props} />,
                             li: ({ node, ...props }) => <li className="mb-0.5" {...props} />,
-                            strong: ({ node, ...props }) => <strong className="font-bold text-white" {...props} />,
+                            strong: ({ node, ...props }) => <strong className="font-bold text-textMain" {...props} />,
                             a: ({ node, ...props }) => <a className="text-accent hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
-                            code: ({ node, ...props }) => <code className="bg-[#181920] border border-border/50 px-1 py-0.5 rounded text-xs font-mono text-accent" {...props} />,
+                            code: ({ node, ...props }) => <code className="bg-background border border-border/50 px-1 py-0.5 rounded text-xs font-mono text-accent" {...props} />,
                           }}
                         >
                           {item.respuesta_asistente}
@@ -160,7 +160,7 @@ export function FeedbackList() {
                       <h4 className="text-xs font-bold uppercase tracking-wider text-red-400">
                         Motivo del reporte / Comentario del usuario:
                       </h4>
-                      <p className="text-xs text-gray-300 italic">
+                      <p className="text-xs text-textMain italic">
                         "{item.feedback_comentario}"
                       </p>
                     </div>
@@ -169,13 +169,13 @@ export function FeedbackList() {
                   {/* References used */}
                   {parsedRefs.length > 0 && (
                     <div className="space-y-2 pt-1">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center space-x-1.5">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-textMuted flex items-center space-x-1.5">
                         <BookOpen size={12} />
                         <span>Documentos de RAG Consultados</span>
                       </h4>
-                      <ul className="grid gap-1.5 sm:grid-cols-2 text-xs text-gray-400">
+                      <ul className="grid gap-1.5 sm:grid-cols-2 text-xs text-textMuted">
                         {parsedRefs.map((ref, idx) => (
-                          <li key={idx} className="flex items-center space-x-2 rounded bg-[#0d0e12] px-3 py-2 border border-border/50">
+                          <li key={idx} className="flex items-center space-x-2 rounded bg-background px-3 py-2 border border-border/50">
                             <span className="h-1.5 w-1.5 rounded-full bg-accent shrink-0" />
                             <span className="truncate">{ref}</span>
                           </li>
