@@ -49,9 +49,9 @@ export default function Home() {
       setIsAuthenticated(true);
       setIsAdmin(adminCookie === "true");
       
-      // Fetch /me to get current email
+      // Fetch /auth/me to get current email
       try {
-        const res = await fetch(`${API_URL}/me`, {
+        const res = await fetch(`${API_URL}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {

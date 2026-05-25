@@ -30,7 +30,7 @@ export function LoginScreen({ onLoginSuccess }: LoginProps) {
     try {
       if (isRegister) {
         // Register flow
-        const res = await fetch(`${API_URL}/registro`, {
+        const res = await fetch(`${API_URL}/auth/registro`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
@@ -50,7 +50,7 @@ export function LoginScreen({ onLoginSuccess }: LoginProps) {
         params.append("username", email);
         params.append("password", password);
 
-        const res = await fetch(`${API_URL}/login`, {
+        const res = await fetch(`${API_URL}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: params,

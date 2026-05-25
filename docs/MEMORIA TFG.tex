@@ -629,9 +629,9 @@ Las relaciones incluyen eliminación en cascada: al eliminar un usuario se elimi
         \toprule
         \textbf{Método} & \textbf{Ruta}                                   & \textbf{Descripción}                          \\
         \midrule
-        POST            & \texttt{/registro}                               & Registro de nuevo usuario                     \\
-        POST            & \texttt{/login}                                  & Autenticación con email/contraseña            \\
-        GET             & \texttt{/me}                                     & Datos del usuario autenticado                 \\
+        POST            & \texttt{/auth/registro}                          & Registro de nuevo usuario                     \\
+        POST            & \texttt{/auth/login}                             & Autenticación con email/contraseña            \\
+        GET             & \texttt{/auth/me}                                & Datos del usuario autenticado                 \\
         GET             & \texttt{/conversaciones}                         & Lista de conversaciones del usuario           \\
         POST            & \texttt{/conversaciones}                         & Crear nueva conversación                      \\
         GET             & \texttt{/conversaciones/\allowbreak\{\allowbreak{}id\}/\allowbreak{}mensajes} & Historial de mensajes                         \\
@@ -645,9 +645,14 @@ Las relaciones incluyen eliminación en cascada: al eliminar un usuario se elimi
         GET             & \texttt{/admin/usuarios}                         & Listar cuentas de usuarios (Admin)            \\
         DELETE          & \texttt{/admin/usuarios/\allowbreak\{\allowbreak{}id\}}                          & Eliminar cuenta de usuario (Admin)            \\
         PUT             & \texttt{/admin/usuarios/\allowbreak\{\allowbreak{}id\}/\allowbreak{}admin}      & Conceder/revocar rol de admin (Admin)         \\
+        GET             & \texttt{/documentos}                             & Listar los nombres de los documentos en Pinecone \\
         \bottomrule
     \end{tabular}
 \end{table}
+
+\subsection{Políticas de origen cruzado (CORS)}
+
+Dado que el frontend (Next.js) y el backend (FastAPI) corren en puertos o subdominios independientes, los navegadores bloquean de forma nativa las peticiones HTTP cruzadas. Para solucionar esto, configuré el middleware de CORS en FastAPI (\texttt{CORSMiddleware}) para permitir el acceso de forma controlada a los métodos y cabeceras necesarios, garantizando que el chat y el streaming por SSE funcionen correctamente sin bloqueos del navegador.
 
 \subsection{Autenticación, Autorización y Roles}
 
@@ -664,6 +669,20 @@ A nivel de base de datos, implementé roles diferenciados mediante la columna bo
     \end{enumerate}
 \end{itemize}
 
+\subsection{Modularización y Desacoplamiento (Capa CRUD y Servicios)}
+
+A medida que el backend crecía, me di cuenta de que mantener todo el código en un único archivo (\texttt{main.py}) era una mala idea. El archivo principal acumulaba más de 500 líneas y mezclaba demasiadas responsabilidades: la definición de endpoints, la inyección de dependencias de usuario, la lógica de acceso a la base de datos con SQLAlchemy y la orquestación del streaming SSE con LangGraph. Esto no solo dificultaba enormemente la lectura y la depuración del código, sino que ponía en riesgo la escalabilidad del sistema.
+
+Para solucionar este problema de acoplamiento, decidí llevar a cabo una refactorización profunda estructurando el backend en una arquitectura modular por capas:
+
+\begin{itemize}
+    \item \textbf{Capa de Controladores (Routers):} Dividí los endpoints de la API REST utilizando \texttt{APIRouter} de FastAPI en archivos independientes dentro de una nueva carpeta \texttt{/routers}: \texttt{auth.py} (para el registro, login y perfil), \texttt{conversaciones.py} (para la gestión de chats y mensajes), \texttt{admin.py} (para operaciones administrativas) y \texttt{documentos.py} (para consultas del RAG).
+    \item \textbf{Capa CRUD/Acceso a Datos (\texttt{crud.py}):} Con el fin de aislar las consultas y modificaciones en la base de datos relacional, extraje todas las llamadas directas de SQLAlchemy (\texttt{db.query}, \texttt{db.commit}, etc.) fuera de los controladores. Aunque consideré llamarle a esta capa \textit{Repository} de acuerdo con patrones formales como DDD (Domain-Driven Design), preferí mantener el término \texttt{crud.py} por ser la convención estándar recomendada en la documentación oficial de FastAPI.
+    \item \textbf{Capa de Servicios de Negocio (\texttt{services/}):} Endpoints extremadamente complejos como la transmisión asíncrona por Server-Sent Events (SSE) en \texttt{enviar\_mensaje} los simplifiqué abstrayendo sus responsabilidades. Creé un servicio de chat (\texttt{chat\_service.py}) encargado de dar formato al historial reciente e interactuar con el agente en segundo plano, dejando el router del endpoint con apenas 20 líneas de código dedicadas a validar la petición HTTP y retornar la respuesta en streaming.
+\end{itemize}
+
+Esta separación de responsabilidades no solo incrementó drásticamente la legibilidad del proyecto, sino que me permitió solventar un bug latente de tipado en el formateador del stream del agente (al extraer claves con un iterador incorrecto en tiempo de ejecución) y facilitó la integración limpia de las dependencias comunes de autorización mediante tipados avanzados con \texttt{Annotated} de Python.
+
 \section{Diseño del agente conversacional}
 \subsection{Grafo de estados (LangGraph)}
 
@@ -673,10 +692,11 @@ El flujo general del grafo es:
 
 \begin{enumerate}
     \item \textbf{START $\rightarrow$ Estado Inicial:} Formatea el historial de la conversación.
-    \item \textbf{Estado Inicial $\rightarrow$ Recuperador | Rechazo:} Decide si la consulta es relevante.
-    \item \textbf{Recuperador $\rightarrow$ Entrevistador | Clasificador:} Decide si hay suficiente información o se necesitan aclaraciones.
-    \item \textbf{Clasificador $\rightarrow$ Procedimental | Calendario | Normativo | Baremo:} Enruta al nodo especializado.
-    \item \textbf{Nodo final $\rightarrow$ END:} Genera la respuesta y finaliza.
+    \item \textbf{Estado Inicial $\rightarrow$ Recuperador | Rechazo:} Decide si la consulta es relevante para el dominio.
+    \item \textbf{Recuperador $\rightarrow$ Entrevistador | Búsqueda Web | Clasificador:} Decide si la información es suficiente (va al clasificador), ambigua (va al entrevistador) o insuficiente (va a la búsqueda web de fallback).
+    \item \textbf{Búsqueda Web $\rightarrow$ Clasificador:} Enriquece el contexto con la búsqueda externa y continúa hacia el clasificador.
+    \item \textbf{Clasificador $\rightarrow$ Procedimental | Calendario | Normativo | Baremo:} Enruta la consulta al nodo resolutor experto adecuado.
+    \item \textbf{Nodos finales $\rightarrow$ END:} Genera la respuesta definitiva y finaliza el flujo.
 \end{enumerate}
 
 \begin{figure}[H]
@@ -701,6 +721,10 @@ Este nodo ejecuta el pipeline completo de recuperación de información:
     \item Aplica reranking con Cohere (\texttt{rerank-v4.0-pro}) seleccionando los 4 más relevantes.
     \item Formatea los documentos con metadata (fuente y página).
 \end{enumerate}
+
+\subsection{Nodo Búsqueda Web: recuperación externa fallback}
+
+Este nodo se activa cuando el evaluador de suficiencia determina que los documentos internos recuperados de la base de conocimiento vectorial en Pinecone son insuficientes para resolver la pregunta. En este caso, realizo una consulta a la API de DuckDuckGo filtrada estrictamente al dominio de la Universidad de Sevilla (\texttt{site:us.es}) para obtener información fresca de internet. Los extractos y referencias recuperados se anexan al contexto del grafo y la ejecución prosigue hacia el clasificador para responder de forma precisa.
 
 \subsection{Nodo Entrevistador: gestión de ambigüedades}
 Este nodo se activa cuando el sistema de suficiencia detecta que la consulta del usuario es ambigua o carece de parámetros clave para ofrecer una resolución definitiva (por ejemplo, al preguntar sobre "becas" de manera genérica). Para evitar que el agente formule preguntas de aclaración al vacío, decidí dotar a este nodo de una herramienta de búsqueda web en tiempo de ejecución (filtrada al dominio \texttt{site:us.es}). De esta forma, el entrevistador realiza una consulta complementaria, enriquece el contexto inicial obtenido de Pinecone y presenta al usuario un resumen orientador de las opciones generales detectadas antes de formular la pregunta aclaratoria de seguimiento. Adicionalmente, implementé una regla estricta en el grafo para impedir que el agente encadene dos preguntas aclaratorias consecutivas, evitando así cansar al usuario.
@@ -774,6 +798,7 @@ Se utiliza PostgreSQL 15 como sistema de gestión de base de datos relacional. L
     \item Motor de conexión con \texttt{client\_encoding=utf8} para soporte de caracteres especiales en español.
     \item Sesiones gestionadas mediante un generador (\texttt{get\_db}) que garantiza el cierre correcto de conexiones.
     \item Creación automática de tablas al iniciar la aplicación mediante \texttt{Base.metadata.create\_all}.
+    \item \textbf{Inicialización de datos (seeding):} Para simplificar las pruebas del sistema, programé una rutina de inicio en \texttt{main.py} llamada \texttt{seed\_admin\_user()}. Si el sistema detecta que la base de datos está vacía de perfiles administradores al arrancar, genera automáticamente una cuenta de administración por defecto (\texttt{admin@us.es} con la clave \texttt{adminpassword}) para poder probar el panel de control sin pasos previos de configuración.
 \end{itemize}
 
 \chapter{Pipeline de ingesta de documentos}
@@ -953,30 +978,31 @@ Al enviar el primer mensaje de una conversación con título ``Nueva conversaci�
 
 \section{Corrective RAG (CRAG) y Búsqueda Web Fallback}
 
-Uno de los principales riesgos de los sistemas RAG tradicionales es la falta de información útil dentro de los documentos almacenados. Si el usuario pregunta algo que no está en la base de datos de PDFs (por ejemplo, plazos específicos de automatrícula del curso vigente que aún no se han subido), el agente respondería típicamente que "no dispone de esa información", o peor, podría alucinar.
+El principal inconveniente de usar un RAG clásico es que si la información no está en los PDF de Pinecone (por ejemplo, plazos específicos de la automatrícula del curso actual que aún no se han publicado oficialmente en los reglamentos cargados), el asistente responde que no sabe nada o, peor aún, se inventa la respuesta.
 
-Para mitigar esto, implementé un flujo de \textbf{Corrective RAG (CRAG)} en LangGraph. Después de recuperar los documentos de Pinecone, introduje un nodo clasificador de relevancia. Este evaluador utiliza el LLM para analizar la concordancia entre los fragmentos recuperados y la pregunta reformulada del usuario, clasificando el contexto en:
+Para resolver esto, implementé una arquitectura Corrective RAG (CRAG) en LangGraph. Justo después de recuperar los fragmentos, la arista condicional evalúa la relevancia y suficiencia de la información recuperada de Pinecone usando el modelo de lenguaje ligero, dividiendo el flujo en tres caminos posibles:
 \begin{itemize}
-    \item \textbf{Suficiente:} Los fragmentos responden directamente a la pregunta. El flujo continúa hacia el nodo resolutor correspondiente.
-    \item \textbf{Insuficiente:} Los fragmentos recuperados no contienen la respuesta a la consulta. En este caso, el grafo transiciona a un nodo especializado de \texttt{busqueda\_web}.
+    \item \textbf{Suficiente (resultor):} Los fragmentos contienen la información necesaria para responder de forma directa. El flujo continúa hacia el clasificador de categorías y los nodos resolutores.
+    \item \textbf{Ambiguo (entrevistador):} La consulta carece de parámetros clave para dar una respuesta definitiva. El flujo se deriva al nodo entrevistador para solicitar aclaraciones al usuario.
+    \item \textbf{Insuficiente (busqueda\_web):} Los fragmentos recuperados no contienen información útil para la consulta. El grafo transiciona al nodo de \texttt{busqueda\_web} para realizar una búsqueda externa de fallback.
 \end{itemize}
 
-En el nodo de \texttt{busqueda\_web}, realizo una consulta utilizando la API de DuckDuckGo restringida de forma estricta a la URL oficial de la Universidad de Sevilla (\texttt{site:us.es}). El agente descarga los extractos de la web oficial en tiempo real, los procesa y los añade al contexto del prompt para que el LLM pueda redactar una respuesta precisa con información del portal oficial.
+En el nodo de \texttt{busqueda\_web}, realizo una consulta a la API de DuckDuckGo filtrando los resultados de forma estricta por la web de la US (\texttt{site:us.es}). Con esto logro que el agente se descargue fragmentos del portal oficial en tiempo real, los procese y los meta en el prompt del LLM principal para generar la respuesta definitiva con datos actualizados.
 
-Para que la experiencia de usuario sea fluida y transparente, el backend transmite eventos intermedios mediante \textbf{Server-Sent Events (SSE)} con el estado de ejecución (por ejemplo, \textit{"Información interna insuficiente. Buscando en el portal de la US..."}), informando al usuario de qué está ocurriendo en cada paso y reduciendo la latencia percibida.
+Como buscar en la web tarda un par de segundos, decidí enviar eventos intermedios al usuario mediante Server-Sent Events (SSE). De este modo, en la pantalla se muestra un estado dinámico (como "Buscando en el portal de la US...") para que el usuario sepa qué está haciendo el agente en cada momento y no tenga la sensación de que la aplicación se ha quedado colgada.
 
 \section{Perfilado Dinámico y Memoria Persistente de Usuario}
 
-Para evitar que el asistente se comporte de manera impersonal, desarrollé un mecanismo de \textbf{perfilado dinámico y memoria persistente} que se ejecuta en segundo plano.
+Tampoco quería que el asistente se sintiera frío o impersonal en conversaciones repetidas, así que desarrollé un sistema de perfilado dinámico que aprende del usuario de forma automática.
 
-En la base de datos PostgreSQL, agregué una columna \texttt{perfil\_metadata} (tipo texto con estructura JSON) en la tabla de usuarios. Al finalizar cada interacción de chat, en lugar de ralentizar el flujo de respuesta del usuario, ejecuto una tarea en segundo plano mediante \texttt{BackgroundTasks} de FastAPI:
+En la tabla de usuarios de PostgreSQL añadí una columna \texttt{perfil\_metadata} tipo JSON. Al acabar cada mensaje del chat, en lugar de hacer esperar al usuario, lanzo una tarea asíncrona en segundo plano mediante \texttt{BackgroundTasks} de FastAPI:
 \begin{enumerate}
-    \item Un extractor basado en un LLM analiza el historial reciente del chat.
-    \item Identifica datos implícitos y explícitos del perfil del usuario, como su titulación (p. ej., Grado en Medicina), su rol (alumno, profesor, PAS) o si solicita becas de interés.
-    \item Actualiza de manera incremental el JSON \texttt{perfil\_metadata} en la base de datos sin machacar los campos previamente aprendidos.
+    \item Pasa el historial reciente por un LLM ligero para extraer datos clave del perfil.
+    \item Detecta información útil, como el rol del usuario (alumno, profesor, PAS), qué grado o máster estudia (por ejemplo, Medicina) o si le interesan ciertos trámites como las becas.
+    \item Guarda estos detalles en \texttt{perfil\_metadata} de forma incremental, sin machacar la información que ya sabíamos del usuario.
 \end{enumerate}
 
-Al abrir una nueva conversación o continuar una existente, el backend recupera esta información de perfil y la inyecta como contexto inicial del sistema en el prompt. Gracias a esto, el agente adapta automáticamente su lenguaje y sus respuestas. Por ejemplo, si el usuario aprendió que es del Grado de Medicina y pregunta "¿cuándo empiezan las clases?", el asistente recuperará directamente el calendario lectivo específico para la Facultad de Medicina sin necesidad de pedir aclaraciones adicionales.
+La siguiente vez que el usuario abre un chat, el backend recupera estos metadatos y los inyecta en el prompt del sistema. De esta forma, si el asistente ya sabe que el usuario estudia Medicina y este le pregunta "¿cuándo empiezan las clases?", el RAG buscará el calendario específico de esa facultad directamente, ahorrándole al usuario tener que dar explicaciones extra en cada conversación.
 
 \chapter{Implementación del frontend}
 
@@ -990,6 +1016,8 @@ La estructura del código fuente la organicé de la siguiente manera:
     \item \texttt{ChatInterface.tsx}: Componente principal para el chat interactivo, la visualización de flujos Server-Sent Events (SSE) y la recogida de feedback.
     \item \texttt{FeedbackList.tsx}: Vista administrativa de auditoría que recopila e ilustra el feedback negativo de los usuarios.
     \item \texttt{UserManagement.tsx}: Componente administrativo para la visualización, ascenso, degradación y borrado de cuentas de usuario.
+    \item \texttt{DocumentList.tsx}: Panel administrativo que creé para ver de un vistazo qué normativas en PDF están subidas a Pinecone y poder eliminarlas del sistema si quedan obsoletas.
+    \item \texttt{ConfirmModal.tsx}: Un modal de confirmación genérico y reutilizable que programé para evitar que se ejecuten acciones destructivas (como borrar un chat o eliminar un usuario) por un clic accidental.
     \item \texttt{src/utils/api.ts}: Módulo utilitario que abstrae la URL de conexión del backend.
 \end{itemize}
 
