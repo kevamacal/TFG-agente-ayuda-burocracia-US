@@ -27,7 +27,9 @@ export default function Home() {
       setTheme(savedTheme);
       document.documentElement.classList.toggle("dark", savedTheme === "dark");
     } else {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const prefersDark = globalThis.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
       const initialTheme = prefersDark ? "dark" : "light";
       setTheme(initialTheme);
       document.documentElement.classList.toggle("dark", prefersDark);
@@ -48,7 +50,7 @@ export default function Home() {
     if (token) {
       setIsAuthenticated(true);
       setIsAdmin(adminCookie === "true");
-      
+
       // Fetch /auth/me to get current email
       try {
         const res = await fetch(`${API_URL}/auth/me`, {
@@ -77,7 +79,7 @@ export default function Home() {
     setActiveTab("chat");
     // Reload chat conversations once authenticated
     setTimeout(() => {
-      window.location.reload();
+      globalThis.location.reload();
     }, 100);
   };
 
@@ -138,17 +140,13 @@ export default function Home() {
           />
         )}
 
-        {activeTab === "documents" && (
-          <DocumentList isAdmin={isAdmin} />
-        )}
+        {activeTab === "documents" && <DocumentList isAdmin={isAdmin} />}
 
         {activeTab === "users" && isAdmin && (
           <UserManagement currentUserEmail={userEmail} />
         )}
 
-        {activeTab === "feedback" && isAdmin && (
-          <FeedbackList />
-        )}
+        {activeTab === "feedback" && isAdmin && <FeedbackList />}
       </div>
     </div>
   );

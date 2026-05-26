@@ -1,5 +1,18 @@
 import React, { useState } from "react";
-import { MessageSquare, Files, Users, LogOut, Plus, Edit2, Trash2, Check, X, ThumbsDown, Sun, Moon } from "lucide-react";
+import {
+  MessageSquare,
+  Files,
+  Users,
+  LogOut,
+  Plus,
+  Edit2,
+  Trash2,
+  Check,
+  X,
+  ThumbsDown,
+  Sun,
+  Moon,
+} from "lucide-react";
 import { Conversation } from "../hooks/useChat";
 import { ConfirmModal } from "./ConfirmModal";
 
@@ -33,11 +46,13 @@ export function Sidebar({
   onLogout,
   theme,
   onToggleTheme,
-}: SidebarProps) {
+}: Readonly<SidebarProps>) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [conversationToDelete, setConversationToDelete] = useState<number | null>(null);
+  const [conversationToDelete, setConversationToDelete] = useState<
+    number | null
+  >(null);
 
   const handleStartRename = (c: Conversation, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -72,7 +87,10 @@ export function Sidebar({
             <p className="text-xs font-semibold uppercase tracking-wider text-textMuted">
               Conectado como
             </p>
-            <p className="truncate text-sm font-medium text-textMain" title={userEmail || ""}>
+            <p
+              className="truncate text-sm font-medium text-textMain"
+              title={userEmail || ""}
+            >
               {userEmail || "Usuario"}
             </p>
           </div>
@@ -159,15 +177,24 @@ export function Sidebar({
                 return (
                   <div
                     key={c.id}
+                    role={isEditing ? undefined : "button"}
+                    tabIndex={isEditing ? -1 : 0}
+                    aria-label={`Seleccionar conversación: ${c.titulo}`}
                     onClick={() => !isEditing && setActiveConversationId(c.id)}
-                    className={`group relative flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium cursor-pointer transition-all ${
+                    onKeyDown={(e) => {
+                      if (!isEditing && (e.key === "Enter" || e.key === " ")) {
+                        e.preventDefault();
+                        setActiveConversationId(c.id);
+                      }
+                    }}
+                    className={`group relative flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-accent/50 ${
                       isActive
                         ? "bg-hover text-textMain border-l-4 border-accent"
                         : "text-textMuted hover:bg-hover hover:text-textMain"
                     }`}
                   >
                     {isEditing ? (
-                      <div className="flex w-full items-center space-x-1" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex w-full items-center space-x-1">
                         <input
                           type="text"
                           value={editTitle}
@@ -223,7 +250,8 @@ export function Sidebar({
         ) : (
           <div className="flex h-full items-center justify-center text-center px-4">
             <p className="text-xs text-textMuted">
-              Navega entre pestañas para ver las herramientas de administración y listado de conocimiento.
+              Navega entre pestañas para ver las herramientas de administración
+              y listado de conocimiento.
             </p>
           </div>
         )}
@@ -234,7 +262,9 @@ export function Sidebar({
         <button
           onClick={onToggleTheme}
           className="flex flex-1 items-center justify-center space-x-2 rounded-lg border border-border bg-background px-3 py-2.5 text-sm font-medium text-textMuted transition-all hover:bg-hover hover:text-textMain"
-          title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+          title={
+            theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"
+          }
         >
           {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
           <span>{theme === "dark" ? "Claro" : "Oscuro"}</span>

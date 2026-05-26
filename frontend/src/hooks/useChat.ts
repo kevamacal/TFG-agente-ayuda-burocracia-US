@@ -1,5 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
+import { API_URL } from "@/utils/api";
+import { parseSSEStream } from "@/utils/sse";
 
 export interface Message {
   id?: number;
@@ -18,7 +20,6 @@ export interface Conversation {
   titulo: string;
   fecha_creacion: string;
 }
-import { API_URL } from "@/utils/api";
 
 export function useChat() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -27,6 +28,18 @@ export function useChat() {
   const [isLoading, setIsLoading] = useState(false);
   
   const token = Cookies.get("auth_token");
+
+  // Helper local para actualizar el último mensaje del asistente en el estado de React
+  const updateLastAssistantMessage = (updates: Partial<Message>) => {
+    setMessages((prev) => {
+      const next = [...prev];
+      const idx = next.length - 1;
+      if (idx >= 0 && next[idx].role === "assistant") {
+        next[idx] = { ...next[idx], ...updates };
+      }
+      return next;
+    });
+  };
 
   // Fetch all conversations
   const fetchConversations = async () => {
@@ -171,155 +184,49 @@ export function useChat() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        throw new Error("Error al enviar la consulta");
       }
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder("utf-8");
-      if (!reader) throw new Error("No reader available");
-
-      let done = false;
-      let buffer = "";
 
       let currentAssistantResponse = "";
-      let currentReferences: string[] = [];
-      let currentContext = "";
 
-      while (!done) {
-        const { value, done: readerDone } = await reader.read();
-        done = readerDone;
-        
-        if (value) {
-          buffer += decoder.decode(value, { stream: true });
-          
-          // Split buffer by event markers (double-newlines)
-          const parts = buffer.split("\n\n");
-          // Keep the last part if it is incomplete
-          buffer = parts.pop() || "";
-
-          for (const part of parts) {
-            if (!part.trim()) continue;
-
-            // Parse Event Source format
-            // example:
-            // event: token
-            // data: {"token": "hello"}
-            const lines = part.split("\n");
-            let eventType = "";
-            let dataString = "";
-
-            for (const line of lines) {
-              if (line.startsWith("event: ")) {
-                eventType = line.replace("event: ", "").trim();
-              } else if (line.startsWith("data: ")) {
-                dataString = line.replace("data: ", "").trim();
-              }
-            }
-
-            if (dataString) {
-              try {
-                const parsedData = JSON.parse(dataString);
-                
-                if (eventType === "status") {
-                  const statusMsg = parsedData.message || "";
-                  setMessages((prev) => {
-                    const next = [...prev];
-                    const idx = next.length - 1;
-                    if (idx >= 0 && next[idx].role === "assistant") {
-                      next[idx] = {
-                        ...next[idx],
-                        status: statusMsg,
-                      };
-                    }
-                    return next;
-                  });
-                } else if (eventType === "metadata") {
-                  currentReferences = parsedData.referencias || [];
-                  currentContext = parsedData.contexto || "";
-                  
-                  // Update message with metadata
-                  setMessages((prev) => {
-                    const next = [...prev];
-                    const idx = next.length - 1;
-                    if (idx >= 0 && next[idx].role === "assistant") {
-                      next[idx] = {
-                        ...next[idx],
-                        referencias: currentReferences,
-                        contexto: currentContext,
-                      };
-                    }
-                    return next;
-                  });
-                } else if (eventType === "token") {
-                  currentAssistantResponse += parsedData.token;
-                  
-                  // Update message content
-                  setMessages((prev) => {
-                    const next = [...prev];
-                    const idx = next.length - 1;
-                    if (idx >= 0 && next[idx].role === "assistant") {
-                      next[idx] = {
-                        ...next[idx],
-                        content: currentAssistantResponse,
-                      };
-                    }
-                    return next;
-                  });
-                } else if (eventType === "error") {
-                  console.error("SSE agent error:", parsedData.detail);
-                  currentAssistantResponse += `\n[Error del agente: ${parsedData.detail}]`;
-                  setMessages((prev) => {
-                    const next = [...prev];
-                    const idx = next.length - 1;
-                    if (idx >= 0 && next[idx].role === "assistant") {
-                      next[idx] = {
-                        ...next[idx],
-                        content: currentAssistantResponse,
-                        isStreaming: false,
-                      };
-                    }
-                    return next;
-                  });
-                }
-              } catch (e) {
-                console.error("Error parsing chunk JSON:", e, dataString);
-              }
-            }
-          }
-        }
-      }
-
-      // Mark streaming as finished
-      setMessages((prev) => {
-        const next = [...prev];
-        const idx = next.length - 1;
-        if (idx >= 0 && next[idx].role === "assistant") {
-          next[idx] = {
-            ...next[idx],
+      // Procesar el flujo usando la utilidad centralizada de SSE
+      await parseSSEStream(response, {
+        onStatus: (message) => {
+          updateLastAssistantMessage({ status: message });
+        },
+        onMetadata: (data) => {
+          updateLastAssistantMessage({
+            referencias: data.referencias || [],
+            contexto: data.contexto || "",
+          });
+        },
+        onToken: (tokenText) => {
+          currentAssistantResponse += tokenText;
+          updateLastAssistantMessage({ content: currentAssistantResponse });
+        },
+        onError: (detail) => {
+          console.error("SSE agent error:", detail);
+          currentAssistantResponse += `\n[Error del agente: ${detail}]`;
+          updateLastAssistantMessage({
+            content: currentAssistantResponse,
             isStreaming: false,
-          };
-        }
-        return next;
+          });
+        },
       });
 
-      // Reload conversations to fetch any updated title in background
+      // Finalizar estado de streaming
+      updateLastAssistantMessage({ isStreaming: false });
+
+      // Recargar conversaciones para capturar el título generado en background
       await fetchConversations();
-      // Fetch messages again to populate database IDs for feedback
+      // Obtener mensajes de nuevo para mapear IDs reales de base de datos para el feedback
       await fetchMessages(activeConversationId);
 
     } catch (err) {
       console.error("Error sending message:", err);
-      setMessages((prev) => {
-        const next = [...prev];
-        const idx = next.length - 1;
-        if (idx >= 0 && next[idx].role === "assistant") {
-          next[idx] = {
-            ...next[idx],
-            content: "Hubo un error de conexión con el servidor al intentar generar la respuesta.",
-            isStreaming: false,
-          };
-        }
-        return next;
+      updateLastAssistantMessage({
+        content: "Hubo un error de conexión con el servidor al intentar generar la respuesta.",
+        isStreaming: false,
       });
     } finally {
       setIsLoading(false);

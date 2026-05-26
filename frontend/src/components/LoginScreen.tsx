@@ -6,8 +6,7 @@ interface LoginProps {
   onLoginSuccess: (isAdmin: boolean, email: string) => void;
 }
 
-
-export function LoginScreen({ onLoginSuccess }: LoginProps) {
+export function LoginScreen({ onLoginSuccess }: Readonly<LoginProps>) {
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +28,6 @@ export function LoginScreen({ onLoginSuccess }: LoginProps) {
 
     try {
       if (isRegister) {
-        // Register flow
         const res = await fetch(`${API_URL}/auth/registro`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -45,7 +43,6 @@ export function LoginScreen({ onLoginSuccess }: LoginProps) {
           setError(data.detail || "Error al registrar el usuario.");
         }
       } else {
-        // Login flow
         const params = new URLSearchParams();
         params.append("username", email);
         params.append("password", password);
@@ -94,9 +91,7 @@ export function LoginScreen({ onLoginSuccess }: LoginProps) {
           <h2 className="text-2xl font-bold tracking-tight text-textMain">
             Asistente Académico
           </h2>
-          <p className="mt-1 text-sm text-textMuted">
-            Universidad de Sevilla
-          </p>
+          <p className="mt-1 text-sm text-textMuted">Universidad de Sevilla</p>
         </div>
 
         {/* Tab switch */}
@@ -104,7 +99,9 @@ export function LoginScreen({ onLoginSuccess }: LoginProps) {
           <button
             type="button"
             className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-              !isRegister ? "bg-accent text-white" : "text-textMuted hover:text-textMain"
+              isRegister
+                ? "text-textMuted hover:text-textMain"
+                : "bg-accent text-white"
             }`}
             onClick={() => {
               setIsRegister(false);
@@ -117,7 +114,9 @@ export function LoginScreen({ onLoginSuccess }: LoginProps) {
           <button
             type="button"
             className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-              isRegister ? "bg-accent text-white" : "text-textMuted hover:text-textMain"
+              isRegister
+                ? "bg-accent text-white"
+                : "text-textMuted hover:text-textMain"
             }`}
             onClick={() => {
               setIsRegister(true);
@@ -175,7 +174,11 @@ export function LoginScreen({ onLoginSuccess }: LoginProps) {
             disabled={loading}
             className="mt-2 w-full rounded-lg bg-accent py-3 text-sm font-semibold text-white shadow-lg transition-all hover:bg-accent-hover active:scale-[0.98] disabled:opacity-50"
           >
-            {loading ? "Procesando..." : isRegister ? "Registrar cuenta" : "Iniciar Sesión"}
+            {loading
+              ? "Procesando..."
+              : isRegister
+                ? "Registrar cuenta"
+                : "Iniciar Sesión"}
           </button>
         </form>
       </div>
