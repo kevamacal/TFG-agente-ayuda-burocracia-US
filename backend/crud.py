@@ -29,17 +29,28 @@ def actualizar_permisos_admin(db: Session, usuario: models.Usuario, is_admin: bo
     db.refresh(usuario)
     return usuario
 
+def actualizar_perfil_metadata(db: Session, usuario: models.Usuario, perfil_metadata: str):
+    usuario.perfil_metadata = perfil_metadata
+    db.commit()
+    db.refresh(usuario)
+    return usuario
+
 
 # --- CONVERSACIONES ---
 
 def get_conversaciones_usuario(db: Session, usuario_id: int):
-    return db.query(models.Conversacion).filter(models.Conversacion.usuario_id == usuario_id).all()
+    return db.query(models.Conversacion).filter(
+        models.Conversacion.usuario_id == usuario_id
+    ).order_by(models.Conversacion.id.desc()).all()
 
 def get_conversacion(db: Session, conversacion_id: int, usuario_id: int):
     return db.query(models.Conversacion).filter(
         models.Conversacion.id == conversacion_id,
         models.Conversacion.usuario_id == usuario_id
     ).first()
+
+def get_conversacion_por_id(db: Session, conversacion_id: int):
+    return db.query(models.Conversacion).filter(models.Conversacion.id == conversacion_id).first()
 
 def crear_conversacion(db: Session, usuario_id: int, titulo: str):
     nueva_conv = models.Conversacion(usuario_id=usuario_id, titulo=titulo)
@@ -54,6 +65,12 @@ def eliminar_conversacion(db: Session, conversacion: models.Conversacion):
 
 def actualizar_titulo_conversacion(db: Session, conversacion: models.Conversacion, titulo: str):
     conversacion.titulo = titulo
+    db.commit()
+    db.refresh(conversacion)
+    return conversacion
+
+def actualizar_resumen_memoria_conversacion(db: Session, conversacion: models.Conversacion, resumen: str):
+    conversacion.resumen_memoria = resumen
     db.commit()
     db.refresh(conversacion)
     return conversacion
@@ -78,6 +95,11 @@ def get_mensaje(db: Session, mensaje_id: int, conversacion_id: int):
         models.Mensaje.id == mensaje_id,
         models.Mensaje.conversacion_id == conversacion_id
     ).first()
+
+def get_mensajes_conversacion(db: Session, conversacion_id: int):
+    return db.query(models.Mensaje).filter(
+        models.Mensaje.conversacion_id == conversacion_id
+    ).order_by(models.Mensaje.fecha_creacion.asc(), models.Mensaje.id.asc()).all()
 
 def actualizar_feedback_mensaje(db: Session, mensaje: models.Mensaje, feedback: bool, comentario: str):
     mensaje.feedback = feedback

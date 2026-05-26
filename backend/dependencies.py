@@ -4,7 +4,7 @@ from fastapi import Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
 from jose import jwt, JWTError
-import security, models
+import security, models, crud
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login", auto_error=False)
@@ -31,7 +31,7 @@ def get_usuario_actual(
     except JWTError:
         raise credentials_exception
         
-    usuario = db.query(models.Usuario).filter(models.Usuario.id == int(usuario_id)).first()
+    usuario = crud.get_usuario_por_id(db, int(usuario_id))
     if usuario is None:
         raise credentials_exception
     return usuario

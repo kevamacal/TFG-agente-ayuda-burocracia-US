@@ -14,9 +14,9 @@ router = APIRouter(
 detail_404_error = "Conversación no encontrada"
 
 @router.get("", response_model=list[schemas.ConversacionResponse])
-def listar_conversaciones(usuario_actual: CurrentUser):
+def listar_conversaciones(usuario_actual: CurrentUser, db: DbSession):
     """Devuelve todas las conversaciones del usuario logueado"""
-    return usuario_actual.conversaciones
+    return crud.get_conversaciones_usuario(db, usuario_actual.id)
 
 @router.post("", response_model=schemas.ConversacionResponse)
 def crear_conversacion(
@@ -39,7 +39,7 @@ def obtener_mensajes(
     if not conversacion:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail_404_error)
     
-    return conversacion.mensajes
+    return crud.get_mensajes_conversacion(db, conversacion_id)
 
 @router.post("/{conversacion_id}/chat")
 def enviar_mensaje(

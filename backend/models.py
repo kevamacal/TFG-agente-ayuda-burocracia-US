@@ -13,7 +13,7 @@ class Usuario(Base):
     perfil_metadata = Column(Text, nullable=True, default='{}')
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
 
-    conversaciones = relationship("Conversacion", back_populates="usuario", cascade="all, delete-orphan")
+    conversaciones = relationship("Conversacion", back_populates="usuario", order_by="desc(Conversacion.id)", cascade="all, delete-orphan")
 
 class Conversacion(Base):
     __tablename__ = "conversaciones"
@@ -25,7 +25,7 @@ class Conversacion(Base):
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
 
     usuario = relationship("Usuario", back_populates="conversaciones")
-    mensajes = relationship("Mensaje", back_populates="conversacion", cascade="all, delete-orphan")
+    mensajes = relationship("Mensaje", back_populates="conversacion", order_by="Mensaje.id", cascade="all, delete-orphan")
 
 class Mensaje(Base):
     __tablename__ = "mensajes"
