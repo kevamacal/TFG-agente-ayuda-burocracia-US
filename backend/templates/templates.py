@@ -115,9 +115,9 @@ PROMPT_CLASIFICADOR =  """
         Eres un enrutador experto de la Universidad de Sevilla.
         Tu trabajo es clasificar la consulta del usuario en una de estas 4 categorías según EL TIPO DE RESPUESTA QUE NECESITA:
         
-        - 'procedimental': El usuario necesita instrucciones PASO A PASO para completar un trámite (matricularse, anular matrícula, liquidar un viaje, solicitar algo).
+        - 'procedimental': El usuario necesita instrucciones PASO A PASO para completar un trámite (matricularse, anular matrícula, liquidar un viaje, solicitar algo). No aplica para información general o ubicación de centros.
         - 'calendario': El usuario pregunta por FECHAS, PLAZOS o PERIODOS concretos (cuándo empieza algo, hasta cuándo puede hacer algo).
-        - 'normativo': El usuario pregunta por REGLAS, REQUISITOS LEGALES o DERECHOS (qué dice la normativa, qué requisitos hay, qué artículo aplica).
+        - 'normativo': El usuario pregunta por REGLAS, REQUISITOS LEGALES, DERECHOS o INFORMACIÓN GENERAL/UBICACIONES (qué dice la normativa, qué requisitos hay, qué artículo aplica, o localización/descripción de centros y facultades).
         - 'baremo': El usuario pregunta sobre PUNTUACIONES, MÉRITOS, CRITERIOS DE EVALUACIÓN o CÁLCULO DE NOTAS en procesos de selección.
         
         EJEMPLOS:
@@ -148,7 +148,7 @@ PROMPT_RESULTOR_PROCEDIMENTAL =  """
         INSTRUCCIONES:
         1. Utiliza listas numeradas (1., 2., 3.) para los pasos secuenciales.
         2. Resalta en **negrita** los nombres de plataformas web (ej. SEVIUS, Secretaría Virtual), nombres de impresos y documentos requeridos.
-        3. Si hay advertencias importantes o requisitos previos, ponlos al principio bajo un encabezado "⚠️ Requisitos Previos".
+        3. Si hay advertencias importantes o requisitos previos, ponlos al principio bajo un encabezado "Requisitos Previos" (está prohibido utilizar el emoji ⚠️ en este encabezado).
 
         Historial de conversación:
         {historial}
@@ -244,4 +244,28 @@ Pregunta del usuario:
 {question}
 
 Opción:
+"""
+
+PROMPT_ANALISIS_INICIAL = """
+Analiza la conversación actual y la última pregunta del usuario en el contexto de la Universidad de Sevilla (US).
+Tu tarea es realizar tres tareas en una sola llamada:
+
+1. INTENCIÓN: Determina si el usuario desea hacer una consulta académica o trámite administrativo relacionado con la US (matrícula, becas, plazos, normativas, expedientes, liquidación de viajes de investigación, etc.).
+   - Devuelve 'rechazo_amable' si la consulta no tiene relación con el ámbito universitario o burocrático de la US (ej: recetas de cocina, ocio, programación general, chistes, deportes o torneos internacionales como la Champions, Europa League, La Liga, etc.).
+   - Devuelve 'recuperador' si está relacionada con la universidad (matrícula, becas, plazos, normativas, expedientes, liquidaciones de viaje, etc.). En caso de duda razonable sobre si es un tema universitario, prioriza 'recuperador'.
+
+2. PREGUNTA REFORMULADA: Reformula la última pregunta del usuario para que sea una pregunta independiente y clara, incorporando el contexto del historial de chat (nombres de trámites aclarados, curso académico, vinculación anterior, etc.). Si la pregunta actual es independiente y ya es clara por sí sola, consérvala igual.
+
+3. CATEGORÍA: Clasifica la consulta académica del usuario según el tipo de respuesta que requiere:
+   - 'procedimental': Si el usuario necesita instrucciones paso a paso para completar un trámite burocrático (ej: cómo solicitar algo, qué pasos seguir, qué documentos entregar). No utilices esto para preguntas de información general o localización de centros.
+   - 'calendario': Si el usuario pregunta por fechas, plazos o periodos del calendario académico.
+   - 'normativo': Si el usuario pregunta por reglas generales, derechos, artículos de reglamento, normativas, información general o descripción/localización de centros y facultades.
+   - 'baremo': Si el usuario pregunta por criterios de evaluación, méritos o cálculo de puntuaciones en contrataciones u oposiciones.
+   - 'ninguna': Si la consulta no está relacionada con la universidad (intención 'rechazo_amable').
+
+Historial de conversación:
+{historial}
+
+Pregunta actual del usuario:
+{question}
 """

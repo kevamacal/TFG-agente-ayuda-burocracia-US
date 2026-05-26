@@ -2,13 +2,15 @@ from langchain_cohere import CohereEmbeddings, CohereRerank
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from templates.templates import *
-
+from pydantic import BaseModel, Field
 import os
 from utils.config import format_docs, config_classifier_llm, config_light_llm, config_llm
 from langchain_pinecone import PineconeVectorStore
 from utils.config import settings
 from langchain_classic.retrievers.contextual_compression import ContextualCompressionRetriever
-import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 class StreamWrapper:
     def __init__(self, generator):
@@ -16,6 +18,12 @@ class StreamWrapper:
 
     def __repr__(self):
         return f"<StreamWrapper generator={self.generator}>"
+
+
+class AnalisisInicial(BaseModel):
+    intencion: str = Field(description="Categoría de intención: 'recuperador' para consultas académicas o 'rechazo_amable' para no relacionadas.")
+    pregunta_reformulada: str = Field(description="Pregunta reformulada independiente que combina el historial de chat.")
+    categoria: str = Field(description="Tipo de respuesta académica: 'procedimental', 'calendario', 'normativo', 'baremo' o 'ninguna' (si la intención es 'rechazo_amable').")
 
 class AsistenteRAG:
     def __init__(self):
@@ -51,9 +59,9 @@ class AsistenteRAG:
                     host=os.getenv("LANGFUSE_HOST", "http://langfuse:3000")
                 )
                 self.callbacks = [langfuse_handler]
-                print("✅ Langfuse CallbackHandler inicializado globalmente en AsistenteRAG")
+                logger.info("Langfuse CallbackHandler inicializado globalmente en AsistenteRAG")
             except Exception as lf_err:
-                print(f"❌ Error al inicializar Langfuse globalmente en AsistenteRAG: {lf_err}")
+                logger.error(f"Error al inicializar Langfuse globalmente en AsistenteRAG: {lf_err}")
 
         self.llm = config_llm()
         self.light_llm = config_light_llm()
@@ -69,6 +77,8 @@ class AsistenteRAG:
         )
         
         self.chain_reformulacion = self._crear_cadena(PROMPT_REFORMULACION, self.light_llm)
+        prompt_analisis = ChatPromptTemplate.from_template(PROMPT_ANALISIS_INICIAL)
+        self.chain_analisis_inicial = prompt_analisis | self.light_llm.with_structured_output(AnalisisInicial)
         # Cadenas de clasificación: solo devuelven 1 palabra → LLM ultra-ligero (max 15 tokens)
         self.chain_deteccion = self._crear_cadena(PROMPT_DETECCION, self.classifier_llm)
         self.chain_clasificacion = self._crear_cadena(PROMPT_CLASIFICADOR, self.classifier_llm)
@@ -88,9 +98,10 @@ class AsistenteRAG:
         prompt = ChatPromptTemplate.from_template(prompt)
         return prompt | llm_elegido | StrOutputParser()
 
-    def insertar_contexto(self, pregunta: str, historial_formateado: str):
-        print("\n\nInsertando contexto...", datetime.datetime.now())        
-        if historial_formateado:
+    def insertar_contexto(self, pregunta: str, historial_formateado: str, pregunta_reformulada_previa: str = None):
+        if pregunta_reformulada_previa:
+            pregunta_busqueda = pregunta_reformulada_previa
+        elif historial_formateado:
             pregunta_busqueda = self.chain_reformulacion.invoke({
                 "historial": historial_formateado,
                 "question": pregunta
@@ -98,21 +109,14 @@ class AsistenteRAG:
         else:
             pregunta_busqueda = pregunta
         
-        print("Buscando contexto...", datetime.datetime.now())
         contexto, referencias = self._buscar_contexto(pregunta_busqueda)
-        print("Contexto insertado exitosamente", datetime.datetime.now())
         return pregunta_busqueda, contexto, referencias
         
     def _buscar_contexto(self, pregunta_reformulada: str):    
-        t0 = datetime.datetime.now()
         query_embedding = self.embeddings.embed_query(pregunta_reformulada)
-        t1 = datetime.datetime.now()
-        print(f"  [TIMING] Cohere Embedding: {(t1-t0).total_seconds():.2f}s")
         
         # 1. Recuperar un conjunto mayor de candidatos densos (k=18)
         docs_raw = self.vectorstore.similarity_search_by_vector(query_embedding, k=18)
-        t2 = datetime.datetime.now()
-        print(f"  [TIMING] Pinecone Search: {(t2-t1).total_seconds():.2f}s ({len(docs_raw)} docs)")
         
         # 2. Búsqueda Léxica (Sparse/Keyword) sobre los candidatos
         stopwords = {
@@ -147,14 +151,8 @@ class AsistenteRAG:
         docs_combinados = [item[0] for item in sorted(rrf_scores, key=lambda x: x[1], reverse=True)]
         docs_hibridos = docs_combinados[:12]
         
-        t2_5 = datetime.datetime.now()
-        print(f"  [TIMING] RRF Hybrid Fusion: {(t2_5-t2).total_seconds():.4f}s")
-        
         # 4. Cohere Rerank sobre los candidatos híbridos
         docs = self.retriever.base_compressor.compress_documents(docs_hibridos, pregunta_reformulada)
-        t3 = datetime.datetime.now()
-        print(f"  [TIMING] Cohere Rerank: {(t3-t2_5).total_seconds():.2f}s ({len(docs)} docs)")
-        print(f"  [TIMING] Total retrieval: {(t3-t0).total_seconds():.2f}s")
         
         referencias = list(set([
             f"{doc.metadata.get('source', 'Documento desconocido')} (Página {int(doc.metadata.get('page', 0))})" 
@@ -183,7 +181,7 @@ class AsistenteRAG:
     
     def contiene_suficiente_informacion(self, pregunta_reformulada: str, historial_formateado: str, contexto: str):
         if not contexto or not contexto.strip():
-            print("🧐 [EVALUATOR] Contexto vacío -> busqueda_web")
+            logger.info("[EVALUATOR] Contexto vacío -> busqueda_web")
             return "busqueda_web"
             
         contexto_reducido = contexto[:1500] if len(contexto) > 1500 else contexto
@@ -192,11 +190,19 @@ class AsistenteRAG:
             "context": contexto_reducido
         }, config={"callbacks": self.callbacks}).strip().lower()
         
-        print(f"🧐 [EVALUATOR] Relevancia evaluada: '{res}'")
-        if "suficiente" in res:
+        logger.info(f"[EVALUATOR] Relevancia evaluada: '{res}'")
+        if "insuficiente" in res:
+            return "busqueda_web"
+        elif "suficiente" in res:
             return "resultor"
         elif "ambiguo" in res:
-            return "entrevistador"
+            decision_doble_pregunta = self.chain_cuestiona_agente.invoke({
+                "historial": historial_formateado,
+                "context": contexto_reducido,
+                "question": pregunta_reformulada
+            }, config={"callbacks":self.callbacks}).strip().lower()
+
+            return "entrevistador" if "entrevistador" in decision_doble_pregunta else "resultor"
         else:
             return "busqueda_web"
 
