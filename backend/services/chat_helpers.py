@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 def actualizar_resumen_memoria(conversacion_id: int):
     """Actualiza el resumen de memoria de forma incremental para proteger la ventana de contexto de Groq"""
-    db = next(get_db())
+    db = SessionLocal()
     try:
         conv = crud.get_conversacion_por_id(db, conversacion_id)
         if not conv: return
@@ -54,7 +54,7 @@ def actualizar_resumen_memoria(conversacion_id: int):
 
 def generar_y_guardar_titulo(conversacion_id: int, mensaje_usuario: str):
     """Genera un título corto usando Groq y lo guarda en la base de datos."""
-    db = next(get_db()) 
+    db = SessionLocal() 
     
     try:
         llm = config_light_llm()
