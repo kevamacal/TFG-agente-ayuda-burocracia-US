@@ -81,7 +81,7 @@ def procesar_un_pdf(filepath: str, original_filename: str, keep_file: bool = Fal
             return
  
 
-        # 3. Fragmentación (Text Splitter)
+        # 2. Fragmentación (Text Splitter)
         logger.info(f"Fragmentando el Markdown de {original_filename}...")
         splitter = MarkdownTextSplitter(
             chunk_size=1500, 
@@ -92,7 +92,7 @@ def procesar_un_pdf(filepath: str, original_filename: str, keep_file: bool = Fal
         splits_limpios = filter_complex_metadata(splits)
         logger.info(f"Procesados {len(splits_limpios)} fragmentos listos para incrustar.")
         
-        # 4. Generación de Embeddings y Subida a Pinecone
+        # 3. Generación de Embeddings y Subida a Pinecone
         logger.info("Generando Embeddings y subiendo a Pinecone...")
         embeddings = CohereEmbeddings(
             model="embed-multilingual-v3.0",
@@ -111,7 +111,7 @@ def procesar_un_pdf(filepath: str, original_filename: str, keep_file: bool = Fal
     except Exception as e:
         logger.exception(f"Error total durante el procesado: {e}")
     finally:
-        # 5. Asegurarnos de limpiar basura residual en local pase lo que pase si no queremos conservarlo
+        # 4. Asegurarnos de limpiar basura residual en local pase lo que pase si no queremos conservarlo
         if not keep_file:
             try:
                 if os.path.exists(filepath):
