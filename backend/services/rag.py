@@ -80,8 +80,6 @@ class AsistenteRAG:
         prompt_analisis = ChatPromptTemplate.from_template(PROMPT_ANALISIS_INICIAL)
         self.chain_analisis_inicial = prompt_analisis | self.light_llm.with_structured_output(AnalisisInicial)
         # Cadenas de clasificación: solo devuelven 1 palabra → LLM ultra-ligero (max 15 tokens)
-        self.chain_deteccion = self._crear_cadena(PROMPT_DETECCION, self.classifier_llm)
-        self.chain_clasificacion = self._crear_cadena(PROMPT_CLASIFICADOR, self.classifier_llm)
         self.chain_cuestiona_agente = self._crear_cadena(PROMPT_CUESTIONA_AGENTE, self.classifier_llm)
         self.chain_evaluador = self._crear_cadena(PROMPT_EVALUADOR_RELEVANCIA, self.classifier_llm)
         
@@ -170,15 +168,6 @@ class AsistenteRAG:
         
         return contexto_final, referencias
     
-    def decide_ruta_inicial(self, pregunta_reformulada: str, historial_formateado: str):
-        decision = self.chain_deteccion.invoke({
-            "question": pregunta_reformulada, 
-            "historial": historial_formateado,
-        }, config={"callbacks": self.callbacks}).strip().lower()
-        if "rechazo_amable" in decision: return "rechazo_amable"
-        if "recuperador" in decision: return "recuperador"
-        return "recuperador"
-    
     def contiene_suficiente_informacion(self, pregunta_reformulada: str, historial_formateado: str, contexto: str):
         if not contexto or not contexto.strip():
             logger.info("[EVALUATOR] Contexto vacío -> busqueda_web")
@@ -205,17 +194,6 @@ class AsistenteRAG:
             return "entrevistador" if "entrevistador" in decision_doble_pregunta else "resultor"
         else:
             return "busqueda_web"
-
-    def clasificar_categoria(self, pregunta_reformulada: str, historial_formateado: str):
-        decision = self.chain_clasificacion.invoke({
-            "question": pregunta_reformulada, 
-            "historial": historial_formateado
-        }, config={"callbacks": self.callbacks}).strip().lower()
-        if "procedimental" in decision: return "procedimental"
-        if "calendario" in decision: return "calendario"
-        if "baremo" in decision: return "baremo"
-        if "normativo" in decision: return "normativo"
-        return "normativo"
     
     def responder_consulta(self, contexto: str, historial_formateado: str, pregunta_reformulada: str, tipo_respuesta: str):
         inputs = {
