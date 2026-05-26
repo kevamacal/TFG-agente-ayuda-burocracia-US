@@ -56,9 +56,25 @@ async function handleProxy(request: NextRequest, pathSegments: string[]) {
     });
   } catch (error: any) {
     console.error("Proxy connection error:", error);
-    return new NextResponse(JSON.stringify({ detail: "Proxy connection error", error: error.message }), {
-      status: 502,
-      headers: { "Content-Type": "application/json" },
-    });
+    // Extract underlying cause if it exists (e.g. connection refused, timeout, dns lookup failed)
+    const cause = error.cause || {};
+    const causeDetails = {
+      message: cause.message || null,
+      code: cause.code || null,
+      address: cause.address || null,
+      port: cause.port || null,
+    };
+    return new NextResponse(
+      JSON.stringify({ 
+        detail: "Proxy connection error", 
+        error: error.message,
+        cause: causeDetails 
+      }), 
+      {
+        status: 502,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }
+
