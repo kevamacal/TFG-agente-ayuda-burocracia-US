@@ -6,6 +6,10 @@ import schemas, security, crud
 import os
 import shutil
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 router = APIRouter(
     prefix="/admin",
     tags=["Administración"]
@@ -44,7 +48,7 @@ def ingestar_pdf(
 ):
     """Sube un archivo PDF de manera temporal y lo ingesta en Pinecone usando LlamaParse"""
     if not file.filename.endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Solo se permiten archivos .pdf")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Solo se permiten archivos .pdf")
         
     # Obtener el directorio backend base (padre de routers/)
     base_dir = os.path.dirname(os.path.dirname(__file__))
@@ -75,7 +79,7 @@ def crear_usuario_admin(
     """Crea un nuevo usuario con rol configurable (solo admin)"""
     db_user = crud.get_usuario_por_email(db, usuario.email)
     if db_user:
-        raise HTTPException(status_code=400, detail="El email ya está registrado")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El email ya está registrado")
     
     hashed_password = security.get_password_hash(usuario.password)
     nuevo_usuario = crud.crear_usuario(db, usuario.email, hashed_password, is_admin=usuario.is_admin)
@@ -131,7 +135,7 @@ def eliminar_documento_admin(
     if os.path.exists(ruta_archivo):
         try:
             os.remove(ruta_archivo)
-            print(f"Archivo eliminado de static: {ruta_archivo}")
+            logger.info(f"Archivo eliminado de static: {ruta_archivo}")
         except Exception as e:
-            print(f"Error eliminando archivo físico {ruta_archivo}: {e}")
+            logger.error(f"Error eliminando archivo físico {ruta_archivo}: {e}")
     return {"mensaje": f"Documento '{nombre}' y sus vectores eliminados con éxito."}

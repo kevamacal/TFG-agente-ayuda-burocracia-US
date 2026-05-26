@@ -64,5 +64,9 @@ graph.add_edge("calendario", END)
 graph.add_edge("normativo", END)
 graph.add_edge("baremo", END)
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 router = graph.compile()
-print(router.get_graph().draw_mermaid(), "\n\n")
+logger.debug("Grafo de LangGraph:\n%s", router.get_graph().draw_mermaid())

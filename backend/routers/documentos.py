@@ -1,7 +1,10 @@
+import logging
 from typing import Annotated
 from fastapi import APIRouter
 from dependencies import CurrentUser
 import schemas
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/documentos",
@@ -29,5 +32,5 @@ def listar_documentos(usuario_actual: CurrentUser):
                 sources.add(source)
         return [{"nombre": s} for s in sorted(sources)]
     except Exception as e:
-        print(f"Error consultando documentos de Pinecone: {e}")
+        logger.error(f"Error consultando documentos de Pinecone: {e}")
         return []

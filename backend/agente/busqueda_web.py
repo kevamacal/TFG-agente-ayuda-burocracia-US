@@ -1,9 +1,7 @@
-import datetime
 from classes.StateSchema import StateSchema
 from services.search import buscar_web_us
 
 def busqueda_web(state: StateSchema):
-    print("\n--- NODO: BUSQUEDA WEB (FALLBACK CRAG) ---", datetime.datetime.now())
     
     pregunta_reformulada = state.get("pregunta_reformulada") or state.get("pregunta", "")
     

@@ -1,9 +1,13 @@
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 import models, security
 from database import engine, SessionLocal
 from routers import auth, admin, conversaciones, documentos
+
+# Configurar logger
+logger = logging.getLogger(__name__)
 
 # Crear tablas
 models.Base.metadata.create_all(bind=engine)
@@ -15,9 +19,9 @@ try:
         conn.execute(text("ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS resumen_memoria TEXT;"))
         conn.execute(text("ALTER TABLE mensajes ADD COLUMN IF NOT EXISTS feedback BOOLEAN;"))
         conn.execute(text("ALTER TABLE mensajes ADD COLUMN IF NOT EXISTS feedback_comentario TEXT;"))
-    print("[main.py] Migración de base de datos completada exitosamente.")
+    logger.info("[main.py] Migración de base de datos completada exitosamente.")
 except Exception as e:
-    print(f"[main.py] Error al ejecutar migraciones de base de datos: {e}")
+    logger.error(f"[main.py] Error al ejecutar migraciones de base de datos: {e}")
 
 app = FastAPI(title="API Asistente US")
 
@@ -55,9 +59,9 @@ def seed_admin_user():
             )
             db.add(nuevo_admin)
             db.commit()
-            print(f"🔑 Se ha creado la cuenta de administrador inicial: {email} / {password}")
+            logger.info(f"Se ha creado la cuenta de administrador inicial: {email} / {password}")
     except Exception as e:
-        print(f"Error al crear el administrador inicial: {e}")
+        logger.error(f"Error al crear el administrador inicial: {e}")
     finally:
         db.close()
 

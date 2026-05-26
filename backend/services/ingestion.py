@@ -1,5 +1,9 @@
 import os
 import sys
+import logging
+
+# Configurar logger
+logger = logging.getLogger(__name__)
 
 # Asegurarnos de que backend esté en el path (por si se ejecuta importando)
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
@@ -33,7 +37,7 @@ def extraer_texto_un_pdf(pdf_path: str, original_filename: str):
         """
     )
     
-    print(f"\n[Ingesta Async] Enviando a LlamaParse: {original_filename} (procesando en la nube...)")
+    logger.info(f"Enviando a LlamaParse: {original_filename} (procesando en la nube...)")
     
     try:
         # Extraemos el resultado usando la API JSON para aislar meta tags "page"
@@ -57,7 +61,7 @@ def extraer_texto_un_pdf(pdf_path: str, original_filename: str):
                 docs.append(doc)
                 
     except Exception as e:
-        print(f"[Ingesta Async] Error crítico procesando {original_filename}: {e}")
+        logger.error(f"Error crítico procesando {original_filename}: {e}")
         raise e
                 
     return docs
@@ -67,7 +71,7 @@ def procesar_un_pdf(filepath: str, original_filename: str, keep_file: bool = Fal
     Servicio de backend asíncrono para ingestar un único documento.
     """
     try:
-        print(f"\n[Ingesta Async] === Iniciando proceso para {original_filename} ===")
+        logger.info(f"=== Iniciando proceso para {original_filename} ===")
         
         # 1. Conexión a Pinecone
         pc = Pinecone(api_key=settings.PINECONE_API_KEY)
@@ -77,11 +81,12 @@ def procesar_un_pdf(filepath: str, original_filename: str, keep_file: bool = Fal
         docs_completos = extraer_texto_un_pdf(filepath, original_filename)
         
         if not docs_completos:
-            print(f"[Ingesta Async] El documento {original_filename} estaba vacío o no se pudo extraer texto.")
+            logger.warning(f"El documento {original_filename} estaba vacío o no se pudo extraer texto.")
             return
+ 
 
         # 3. Fragmentación (Text Splitter)
-        print(f"[Ingesta Async] Fragmentando el Markdown de {original_filename}...")
+        logger.info(f"Fragmentando el Markdown de {original_filename}...")
         splitter = MarkdownTextSplitter(
             chunk_size=1500, 
             chunk_overlap=250
@@ -89,10 +94,10 @@ def procesar_un_pdf(filepath: str, original_filename: str, keep_file: bool = Fal
         
         splits = splitter.split_documents(docs_completos)
         splits_limpios = filter_complex_metadata(splits)
-        print(f"[Ingesta Async] Procesados {len(splits_limpios)} fragmentos listos para incrustar.")
+        logger.info(f"Procesados {len(splits_limpios)} fragmentos listos para incrustar.")
         
         # 4. Generación de Embeddings y Subida a Pinecone
-        print("[Ingesta Async] Generando Embeddings y subiendo a Pinecone...")
+        logger.info("Generando Embeddings y subiendo a Pinecone...")
         embeddings = CohereEmbeddings(
             model="embed-multilingual-v3.0",
             cohere_api_key=settings.COHERE_API_KEY
@@ -103,21 +108,21 @@ def procesar_un_pdf(filepath: str, original_filename: str, keep_file: bool = Fal
         for i in range(0, len(splits_limpios), batch_size):
             lote = splits_limpios[i : i + batch_size]
             vectorstore.add_documents(lote)
-            print(f"[Ingesta Async] Subidos {min(i + batch_size, len(splits_limpios))} de {len(splits_limpios)} fragmentos...")
+            logger.info(f"Subidos {min(i + batch_size, len(splits_limpios))} de {len(splits_limpios)} fragmentos...")
             
-        print(f"[Ingesta Async] ✅ ¡Documento {original_filename} ingestado exitosamente!")
+        logger.info(f"✅ ¡Documento {original_filename} ingestado exitosamente!")
 
     except Exception as e:
-        print(f"[Ingesta Async] ❌ Error total durante el procesado: {e}")
+        logger.error(f"Error total durante el procesado: {e}")
     finally:
         # 5. Asegurarnos de limpiar basura residual en local pase lo que pase si no queremos conservarlo
         if not keep_file:
             try:
                 if os.path.exists(filepath):
                     os.remove(filepath)
-                    print(f"[Ingesta Async] 🧹 Archivo temporal local descartado: {filepath}")
+                    logger.info(f"🧹 Archivo temporal local descartado: {filepath}")
             except Exception as cleanup_err:
-                print(f"[Ingesta Async] ⚠️ No se pudo eliminar el fichero {filepath}. Error: {cleanup_err}")
+                logger.warning(f"No se pudo eliminar el fichero {filepath}. Error: {cleanup_err}")
 
 def eliminar_vectores_de_pdf(filename: str):
     """
@@ -128,8 +133,8 @@ def eliminar_vectores_de_pdf(filename: str):
         index = pc.Index("index-tfg")
         # El filter de Pinecone depende del metadato. source es donde guardamos el nombre del archivo
         index.delete(filter={"source": {"$eq": filename}})
-        print(f"✅ Vectores de '{filename}' eliminados de Pinecone.")
+        logger.info(f"✅ Vectores de '{filename}' eliminados de Pinecone.")
         return True
     except Exception as e:
-        print(f"Error eliminando vectores de {filename} de Pinecone: {e}")
+        logger.error(f"Error eliminando vectores de {filename} de Pinecone: {e}")
         return False

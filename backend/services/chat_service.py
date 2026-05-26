@@ -5,14 +5,19 @@ from database import SessionLocal
 from services.chat_helpers import generar_y_guardar_titulo, actualizar_resumen_memoria
 from services.profiling import actualizar_perfil_usuario
 from agente.router import router as agente_router
+from services.rag import asistente_rag
 import models, crud
 import json
 import asyncio
 import os
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 def preparar_historial(db: Session, conv: models.Conversacion, usuario: models.Usuario) -> list:
     """Prepara el historial de mensajes de la conversación y fusiona el perfil y memoria"""
-    historial_db = db.query(models.Mensaje).filter(models.Mensaje.conversacion_id == conv.id).order_by(models.Mensaje.fecha_creacion).all()
+    historial_db = crud.get_mensajes_conversacion(db, conv.id)
     mensajes_recientes = historial_db[-5:] if len(historial_db) > 5 else historial_db
     
     historial_langgraph = []
@@ -28,14 +33,14 @@ def preparar_historial(db: Session, conv: models.Conversacion, usuario: models.U
                 "content": f"INFORMACIÓN DEL USUARIO CONECTADO (Úsala para contextualizar tus respuestas si es relevante. Asume estos datos como ciertos sobre el usuario):\n{perfil_formateado}"
             })
     except Exception as e:
-        print(f"Error al decodificar perfil_metadata: {e}")
+        logger.error(f"Error al decodificar perfil_metadata: {e}")
 
     if conv.resumen_memoria and len(historial_db) > 5:
         historial_langgraph.append({"role": "system", "content": f"Resumen de conversación antigua: {conv.resumen_memoria}"})
         
     historial_langgraph.extend([{"role": m.rol, "content": m.contenido} for m in mensajes_recientes])
     return historial_langgraph
-
+ 
 async def sse_chat_generator(
     conv_id: int,
     usuario_id: int,
@@ -57,16 +62,15 @@ async def sse_chat_generator(
         config = {}
         if os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY"):
             try:
-                from services.rag import asistente_rag
                 config["callbacks"] = asistente_rag.callbacks
                 config["run_name"] = f"Chat RAG Asistente US - Conv {conv_id}"
             except Exception as lf_err:
-                print(f"Error al configurar Langfuse callback: {lf_err}")
+                logger.error(f"Error al configurar Langfuse callback: {lf_err}")
 
         # Ejecutar el agente en pasos (streaming de nodos)
         estado = estado_inicial.copy()
         for update in agente_router.stream(estado_inicial, config=config, stream_mode="updates"):
-            node_name = next(iter(update.keys()))  # Seguro y correcto para dict_keys
+            node_name = next(iter(update.keys()))  
             node_output = update[node_name]
             estado.update(node_output)
             
@@ -99,9 +103,9 @@ async def sse_chat_generator(
         try:
             referencias_str = json.dumps(referencias)
             crud.crear_mensaje(db_gen, conv_id, rol="assistant", contenido=respuesta_texto, referencias=referencias_str)
-            print(f"✅ Respuesta del asistente guardada en la base de datos para conv {conv_id}")
+            logger.info(f"Respuesta del asistente guardada en la base de datos para conv {conv_id}")
         except Exception as db_err:
-            print(f"Error guardando respuesta en base de datos: {db_err}")
+            logger.error(f"Error guardando respuesta en base de datos: {db_err}")
         finally:
             db_gen.close()
             
@@ -112,5 +116,5 @@ async def sse_chat_generator(
         yield "event: close\ndata: close\n\n"
         
     except Exception as e:
-        print(f"Error en sse_generator: {e}")
+        logger.error(f"Error en sse_generator: {e}")
         yield f"event: error\ndata: {json.dumps({'detail': str(e)})}\n\n"
