@@ -8,6 +8,8 @@ RUN npm install
 
 COPY . .
 
+RUN npm run build
+
 EXPOSE 8501
 
-CMD ["npm", "run", "dev"]
+CMD ["sh", "-c", "npx next start -p ${PORT:-8501}"]
