@@ -16,7 +16,7 @@ export function DocumentList({ isAdmin }: DocumentListProps) {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  
+
   // File upload state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -59,10 +59,13 @@ export function DocumentList({ isAdmin }: DocumentListProps) {
 
     try {
       const encodedName = encodeURIComponent(nombre);
-      const res = await fetch(`${API_URL}/admin/documentos?nombre=${encodedName}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${API_URL}/admin/documentos?nombre=${encodedName}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
 
       if (res.ok) {
         setDocuments((prev) => prev.filter((doc) => doc.nombre !== nombre));
@@ -111,7 +114,9 @@ export function DocumentList({ isAdmin }: DocumentListProps) {
 
       const data = await res.json();
       if (res.status === 202) {
-        setUploadMessage(`El archivo '${selectedFile.name}' se está indexando en segundo plano en Pinecone. Esto puede demorar unos minutos.`);
+        setUploadMessage(
+          `El archivo '${selectedFile.name}' se está indexando en segundo plano en Pinecone. Esto puede demorar unos minutos.`,
+        );
         setSelectedFile(null);
         // Refresh list in a few seconds
         setTimeout(fetchDocuments, 3000);
@@ -133,16 +138,16 @@ export function DocumentList({ isAdmin }: DocumentListProps) {
   return (
     <div className="flex flex-1 flex-col bg-background text-textMain p-8 overflow-y-auto">
       <div className="mx-auto w-full max-w-4xl space-y-8 animate-fade-in">
-        
         {/* Title */}
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-textMain flex items-center space-x-2">
               <FileText size={24} className="text-accent" />
-              <span>📚 Base de Conocimiento (Pinecone)</span>
+              <span>Base de Conocimiento (Pinecone)</span>
             </h2>
             <p className="mt-1 text-sm text-textMuted">
-              Inventario de normativas y PDFs que el asistente utiliza para dar respuestas en el RAG.
+              Inventario de normativas y PDFs que el asistente utiliza para dar
+              respuestas en el RAG.
             </p>
           </div>
           <button
@@ -159,9 +164,9 @@ export function DocumentList({ isAdmin }: DocumentListProps) {
         {isAdmin && (
           <div className="rounded-xl border border-border bg-sidebar p-6 shadow-lg">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-textMuted mb-4">
-              ➕ Añadir nuevo documento PDF
+              Añadir nuevo documento PDF
             </h3>
-            
+
             <form onSubmit={handleUploadSubmit} className="space-y-4">
               <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-border/80 bg-inputBg px-6 py-6 transition-all hover:border-accent/40">
                 <div className="text-center">
@@ -177,14 +182,17 @@ export function DocumentList({ isAdmin }: DocumentListProps) {
                       />
                     </label>
                   </div>
-                  <p className="text-xs text-textMuted mt-1">Solo documentos PDF hasta 10MB</p>
+                  <p className="text-xs text-textMuted mt-1">
+                    Solo documentos PDF hasta 10MB
+                  </p>
                 </div>
               </div>
 
               {selectedFile && (
                 <div className="flex items-center justify-between rounded-lg bg-accent/5 border border-accent/10 px-4 py-2 text-xs">
                   <span className="font-semibold text-textMain truncate max-w-[80%]">
-                    📄 {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                    📄 {selectedFile.name} (
+                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
                   </span>
                   <button
                     type="button"
@@ -215,7 +223,9 @@ export function DocumentList({ isAdmin }: DocumentListProps) {
                   disabled={uploading}
                   className="w-full rounded-lg bg-accent py-2.5 text-sm font-semibold text-white shadow hover:bg-accent-hover disabled:opacity-50 transition-all"
                 >
-                  {uploading ? "Subiendo e indexando..." : "Subir y procesar documento"}
+                  {uploading
+                    ? "Subiendo e indexando..."
+                    : "Subir y procesar documento"}
                 </button>
               )}
             </form>
@@ -236,7 +246,8 @@ export function DocumentList({ isAdmin }: DocumentListProps) {
 
           {documents.length === 0 && !loading && !error ? (
             <div className="rounded-xl border border-border bg-sidebar p-8 text-center text-textMuted">
-              No hay documentos registrados actualmente en tu base de datos vectorial.
+              No hay documentos registrados actualmente en tu base de datos
+              vectorial.
             </div>
           ) : (
             <div className="grid gap-3">
@@ -250,7 +261,10 @@ export function DocumentList({ isAdmin }: DocumentListProps) {
                       <FileText size={20} />
                     </div>
                     <div className="min-w-0">
-                      <h4 className="truncate text-sm font-semibold text-textMain" title={doc.nombre}>
+                      <h4
+                        className="truncate text-sm font-semibold text-textMain"
+                        title={doc.nombre}
+                      >
                         {doc.nombre}
                       </h4>
                       <p className="text-xs text-textMuted mt-0.5">
@@ -273,7 +287,6 @@ export function DocumentList({ isAdmin }: DocumentListProps) {
             </div>
           )}
         </div>
-
       </div>
 
       <ConfirmModal

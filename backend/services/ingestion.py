@@ -73,11 +73,7 @@ def procesar_un_pdf(filepath: str, original_filename: str, keep_file: bool = Fal
     try:
         logger.info(f"=== Iniciando proceso para {original_filename} ===")
         
-        # 1. Conexión a Pinecone
-        pc = Pinecone(api_key=settings.PINECONE_API_KEY)
-        index = pc.Index("index-tfg")
-        
-        # 2. Extracción vía LlamaParse
+        # 1. Extracción vía LlamaParse
         docs_completos = extraer_texto_un_pdf(filepath, original_filename)
         
         if not docs_completos:
@@ -110,7 +106,7 @@ def procesar_un_pdf(filepath: str, original_filename: str, keep_file: bool = Fal
             vectorstore.add_documents(lote)
             logger.info(f"Subidos {min(i + batch_size, len(splits_limpios))} de {len(splits_limpios)} fragmentos...")
             
-        logger.info(f"✅ ¡Documento {original_filename} ingestado exitosamente!")
+        logger.info(f"¡Documento {original_filename} ingestado exitosamente!")
 
     except Exception as e:
         logger.exception(f"Error total durante el procesado: {e}")
@@ -120,7 +116,7 @@ def procesar_un_pdf(filepath: str, original_filename: str, keep_file: bool = Fal
             try:
                 if os.path.exists(filepath):
                     os.remove(filepath)
-                    logger.info(f"🧹 Archivo temporal local descartado: {filepath}")
+                    logger.info(f"Archivo temporal local descartado: {filepath}")
             except Exception as cleanup_err:
                 logger.warning(f"No se pudo eliminar el fichero {filepath}. Error: {cleanup_err}")
 
@@ -133,7 +129,7 @@ def eliminar_vectores_de_pdf(filename: str):
         index = pc.Index("index-tfg")
         # El filter de Pinecone depende del metadato. source es donde guardamos el nombre del archivo
         index.delete(filter={"source": {"$eq": filename}})
-        logger.info(f"✅ Vectores de '{filename}' eliminados de Pinecone.")
+        logger.info(f"Vectores de '{filename}' eliminados de Pinecone.")
         return True
     except Exception as e:
         logger.exception(f"Error eliminando vectores de {filename} de Pinecone: {e}")
