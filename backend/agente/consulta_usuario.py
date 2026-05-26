@@ -33,7 +33,7 @@ def consulta_usuario(state: StateSchema):
                 contexto = contexto_web_final
             referencias = list(set(referencias + referencias_web))
     except Exception as e:
-        logger.error(f"Error al realizar la búsqueda web complementaria en entrevistador: {e}")
+        logger.exception(f"Error al realizar la búsqueda web complementaria en entrevistador: {e}")
         
     stream = asistente_rag.responder_consulta(contexto, historial, pregunta, "consulta")
     

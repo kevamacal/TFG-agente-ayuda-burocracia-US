@@ -33,7 +33,7 @@ def preparar_historial(db: Session, conv: models.Conversacion, usuario: models.U
                 "content": f"INFORMACIÓN DEL USUARIO CONECTADO (Úsala para contextualizar tus respuestas si es relevante. Asume estos datos como ciertos sobre el usuario):\n{perfil_formateado}"
             })
     except Exception as e:
-        logger.error(f"Error al decodificar perfil_metadata: {e}")
+        logger.exception(f"Error al decodificar perfil_metadata: {e}")
 
     if conv.resumen_memoria and len(historial_db) > 5:
         historial_langgraph.append({"role": "system", "content": f"Resumen de conversación antigua: {conv.resumen_memoria}"})
@@ -65,7 +65,7 @@ async def sse_chat_generator(
                 config["callbacks"] = asistente_rag.callbacks
                 config["run_name"] = f"Chat RAG Asistente US - Conv {conv_id}"
             except Exception as lf_err:
-                logger.error(f"Error al configurar Langfuse callback: {lf_err}")
+                logger.exception(f"Error al configurar Langfuse callback: {lf_err}")
 
         # Ejecutar el agente en pasos (streaming de nodos)
         estado = estado_inicial.copy()
@@ -105,7 +105,7 @@ async def sse_chat_generator(
             crud.crear_mensaje(db_gen, conv_id, rol="assistant", contenido=respuesta_texto, referencias=referencias_str)
             logger.info(f"Respuesta del asistente guardada en la base de datos para conv {conv_id}")
         except Exception as db_err:
-            logger.error(f"Error guardando respuesta en base de datos: {db_err}")
+            logger.exception(f"Error guardando respuesta en base de datos: {db_err}")
         finally:
             db_gen.close()
             
@@ -116,5 +116,5 @@ async def sse_chat_generator(
         yield "event: close\ndata: close\n\n"
         
     except Exception as e:
-        logger.error(f"Error en sse_generator: {e}")
+        logger.exception(f"Error en sse_generator: {e}")
         yield f"event: error\ndata: {json.dumps({'detail': str(e)})}\n\n"

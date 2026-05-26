@@ -73,9 +73,9 @@ def actualizar_perfil_usuario(usuario_id: int, pregunta: str, respuesta: str):
                 crud.actualizar_perfil_metadata(db, usuario, json.dumps(perfil_actual, ensure_ascii=False))
                 logger.info(f"👤 Perfil actualizado para usuario {usuario_id}: {usuario.perfil_metadata}")
         except Exception as parse_err:
-            logger.error(f"Error al parsear el JSON de perfil generado: {parse_err}. Respuesta LLM: {resultado}")
+            logger.exception(f"Error al parsear el JSON de perfil generado: {parse_err}. Respuesta LLM: {resultado}")
             
     except Exception as e:
-        logger.error(f"Error en actualizar_perfil_usuario: {e}")
+        logger.exception(f"Error en actualizar_perfil_usuario: {e}")
     finally:
         db.close()

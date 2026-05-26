@@ -61,7 +61,7 @@ class AsistenteRAG:
                 self.callbacks = [langfuse_handler]
                 logger.info("Langfuse CallbackHandler inicializado globalmente en AsistenteRAG")
             except Exception as lf_err:
-                logger.error(f"Error al inicializar Langfuse globalmente en AsistenteRAG: {lf_err}")
+                logger.exception(f"Error al inicializar Langfuse globalmente en AsistenteRAG: {lf_err}")
 
         self.llm = config_llm()
         self.light_llm = config_light_llm()

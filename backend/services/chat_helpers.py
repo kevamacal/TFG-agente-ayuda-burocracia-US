@@ -48,7 +48,7 @@ def actualizar_resumen_memoria(conversacion_id: int):
         crud.actualizar_resumen_memoria_conversacion(db, conv, res.content.strip())
         logger.info(f"Memoria comprimida para conversacion {conversacion_id}.")
     except Exception as e:
-        logger.error(f"Error comprimiendo memoria: {e}")
+        logger.exception(f"Error comprimiendo memoria: {e}")
     finally:
         db.close()
 
@@ -76,6 +76,30 @@ def generar_y_guardar_titulo(conversacion_id: int, mensaje_usuario: str):
             logger.info(f"Título generado para conv {conversacion_id}: {nuevo_titulo}")
             
     except Exception as e:
-        logger.error(f"Error al generar el título en segundo plano: {e}")
+        logger.exception(f"Error al generar el título en segundo plano: {e}")
     finally:
         db.close()
+
+def formatear_historial(historial: list) -> str:
+    """Convierte el historial de mensajes (lista de diccionarios) en un string estructurado,
+    formateando correctamente los mensajes del sistema, usuario y asistente."""
+    if not historial:
+        return ""
+    
+    lineas = []
+    for msg in historial:
+        role = msg.get("role")
+        content = msg.get("content", "")
+        if not content:
+            continue
+        
+        if role == "user":
+            lineas.append(f"Usuario: {content}")
+        elif role == "assistant":
+            lineas.append(f"Asistente: {content}")
+        elif role == "system":
+            lineas.append(f"[Información del Sistema]: {content}")
+        else:
+            lineas.append(f"{role.capitalize() if role else 'Mensaje'}: {content}")
+            
+    return "\n".join(lineas)

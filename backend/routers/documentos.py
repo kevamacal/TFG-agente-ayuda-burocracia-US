@@ -32,5 +32,5 @@ def listar_documentos(usuario_actual: CurrentUser):
                 sources.add(source)
         return [{"nombre": s} for s in sorted(sources)]
     except Exception as e:
-        logger.error(f"Error consultando documentos de Pinecone: {e}")
+        logger.exception(f"Error consultando documentos de Pinecone: {e}")
         return []

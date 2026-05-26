@@ -137,5 +137,5 @@ def eliminar_documento_admin(
             os.remove(ruta_archivo)
             logger.info(f"Archivo eliminado de static: {ruta_archivo}")
         except Exception as e:
-            logger.error(f"Error eliminando archivo físico {ruta_archivo}: {e}")
+            logger.exception(f"Error eliminando archivo físico {ruta_archivo}: {e}")
     return {"mensaje": f"Documento '{nombre}' y sus vectores eliminados con éxito."}

@@ -21,7 +21,7 @@ try:
         conn.execute(text("ALTER TABLE mensajes ADD COLUMN IF NOT EXISTS feedback_comentario TEXT;"))
     logger.info("[main.py] Migración de base de datos completada exitosamente.")
 except Exception as e:
-    logger.error(f"[main.py] Error al ejecutar migraciones de base de datos: {e}")
+    logger.exception(f"[main.py] Error al ejecutar migraciones de base de datos: {e}")
 
 app = FastAPI(title="API Asistente US")
 
@@ -61,7 +61,7 @@ def seed_admin_user():
             db.commit()
             logger.info(f"Se ha creado la cuenta de administrador inicial: {email} / {password}")
     except Exception as e:
-        logger.error(f"Error al crear el administrador inicial: {e}")
+        logger.exception(f"Error al crear el administrador inicial: {e}")
     finally:
         db.close()
 

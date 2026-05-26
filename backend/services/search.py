@@ -42,5 +42,5 @@ def buscar_web_us(query: str, max_results: int = 4):
                 for r in results
             ]
     except Exception as e:
-        logger.error(f"Error realizando búsqueda en DuckDuckGo: {e}")
+        logger.exception(f"Error realizando búsqueda en DuckDuckGo: {e}")
         return []

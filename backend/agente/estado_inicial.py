@@ -1,4 +1,5 @@
 from services.rag import asistente_rag
+from services.chat_helpers import formatear_historial
 import logging
 
 logger = logging.getLogger(__name__)
@@ -7,12 +8,7 @@ def estado_inicial(state):
     pregunta = state["pregunta"]
     historial = state.get("historial", [])
     
-    historial_formateado = "" 
-    if historial:
-        historial_formateado = "\n".join([
-            f"{'Usuario' if msg['role'] == 'user' else 'Asistente'}: {msg['content']}" 
-            for msg in historial
-        ])
+    historial_formateado = formatear_historial(historial)
     
     try:
         # Invocar la llamada estructurada consolidada

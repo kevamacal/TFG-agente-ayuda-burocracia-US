@@ -61,7 +61,7 @@ def extraer_texto_un_pdf(pdf_path: str, original_filename: str):
                 docs.append(doc)
                 
     except Exception as e:
-        logger.error(f"Error crítico procesando {original_filename}: {e}")
+        logger.exception(f"Error crítico procesando {original_filename}: {e}")
         raise e
                 
     return docs
@@ -113,7 +113,7 @@ def procesar_un_pdf(filepath: str, original_filename: str, keep_file: bool = Fal
         logger.info(f"✅ ¡Documento {original_filename} ingestado exitosamente!")
 
     except Exception as e:
-        logger.error(f"Error total durante el procesado: {e}")
+        logger.exception(f"Error total durante el procesado: {e}")
     finally:
         # 5. Asegurarnos de limpiar basura residual en local pase lo que pase si no queremos conservarlo
         if not keep_file:
@@ -136,5 +136,5 @@ def eliminar_vectores_de_pdf(filename: str):
         logger.info(f"✅ Vectores de '{filename}' eliminados de Pinecone.")
         return True
     except Exception as e:
-        logger.error(f"Error eliminando vectores de {filename} de Pinecone: {e}")
+        logger.exception(f"Error eliminando vectores de {filename} de Pinecone: {e}")
         return False
