@@ -44,3 +44,30 @@ def buscar_web_us(query: str, max_results: int = 4):
     except Exception as e:
         logger.exception(f"Error realizando búsqueda en DuckDuckGo: {e}")
         return []
+
+def procesar_resultados_busqueda(resultados: list, contexto_previo: str = "", referencias_previas: list = None) -> tuple[str, list]:
+    """Procesa los resultados crudos de búsqueda de DuckDuckGo,
+    los formatea como contexto web y los fusiona con el contexto y referencias previos."""
+    if referencias_previas is None:
+        referencias_previas = []
+        
+    contextos_web = []
+    referencias_web = []
+    
+    for r in resultados:
+        titulo = r.get("title", "")
+        body = r.get("body", "")
+        href = r.get("href", "")
+        contextos_web.append(f"FUENTE WEB (site:us.es): {titulo} ({href})\n{body}")
+        referencias_web.append(f"{titulo} (Web US: {href})")
+        
+    contexto_web_final = "\n\n---\n\n".join(contextos_web)
+    
+    if contexto_previo and contexto_web_final:
+        contexto_combinado = contexto_previo + "\n\n---\n\n" + contexto_web_final
+    else:
+        contexto_combinado = contexto_web_final or contexto_previo
+        
+    referencias_combinadas = list(set(referencias_previas + referencias_web))
+    
+    return contexto_combinado, referencias_combinadas
