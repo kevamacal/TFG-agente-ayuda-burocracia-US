@@ -1,7 +1,10 @@
 export const getApiUrl = (): string => {
   if (typeof window !== "undefined") {
     // Si estamos en producción en el navegador, conectamos directamente al backend público en Render
-    if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+    if (
+      window.location.hostname !== "localhost" &&
+      window.location.hostname !== "127.0.0.1"
+    ) {
       return "https://tfg-agente-ayuda-burocracia-us.onrender.com";
     }
     // En desarrollo local en el navegador, conectamos a localhost:8000
@@ -13,6 +16,3 @@ export const getApiUrl = (): string => {
 };
 
 export const API_URL = getApiUrl();
-
-
-

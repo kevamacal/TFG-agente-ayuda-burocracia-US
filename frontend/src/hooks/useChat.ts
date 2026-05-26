@@ -15,6 +15,41 @@ export interface Message {
   feedback_comentario?: string | null;
 }
 
+const formatSSEError = (detail: string): string => {
+  // Rate limits (Error 429)
+  if (detail.includes("429") || detail.includes("rate_limit_exceeded") || detail.includes("Rate limit")) {
+    let friendlyMessage = "⚠️ **Límite de peticiones alcanzado (Error 429)**\n\nEl servidor de IA está experimentando una alta demanda o se han agotado los tokens gratuitos diarios del proveedor (Groq).";
+    
+    // Intentar extraer el tiempo de espera (ej: 1h32m26s o similar)
+    const timeMatch = detail.match(/try again in ([0-9a-zA-Z\.]+)/i);
+    if (timeMatch && timeMatch[1]) {
+      let timeStr = timeMatch[1];
+      timeStr = timeStr
+        .replace(/h/g, " hora(s) ")
+        .replace(/m/g, " minuto(s) ")
+        .replace(/s/g, " segundo(s) ");
+      friendlyMessage += `\n\nPor favor, vuelve a intentarlo en: **${timeStr.trim()}**.`;
+    } else {
+      friendlyMessage += "\n\nPor favor, inténtalo de nuevo en unos minutos o más tarde.";
+    }
+    
+    return friendlyMessage;
+  }
+
+  // Límite de tokens de contexto superado
+  if (detail.includes("context_length_exceeded") || detail.includes("context length")) {
+    return "⚠️ **Ventana de contexto superada**\n\nEl historial de esta conversación se ha vuelto demasiado largo para ser procesado por el modelo. Por favor, crea una **nueva conversación** desde el panel lateral para poder continuar.";
+  }
+
+  // Errores de API de Groq o Proveedor
+  if (detail.includes("Groq") || detail.includes("API connection") || detail.includes("Failed to establish a new connection")) {
+    return "⚠️ **Error de conexión con el servicio de IA**\n\nNo se ha podido establecer comunicación con los servidores del modelo de lenguaje (Groq). Por favor, comprueba tu conexión a internet o inténtalo de nuevo en unos momentos.";
+  }
+
+  // Fallback general
+  return `⚠️ **Error en el agente**\n\nEl asistente no pudo completar tu respuesta debido al siguiente inconveniente:\n\n*${detail}*`;
+};
+
 export interface Conversation {
   id: number;
   titulo: string;
@@ -206,9 +241,12 @@ export function useChat() {
         },
         onError: (detail) => {
           console.error("SSE agent error:", detail);
-          currentAssistantResponse += `\n[Error del agente: ${detail}]`;
+          const friendlyError = formatSSEError(detail);
+          const newContent = currentAssistantResponse
+            ? `${currentAssistantResponse}\n\n${friendlyError}`
+            : friendlyError;
           updateLastAssistantMessage({
-            content: currentAssistantResponse,
+            content: newContent,
             isStreaming: false,
           });
         },
