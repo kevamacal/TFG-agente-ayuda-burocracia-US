@@ -186,7 +186,7 @@ export function ChatInterface({
 
                       {msg.feedback === false && msg.feedback_comentario && activeCommentMsgId !== msg.id && (
                         <span className="text-[10px] text-gray-400 italic truncate max-w-[200px]" title={msg.feedback_comentario}>
-                          Comentario: "{msg.feedback_comentario}"
+                          Comentario: &ldquo;{msg.feedback_comentario}&rdquo;
                         </span>
                       )}
                     </div>

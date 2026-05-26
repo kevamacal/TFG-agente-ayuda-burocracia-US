@@ -161,7 +161,7 @@ export function FeedbackList() {
                         Motivo del reporte / Comentario del usuario:
                       </h4>
                       <p className="text-xs text-textMain italic">
-                        "{item.feedback_comentario}"
+                        &ldquo;{item.feedback_comentario}&rdquo;
                       </p>
                     </div>
                   )}
