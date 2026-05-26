@@ -25,3 +25,7 @@ pypdf
 alembic
 streamlit_cookies_controller
 nest-asyncio
+ddgs
+langfuse
+pandas
+ragas
