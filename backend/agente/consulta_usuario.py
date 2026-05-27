@@ -27,5 +27,6 @@ def consulta_usuario(state: StateSchema):
     return {
         "stream": stream,
         "contexto": contexto,
-        "referencias": referencias
+        "referencias": referencias,
+        "categoria": "entrevistador"
     }

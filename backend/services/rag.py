@@ -185,6 +185,10 @@ class AsistenteRAG:
         elif "suficiente" in res:
             return "resultor"
         elif "ambiguo" in res:
+            if not historial_formateado or "asistente:" not in historial_formateado.lower():
+                logger.info("[EVALUATOR] Consulta ambigua en el primer turno -> entrevistador")
+                return "entrevistador"
+                
             decision_doble_pregunta = self.chain_cuestiona_agente.invoke({
                 "historial": historial_formateado,
                 "context": contexto_reducido,

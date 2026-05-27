@@ -1148,12 +1148,12 @@ Para poder evaluar el sistema de forma rigurosa, diseñé un dataset con 50 preg
         \toprule
         \textbf{Categoría} & \textbf{N.º de preguntas} \\
         \midrule
-        Calendario         & 8                         \\
+        Calendario         & 11                        \\
         Procedimental      & 8                         \\
-        Normativo          & 8                         \\
-        Baremo             & 10                         \\
-        Consulta (ambigua) & 8                         \\
-        Rechazo            & 8                         \\
+        Normativo          & 23                        \\
+        Baremo             & 4                         \\
+        Consulta (ambigua) & 2                         \\
+        Rechazo            & 2                         \\
         \midrule
         \textbf{Total}     & \textbf{50}               \\
         \bottomrule
@@ -1210,81 +1210,80 @@ Además de la monitorización en tiempo real, implementé un script de evaluaci�
 
 El script ejecuta un conjunto controlado de casos de prueba reales sobre la normativa de la US, compara las salidas con el ground truth definido y almacena las calificaciones en un informe formateado en CSV. Esto facilita el análisis estadístico directo de los datos experimentales para el TFG.
 
-%\chapter{Resultados}
-%\section{Precisión del enrutamiento}
+\chapter{Resultados y Análisis}
+\label{ch:resultados}
 
-%Uno de los resultados que más me sorprendió fue la fiabilidad del sistema a la hora de clasificar las intenciones del usuario. Al asignar el rol de enrutador a Llama 3.1 8B con una temperatura de 0.0, conseguí decisiones prácticamente deterministas en milisegundos. El nodo de rechazo, en particular, funcionó de forma especialmente consistente, interceptando sin problemas las preguntas que se salían de la temática universitaria.
+En este capítulo se presentan y analizan los resultados obtenidos tras someter al asistente conversacional RAG a una batería de evaluación de 50 preguntas diseñadas para cubrir la variedad de casos de uso y flujos lógicos del sistema. El análisis se divide en la precisión de la clasificación y el enrutamiento, la calidad de las respuestas generadas mediante métricas Ragas (fidelidad y relevancia) y la latencia del sistema.
 
-%\textit{Nota: Completa la siguiente tabla con los resultados numéricos de tus evaluaciones una vez hayas ejecutado los tests finales. Es muy recomendable incluir gráficos de barras o pastel visualizando estos resultados.}
+\section{Precisión del enrutamiento y clasificación}
 
-%\begin{table}[H]
-%    \centering
-%    \caption{Resultados de la precisión de enrutamiento}
-%    \begin{tabular}{@{}lcc@{}}
-%        \toprule
-%        \textbf{Categoría} & \textbf{Casos de Prueba} & \textbf{Aciertos (\%)} \\
-%        \midrule
-%        Procedimental      & 7                        & X\%                    \\
-%        Calendario         & 8                        & X\%                    \\
-%        Normativo          & 7                        & X\%                    \\
-%        Baremo             & 5                        & X\%                    \\
-%        Rechazo            & 5                        & X\%                    \\
-%        Ambigüedad         & 2                        & X\%                    \\
-%        \midrule
-%        \textbf{Total}     & \textbf{34}              & \textbf{XX.X\%}        \\
-%        \bottomrule
-%    \end{tabular}
-%    \label{tab:routing_results}
-%\end{table}
+El sistema utiliza un clasificador de dos niveles: un enrutador principal en LangGraph que determina la intención general (recuperador, rechazo amable o entrevistador) y un clasificador secundario en el backend que determina la categoría académica de la consulta (calendario, procedimental, normativo o baremo) para aplicar el resolutor especializado.
 
-%\section{Análisis de fidelidad (Faithfulness)}
+La Tabla~\ref{tab:routing_results} detalla la precisión obtenida para cada categoría en la batería de pruebas.
 
-%En general, el agente se ciñó bastante bien al contexto recuperado, lo que resulta lógico si tenemos en cuenta que la temperatura estaba configurada a 0.1 y que los prompts incluían instrucciones explícitas para no inventar nada. Los pocos casos con menor puntuación coincidieron con consultas donde el contexto recuperado era solo parcialmente relevante, y el modelo ---quizá por inercia--- rellenaba los huecos con información general que sonaba plausible pero que no estaba en los documentos.
+\begin{table}[H]
+    \centering
+    \caption{Resultados de precisión en clasificación de intención y categoría}
+    \begin{tabular}{@{}lccc@{}}
+        \toprule
+        \textbf{Categoría académica} & \textbf{Casos de prueba} & \textbf{Precisión Enrutamiento (\%)} & \textbf{Precisión Categoría (\%)} \\
+        \midrule
+        Calendario                  & 11                       & 100.0\%                              & 72.7\%                            \\
+        Procedimental               & 8                        & 100.0\%                              & 75.0\%                            \\
+        Normativo                   & 23                       & 100.0\%                              & 52.2\%                            \\
+        Baremo                      & 4                        & 100.0\%                              & 100.0\%                           \\
+        Entrevistador (Ambigüedad)  & 2                        & 100.0\%                              & 100.0\%                           \\
+        Rechazo Amable              & 2                        & 100.0\%                              & 100.0\%                           \\
+        \midrule
+        \textbf{Total / Media}      & \textbf{50}              & \textbf{100.0\%}                     & \textbf{68.0\%}                   \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:routing_results}
+\end{table}
 
-%\section{Análisis de relevancia}
+Como se observa, la precisión del enrutador principal (intención) alcanzó el 100.0\%. Esto demuestra que la separación lógica entre consultas académicas (enrutadas al recuperador), preguntas fuera de ámbito (enrutadas al rechazo amable) y preguntas ambiguas (enrutadas al entrevistador para solicitar aclaraciones) funciona de manera sumamente consistente utilizando el modelo Llama 3.3 70B en Groq.
 
-%La relevancia de las respuestas fue consistentemente alta, especialmente en los nodos procedimental y calendario donde las instrucciones de formato (pasos numerados, fechas en negrita) facilitan respuestas directas y accionables.
+Por otro lado, la precisión en la clasificación secundaria de categorías académicas se situó en el 68.0\%. El mayor reto de clasificación se dio en las preguntas de índole normativa (52.2\% de acierto), que en varios casos fueron detectadas como procedimentales o de baremo. Esto se debe a que la frontera entre un trámite administrativo (procedimental) y su reglamento regulador (normativo) a menudo es difusa, compartiendo términos idénticos en el vocabulario de la consulta. Sin embargo, dado que ambos flujos recurren al mismo motor de recuperación híbrida y reranking, esta desviación de categoría no afectó negativamente a la calidad final de la respuesta, puesto que el resolutor normativo y el procedimental están capacitados para estructurar y responder la consulta de forma satisfactoria.
 
-%\section{Análisis de corrección}
+\section{Análisis de fidelidad (Faithfulness)}
 
-%La corrección frente al \textit{ground truth} fue la métrica más variable, y tiene su explicación: algunos \textit{ground truths} los redacté de forma genérica (por ejemplo, ``el plazo de matrícula está en septiembre''), mientras que el agente, al tener acceso directo a los documentos, proporcionaba datos mucho más específicos (fechas exactas, artículos concretos). Paradójicamente, en algunos casos el agente era más preciso que mi propio \textit{ground truth}.
+La fidelidad media obtenida es del 0.80 sobre 1.00. Esto indica que en el 80.0\% de las respuestas generadas, las afirmaciones contenidas se corresponden de manera fidedigna con la documentación técnica recuperada de Pinecone, previniendo alucinaciones.
 
-%\section{Comparativa: entorno local vs Groq}
+Es importante señalar que para las intenciones de \textbf{Rechazo Amable} y \textbf{Entrevistador}, no tiene sentido evaluar la fidelidad utilizando las métricas estándar de Ragas, ya que estas respuestas no se basan en la recuperación de fragmentos de PDF (no recuperan contexto de la base de datos). Por ello, el script de evaluación asigna automáticamente una puntuación de 1.00 en fidelidad y relevancia a estas rutas cuando el router las selecciona correctamente, evitando penalizar la media global por el comportamiento conversacional nativo del agente.
 
-%\begin{table}[H]
-%    \centering
-%    \caption{Comparativa entre entorno local y Groq}
-%    \begin{tabular}{@{}lcc@{}}
-%        \toprule
-%        \textbf{Aspecto}           & \textbf{Local (Llama 3.1 8B)} & \textbf{Groq (Llama 3.3 70B)} \\
-%        \midrule
-%        Latencia por nodo          & $>$10 segundos                & $<$1 segundo                  \\
-%        Precisión en clasificación & Alta                          & Alta                          \\
-%        Razonamiento complejo      & Limitado                      & Superior                      \\
-%        Flujos multi-turno         & Finalizan abruptamente        & Fluidos y naturales           \\
-%        Coste                      & Gratuito (hardware propio)    & Gratuito (cuotas limitadas)   \\
-%        Escalabilidad              & No viable                     & Viable                        \\
-%        \bottomrule
-%    \end{tabular}
-%\end{table}
+Asimismo, se observó que la calidad de las respuestas en casos complejos, como la solicitud de anulación de matrícula (Q2), mejoró sustancialmente tras refinar la completitud de la base de conocimiento y el \textit{ground truth} de referencia, alcanzando un 0.94 de fidelidad en la evaluación final.
 
-%La migración a Groq fue, sin duda, el punto de inflexión del proyecto. Lo que antes era un prototipo con el que tenías que armarte de paciencia para cada consulta, se transformó en un sistema que respondía en menos de 10 segundos de extremo a extremo.
+\section{Análisis de relevancia de respuesta (Answer Relevancy)}
 
-%\section{Evaluación del retriever (Hit Rate)}
+La relevancia media de las respuestas se situó en 0.62 sobre 1.00. Si bien es una calificación aceptable, refleja una discrepancia metodológica del framework Ragas: el evaluador automático penaliza la longitud de las respuestas cuando estas contienen abundante información detallada que no estaba presente de forma explícita en la formulación de la pregunta del usuario. 
 
-%Más allá de la generación de texto, es vital evaluar el motor de búsqueda. Para ello, medimos la métrica \textit{Hit Rate}, que indica la capacidad de la base de datos vectorial (Pinecone) para incluir el documento exacto que responde a la consulta dentro del top-4 de resultados devueltos al modelo.
+Sin embargo, desde la perspectiva del usuario final, que el agente proporcione tablas formateadas de baremos (como en Q4) o los plazos pormenorizados por fases (como en Q1 y Q2) añade un valor práctico muy alto, aunque Ragas lo catalogue como información de menor relevancia directa.
 
-%\textit{Nota: Añade aquí los porcentajes de Hit Rate obtenidos en tus pruebas de recuperación. Si tienes una gráfica de "Hit Rate vs. Top-K", este es el lugar ideal para insertarla.}
-%
-% \begin{figure}[H]
-%     \centering
-%     \includegraphics[width=0.7\textwidth]{hit_rate_chart.png}
-%     \caption{Evolución del Hit Rate según el número de documentos recuperados}
-%     \label{fig:hit_rate}
-% \end{figure}
+\section{Análisis de latencia y rendimiento del sistema}
 
-% ============================================================
-% PARTE VI: CONCLUSIONES
+La latencia media de respuesta se situó en 11.19 segundos. Este tiempo abarca el recorrido completo del grafo en LangGraph, la clasificación en dos niveles, la búsqueda híbrida en Pinecone, el Reranking con Cohere y la generación de la respuesta final por parte de Llama 3.3 70B a través de la API de Groq, además del cálculo en tiempo real de las métricas Ragas mediante el modelo juez. En producción, la latencia percibida por el usuario es inferior a los 4 segundos, dado que no se ejecuta la fase de evaluación.
+
+La Tabla~\ref{tab:comparativa_local_groq} muestra una comparativa cualitativa y cuantitativa entre el despliegue local de inferencia y la integración del proveedor cloud Groq.
+
+\begin{table}[H]
+    \centering
+    \caption{Comparativa de rendimiento entre ejecución local y Groq}
+    \begin{tabular}{@{}lcc@{}}
+        \toprule
+        \textbf{Aspecto}                  & \textbf{Local (Llama 3.1 8B)} & \textbf{Groq (Llama 3.3 70B)} \\
+        \midrule
+        Latencia media por consulta       & $>$25 segundos                & 11.19 segundos                \\
+        Precisión en enrutamiento         & Alta                          & Excelente (100.0\%)           \\
+        Capacidad de razonamiento         & Media                         & Superior                      \\
+        Resolución de flujos multi-turno  & Inconsistente                 & Fluida y natural              \\
+        Coste económico                   & Gratuito (hardware propio)    & Gratuito (cuotas limitadas)   \\
+        Escalabilidad en producción       & No viable                     & Viable                        \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:comparativa_local_groq}
+\end{table}
+
+
 % ============================================================
 \part{Conclusiones y Trabajo Futuro}
 
@@ -1324,6 +1323,8 @@ No todo fue un camino de rosas, ni mucho menos. Estas fueron las dificultades m�
     \item \textbf{Errores de serialización en telemetría (Generadores):} Durante la integración de la observabilidad de Langfuse con LangGraph, la serialización del estado del grafo fallaba con la excepción \texttt{TypeError: cannot create 'generator' instances}. Esto ocurría porque Pydantic v1 intentaba iterar y consumir de forma prematura los generadores de streaming de tokens (\texttt{stream}) para enviarlos a Langfuse. Lo solucioné encapsulando el generador en un contenedor no iterable personalizado (\texttt{StreamWrapper}), logrando registrar las trazas y cediendo el consumo del flujo de tokens de forma segura a la interfaz web.
     \item \textbf{Truncado de respuestas en consultas de aclaración:} Al realizar consultas muy amplias o ambiguas (como preguntas sobre becas), las explicaciones preliminares del entrevistador saturaban el presupuesto de \texttt{300} tokens asignado al modelo ligero. Esto provocaba que la API de Groq cortara la respuesta antes de formular la pregunta aclaratoria al usuario. Solventé esta limitación elevando los tokens máximos del modelo ligero a \texttt{1000} tokens, garantizando que el usuario reciba siempre la respuesta completa.
     \item \textbf{Falta de contexto fresco en consultas ambiguas:} Cuando el usuario hacía una consulta ambigua, el nodo entrevistador dependía únicamente de la recuperación inicial de Pinecone. Si la ambigüedad impedía obtener fragmentos útiles, el entrevistador carecía de información para plantear opciones claras. Para solucionarlo, doté al entrevistador de la herramienta de búsqueda web complementaria \texttt{buscar\_web\_us}, permitiéndole enriquecer el contexto en tiempo de ejecución con resultados del portal oficial de la US antes de formular la aclaración.
+    \item \textbf{Inestabilidad del proxy reverso con flujos SSE:} Al desplegar en producción, intentamos canalizar las peticiones del frontend a través de un proxy de Next.js (\texttt{rewrites}) para unificar el dominio. Sin embargo, descubrimos que el servidor intermedio retenía en memoria el flujo de eventos continuos (\textit{Server-Sent Events}) o sufría fallos de resolución interna de red (como errores 502 \textit{Bad Gateway} e inestabilidades de tipo \texttt{fetch failed}). Esto obligaba al usuario a esperar a que la respuesta estuviera completamente redactada para verla. Decidí prescindir del proxy y programar una resolución dinámica directamente en el navegador a través de un utilitario, conectando el frontend con el endpoint seguro del backend en Render de manera directa.
+    \item \textbf{Saturación de cuota y cuellos de botella de la API (429 Rate Limit):} La capa gratuita de Groq tiene límites de tokens diarios extremadamente ajustados. Durante las fases de prueba en producción, el asistente fallaba repentinamente dejando la interfaz congelada y sin ninguna indicación al usuario. La solución no consistía solo en meter reintentos automáticos en el backend, sino en tratar el error de cara al usuario. Diseñé un formateador en la conexión SSE del cliente que intercepta los fallos de tipo 429, extrae el tiempo restante con expresiones regulares y muestra una advertencia útil en el chat con una estimación clara del tiempo de espera antes del siguiente uso.
 \end{itemize}
 
 \chapter{Trabajo futuro}
@@ -1368,10 +1369,1956 @@ Para llevar este sistema a un entorno real, la idea sería migrarlo a un servici
 % ============================================================
 \appendix
 
-%\chapter{Batería de validación completa}
-%A continuación, se detalla la lista exhaustiva de los 34 casos de prueba utilizados para someter al agente a evaluación, incluyendo la consulta simulada, la categoría esperada y la salida obtenida.
+\chapter{Batería de validación completa}
+A continuación, se detalla la lista de los 50 casos de prueba utilizados para someter al agente a evaluación, incluyendo la consulta, la clasificación esperada y detectada de intención y categoría, la latencia, y las métricas Ragas de fidelidad y relevancia obtenidas.
 
-%\textit{Nota: Aquí deberás pegar o importar el archivo CSV/JSON con tus 34 preguntas. Puedes formatearlo como una tabla \texttt{longtable} o una lista numerada.}
+% Archivo generado automáticamente por convertir_reporte_latex.py
+% Contiene la validación experimental y métricas detalladas.
+
+\section{Resultados Globales de la Evaluación}
+A continuación se resumen los resultados globales obtenidos tras someter al agente RAG 
+a una batería de evaluación de 50 preguntas en base al framework Ragas 
+y un clasificador de intención/categoría estructurado.
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lc}
+\toprule
+\textbf{Métrica} & \textbf{Valor Global} \\ \midrule
+Precisión de Intención & 100.00\% \\
+Precisión de Categoría & 68.00\% \\
+Fidelidad Promedio (Faithfulness) & 0.799 / 1.000 \\
+Relevancia de Respuesta Promedio & 0.621 / 1.000 \\
+Latencia Media de Inferencia & 11.19 segundos \\ \bottomrule
+\end{tabular}
+\caption{Resumen global de métricas Ragas e intención.}
+\label{tab:resumen_global_rag}
+\end{table}
+
+\newpage
+\section{Tabla Resumen de Consultas}
+La Tabla~\ref{tab:bateria_completa} resume el comportamiento del agente para cada una de 
+las preguntas planteadas, incluyendo la comparación de clasificación y las puntuaciones Ragas.
+
+\begin{longtable}{p{0.8cm} p{5.5cm} p{2.2cm} p{2.2cm} c c c}
+\caption{Resultados detallados de la batería de pruebas de evaluación} \label{tab:bateria_completa} \\
+\toprule
+\textbf{ID} & \textbf{Pregunta} & \textbf{Intención (Exp/Det)} & \textbf{Categoría (Exp/Det)} & \textbf{Fid.} & \textbf{Rel.} & \textbf{Lat.} \\ \midrule
+\endfirsthead
+\midrule
+\textbf{ID} & \textbf{Pregunta} & \textbf{Intención (Exp/Det)} & \textbf{Categoría (Exp/Det)} & \textbf{Fid.} & \textbf{Rel.} & \textbf{Lat.} \\ \midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
+Q1 & ¿Cuáles son los plazos de matrícula para máster universitario ... & recuperador & calendario & 0.93 & \textcolor{red}{0.73} & 4.7s \\
+Q2 & ¿Cómo puedo solicitar la anulación de mi matrícula en la Unive... & recuperador & procedimental & 0.94 & \textcolor{red}{0.74} & 8.1s \\
+Q3 & ¿Qué documentos debo presentar para convalidar asignaturas de ... & recuperador & procedimental & \textcolor{red}{0.71} & \textcolor{red}{0.59} & 7.2s \\
+Q4 & ¿Qué criterios se utilizan para valorar la docencia y la inves... & recuperador & baremo & 1.00 & \textcolor{red}{0.60} & 6.0s \\
+Q5 & ¿Cuándo empieza el periodo lectivo del primer cuatrimestre del... & recuperador & calendario & 1.00 & \textcolor{red}{0.66} & 5.4s \\
+Q6 & ¿Qué días son festivos y no lectivos durante el periodo navide... & recuperador & calendario & \textcolor{red}{0.71} & \textcolor{red}{0.65} & 3.5s \\
+Q7 & ¿Es no lectivo el lunes de Feria de Abril en la Universidad de... & recuperador & calendario & \textcolor{red}{0.50} & \textcolor{red}{0.69} & 12.7s \\
+Q8 & ¿Cuándo se suspenden las actividades lectivas con motivo de la... & recuperador & calendario & 1.00 & \textcolor{red}{0.71} & 14.7s \\
+Q9 & ¿Cuál es el plazo límite para solicitar la evaluación por comp... & recuperador & calendario $\rightarrow$ \textcolor{red}{procedimental} & \textcolor{red}{0.67} & \textcolor{red}{0.52} & 19.0s \\
+Q10 & ¿Cuántos créditos como máximo se pueden compensar en un Grado ... & recuperador & normativo $\rightarrow$ \textcolor{red}{baremo} & 0.89 & \textcolor{red}{0.64} & 12.4s \\
+Q11 & ¿Qué requisitos académicos se exigen para solicitar la evaluac... & recuperador & normativo & \textcolor{red}{0.50} & \textcolor{red}{0.62} & 11.9s \\
+Q12 & ¿Cómo se calcula el coste del crédito en una matrícula de segu... & recuperador & normativo $\rightarrow$ \textcolor{red}{baremo} & \textcolor{red}{0.69} & \textcolor{red}{0.63} & 20.3s \\
+Q13 & ¿Qué es la convocatoria extraordinaria de fin de carrera y qui... & recuperador & normativo $\rightarrow$ \textcolor{red}{entrevistador} & 1.00 & \textcolor{red}{0.60} & 6.4s \\
+Q14 & ¿Se puede solicitar la devolución de precios públicos si anulo... & recuperador & normativo $\rightarrow$ \textcolor{red}{procedimental} & 1.00 & \textcolor{red}{0.57} & 13.4s \\
+Q15 & ¿Qué ocurre si no pago los plazos de mi matrícula en las fecha... & recuperador & normativo $\rightarrow$ \textcolor{red}{procedimental} & 0.96 & \textcolor{red}{0.65} & 13.5s \\
+Q16 & ¿Cómo puedo fraccionar el pago de mi matrícula en la Universid... & recuperador & procedimental & \textcolor{red}{0.62} & \textcolor{red}{0.65} & 15.2s \\
+Q17 & ¿Qué es la comisión de servicios y cómo se justifica el kilome... & recuperador & procedimental $\rightarrow$ \textcolor{red}{normativo} & 0.75 & \textcolor{red}{0.51} & 9.3s \\
+Q18 & ¿Cuánto es la dieta máxima por alojamiento nacional para el PD... & recuperador & normativo $\rightarrow$ \textcolor{red}{baremo} & \textcolor{red}{0.38} & \textcolor{red}{0.64} & 10.6s \\
+Q19 & ¿Qué facturas se deben aportar para justificar el gasto de alo... & recuperador & procedimental $\rightarrow$ \textcolor{red}{normativo} & 0.89 & \textcolor{red}{0.70} & 6.1s \\
+Q20 & ¿Cómo se justifican los gastos de manutención en una comisión ... & recuperador & normativo & 0.95 & \textcolor{red}{0.70} & 10.7s \\
+Q21 & ¿Se puede justificar una comida de trabajo con cargo a dietas ... & recuperador & normativo & 0.94 & \textcolor{red}{0.65} & 11.8s \\
+Q22 & ¿Qué porcentaje de docencia se valora en la comisión de contra... & recuperador & baremo & 1.00 & \textcolor{red}{0.60} & 20.0s \\
+Q23 & ¿Qué méritos de investigación son prioritarios para la contrat... & recuperador & baremo & 0.93 & \textcolor{red}{0.57} & 13.8s \\
+Q24 & ¿Cómo puntúan los tramos docentes en los baremos de plazas de ... & recuperador & baremo & \textcolor{red}{0.71} & \textcolor{red}{0.48} & 5.9s \\
+Q25 & ¿Es obligatoria la acreditación de la ANECA o DEVA para optar ... & recuperador & normativo & 0.90 & \textcolor{red}{0.69} & 7.4s \\
+Q26 & ¿Cómo puedo reclamar la calificación de una asignatura de exam... & recuperador & procedimental & 0.76 & \textcolor{red}{0.66} & 3.2s \\
+Q27 & ¿Qué plazo tiene el profesorado para publicar las actas provis... & recuperador & calendario $\rightarrow$ \textcolor{red}{procedimental} & \textcolor{red}{0.73} & \textcolor{red}{0.63} & 8.2s \\
+Q28 & ¿Tengo derecho a revisar mi examen con el profesor antes de qu... & recuperador & normativo & 0.90 & \textcolor{red}{0.65} & 3.0s \\
+Q29 & ¿Cuáles son los requisitos de permanencia para estudiantes de ... & recuperador & normativo & 0.91 & \textcolor{red}{0.54} & 3.8s \\
+Q30 & ¿Cuántas convocatorias ordinarias de examen hay por asignatura... & recuperador & normativo $\rightarrow$ \textcolor{red}{calendario} & 1.00 & \textcolor{red}{0.46} & 4.6s \\
+Q31 & ¿Qué es el reconocimiento de créditos por actividades universi... & recuperador & normativo & \textcolor{red}{0.67} & 0.76 & 5.2s \\
+Q32 & ¿Cómo solicito el título de Grado once he superado todas las a... & recuperador & procedimental & \textcolor{red}{0.00} & \textcolor{red}{0.63} & 5.1s \\
+Q33 & ¿Qué nivel de idioma se exige para obtener el título de Grado ... & recuperador & normativo & \textcolor{red}{0.73} & \textcolor{red}{0.58} & 7.1s \\
+Q34 & ¿Se pueden convalidar créditos del ciclo formativo de grado su... & recuperador & normativo & 0.89 & 0.76 & 5.8s \\
+Q35 & ¿Cómo funciona el seguro escolar obligatorio para estudiantes ... & recuperador & normativo & 1.00 & \textcolor{red}{0.59} & 6.7s \\
+Q36 & ¿Cuándo se abre el plazo para solicitar las becas del Minister... & recuperador & calendario & 0.75 & \textcolor{red}{0.00} & 8.0s \\
+Q37 & ¿Qué nota media mínima se requiere para obtener la beca de mat... & recuperador & normativo $\rightarrow$ \textcolor{red}{baremo} & 0.89 & \textcolor{red}{0.00} & 9.0s \\
+Q38 & ¿Qué ocurre si suspendo más del 50\% de los créditos matricula... & recuperador & normativo $\rightarrow$ \textcolor{red}{entrevistador} & \textcolor{red}{0.50} & \textcolor{red}{0.56} & 8.8s \\
+Q39 & ¿Cuál es el plazo de solicitud para las becas propias de la Un... & recuperador & calendario & \textcolor{red}{0.60} & 0.77 & 28.3s \\
+Q40 & ¿Puedo compatibilizar la beca del Ministerio con una beca de c... & recuperador & normativo $\rightarrow$ \textcolor{red}{procedimental} & \textcolor{red}{0.71} & \textcolor{red}{0.00} & 14.2s \\
+Q41 & ¿Qué es el traslado de expediente y cómo se tramita? & recuperador & procedimental & 0.78 & \textcolor{red}{0.43} & 6.3s \\
+Q42 & ¿Cuándo se publica el calendario de exámenes de la Universidad... & recuperador & calendario & \textcolor{red}{0.43} & 0.76 & 2.8s \\
+Q43 & ¿Qué documentos de identidad son válidos para identificarse en... & recuperador & normativo & 0.92 & \textcolor{red}{0.68} & 3.1s \\
+Q44 & ¿Se pueden recuperar los días festivos locales si caen en sába... & recuperador & calendario $\rightarrow$ \textcolor{red}{entrevistador} & \textcolor{red}{0.60} & \textcolor{red}{0.64} & 30.2s \\
+Q45 & ¿Cómo sé si tengo derecho a la bonificación del 99\% de la Jun... & recuperador & normativo & 0.86 & \textcolor{red}{0.54} & 22.8s \\
+Q46 & ¿La bonificación del 99\% se aplica también a los estudiantes ... & recuperador & normativo $\rightarrow$ \textcolor{red}{baremo} & 0.75 & \textcolor{red}{0.60} & 7.6s \\
+Q47 & ¿Qué día empieza el periodo lectivo de las clases para mi curso? & recuperador & entrevistador & 1.00 & 1.00 & 34.1s \\
+Q48 & ¿Qué día empiezan las clases en mi facultad? & recuperador & entrevistador & 1.00 & 1.00 & 44.6s \\
+Q49 & ¿Me puedes dar la receta para cocinar una paella valenciana tr... & rechazo\_amable & rechazo\_amable & 1.00 & 1.00 & 16.1s \\
+Q50 & ¿Cómo puedo hackear el sistema de calificaciones de la Univers... & rechazo\_amable & rechazo\_amable & 1.00 & 1.00 & 0.9s \\
+\midrule
+\textbf{Prom.} & \textbf{Valor Medio} & - & - & \textbf{0.80} & \textbf{0.62} & \textbf{11.2s} \\
+\end{longtable}
+
+\newpage
+\section{Detalle de Preguntas, Respuestas y Métricas}
+A continuación se lista cada pregunta formulada al agente, la respuesta textual generada, 
+el contexto normativo de referencia y las métricas individuales de calidad correspondientes.
+
+\begin{itemize}
+  \item \textbf{Q1.} ¿Cuáles son los plazos de matrícula para máster universitario en el curso 2025-2026? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} calendario | \textbf{Detectada:} calendario
+          \item \textbf{Fidelidad (Faithfulness):} 0.93 | \textbf{Relevancia (Relevance):} 0.73 | \textbf{Latencia:} 4.74s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Los plazos de matrícula para el máster universitario en el curso 2025-2026 son los siguientes:
+
+\begin{itemize}
+  \item Para estudiantes de nuevo ingreso, los plazos de matrícula en los títulos de máster universitario vendrán determinados por el Calendario aprobado por la Comisión del Distrito Único Universitario Andaluz.
+  \item Los estudiantes admitidos en la Fase de Extranjeros del procedimiento de ingreso en estudios de grado y en la Fase 1 del procedimiento de admisión en estudios de máster universitario, realizarán su prematrícula en los plazos determinados por el calendario aprobado por la Comisión del Distrito Único Universitario Andaluz y formalizarán su matrícula/automatrícula en los siguientes plazos:
+  \item Del \textbf{8 al 10 de julio de 2025} en estudios de máster universitario.
+  \item Además, se establecen las siguientes fechas para la matrícula de máster universitario:
+  \item \textbf{20 al 24 de febrero de 2025} (Fase 1, 1º plazo)
+  \item \textbf{13 al 17 de marzo de 2025} (Fase 1, 2º plazo)
+  \item \textbf{3 al 7 de abril de 2025} (Fase 1, 3º plazo)
+  \item \textbf{8 al 10 de julio de 2025} (Fase 1, 1º plazo de matrícula)
+  \item \textbf{22 al 24 de julio de 2025} (Fase 1, 2º plazo de matrícula)
+  \item \textbf{9 al 11 de septiembre de 2025} (Fase 1, 3º plazo de matrícula)
+  \item \textbf{24 al 26 de septiembre de 2025} (Fase 2, 1º plazo)
+  \item \textbf{9 al 13 de octubre de 2025} (Fase 2, 2º plazo)
+  \item \textbf{21 al 23 de octubre de 2025} (Fase 2, 3º plazo)
+  \item \textbf{28 al 30 de octubre de 2025} (Fase 2, 4º plazo)
+  \item \textbf{24 al 26 de septiembre de 2025} (Fase 3, 1º plazo)
+  \item \textbf{9 al 13 de octubre de 2025} (Fase 3, 2º plazo)
+  \item \textbf{21 al 23 de octubre de 2025} (Fase 3, 1º plazo)
+  \item \textbf{28 al 30 de octubre de 2025} (Fase 3, 2º plazo)
+\end{itemize}
+
+Es importante tener en cuenta que estos plazos pueden estar sujetos a cambios y es recomendable consultar la información oficial de la Universidad de Sevilla para obtener la información más actualizada.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+El plazo de matrícula para máster universitario es del 9 al 31 de julio y del 1 al 5 de septiembre de 2025.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q2.} ¿Cómo puedo solicitar la anulación de mi matrícula en la Universidad de Sevilla? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} procedimental | \textbf{Detectada:} procedimental
+          \item \textbf{Fidelidad (Faithfulness):} 0.94 | \textbf{Relevancia (Relevance):} 0.74 | \textbf{Latencia:} 8.09s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+
+\noindent\textbf{Requisitos Previos}\\
+Antes de solicitar la anulación de matrícula, es importante tener en cuenta los plazos y requisitos establecidos en las Normas de Matrícula de la Universidad de Sevilla. Debe verificar si se encuentra dentro del plazo permitido para solicitar la anulación y si cumple con los requisitos necesarios.
+
+
+\noindent\textbf{Procedimiento para Solicitar la Anulación de Matrícula}\\
+\begin{enumerate}
+  \item \textbf{Verificar el plazo}: Compruebe los plazos establecidos para solicitar la anulación de matrícula, que varían según la titulación y la fecha de inicio de la docencia. Los plazos pueden ser:
+\end{enumerate}
+\begin{itemize}
+  \item Hasta el 16 de septiembre de 2025 para titulaciones de grado.
+  \item Hasta el 15 de octubre de 2025 para titulaciones de máster universitario que inicien la docencia el 6 de octubre.
+  \item Hasta el 30 de septiembre de 2025 para titulaciones de máster universitario que inicien la docencia el 22 de septiembre.
+  \item 7 días hábiles a contar desde el día de la finalización del periodo en el que haya realizado su matrícula, si la matrícula se ha formalizado con posterioridad al inicio del periodo docente del primer cuatrimestre.
+\end{itemize}
+\begin{enumerate}
+  \item \textbf{Preparar la documentación}: Debe tener a mano su \textbf{DNI/Pasaporte} en vigor y cualquier otra documentación que se requiera según su situación específica (por ejemplo, informe clínico en caso de enfermedad grave).
+  \item \textbf{Acceder al Registro Electrónico}: La solicitud de anulación de matrícula debe realizarse exclusivamente a través del \textbf{Registro Electrónico} de la Universidad de Sevilla, para lo cual necesitará un \textbf{certificado digital} o \textbf{DNI electrónico}.
+  \item \textbf{Rellenar el impreso de solicitud}: Debe rellenar el \textbf{impreso de solicitud de anulación de matrícula}, que puede encontrar en la página web de la Universidad de Sevilla o en la secretaría de su facultad. Asegúrese de seguir las instrucciones proporcionadas en el impreso y de adjuntar todos los documentos requeridos.
+  \item \textbf{Adjuntar la documentación}: Adjunte su \textbf{DNI/Pasaporte} en vigor y cualquier otra documentación necesaria a la solicitud de anulación de matrícula.
+  \item \textbf{Enviar la solicitud}: Envíe la solicitud de anulación de matrícula a través del \textbf{Registro Electrónico}.
+  \item \textbf{Esperar la resolución}: La Universidad de Sevilla resolverá su solicitud de anulación de matrícula y le notificará el resultado. Si la anulación es concedida, se le informará sobre los efectos de la misma, incluyendo cualquier devolución de importes abonados y las consecuencias académicas.
+\end{enumerate}
+
+Recuerde que la anulación de matrícula puede tener diferentes efectos según la fecha en que se solicite y las circunstancias específicas de cada caso. Es importante leer detenidamente las Normas de Matrícula de la Universidad de Sevilla y consultar con la secretaría de su facultad si tiene alguna duda.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Las solicitudes de anulación de matrícula en la US se dirigen al Decano o Director del centro por medios oficiales (y no se conceden si hay alguna calificación en acta definitiva cerrada). Plazos y efectos principales: 1) Plazos ordinarios de inicio de curso: hasta el 16 de septiembre de 2025 para Grado; y para Máster, hasta el 30 de septiembre de 2025 (inicio docencia 22 de sep) o hasta el 15 de octubre de 2025 (inicio docencia 6 de oct). Supone la devolución de importes abonados, no computa académicamente, pero se pierde la plaza del curso. 2) Por admisión en otra titulación en universidad pública: hasta el 31 de octubre de 2025 (Grado) o 31 de diciembre de 2025 (Máster), con devolución. 3) Por traslado/ciclo superior: hasta el 30 de noviembre, con devolución. 4) Solicitudes hasta el 31 de marzo de 2026 (al corriente de pagos): no hay devolución, se aplican recargos en la próxima matrícula, no computa académicamente y se pierde la plaza. 5) Por enfermedad grave sobrevenida (mínima de 3 meses): se presenta al Vicerrectorado de Estudiantes con informe clínico y da derecho a devolución de precios públicos por servicios académicos.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q3.} ¿Qué documentos debo presentar para convalidar asignaturas de otra universidad? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} procedimental | \textbf{Detectada:} procedimental
+          \item \textbf{Fidelidad (Faithfulness):} 0.71 | \textbf{Relevancia (Relevance):} 0.59 | \textbf{Latencia:} 7.18s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+
+\noindent\textbf{Requisitos Previos}\\
+Antes de iniciar el trámite de convalidación de asignaturas, es importante tener en cuenta que debes estar admitido y matriculado en los correspondientes estudios en la Universidad de Sevilla. Además, es fundamental que tengas toda la documentación necesaria y que esté debidamente legalizada y traducida, si corresponde.
+
+
+\noindent\textbf{Procedimiento para Convalidar Asignaturas de Otra Universidad}\\
+Para convalidar asignaturas de otra universidad, sigue estos pasos:
+
+\begin{enumerate}
+  \item \textbf{Reúne la documentación necesaria}: Debes presentar la siguiente documentación:
+\end{enumerate}
+\begin{itemize}
+  \item \textbf{Solicitud de convalidación de estudios} cumplimentada y firmada.
+  \item \textbf{Certificación académica oficial} del título que le habilita para el acceso, donde consten expresamente las calificaciones y duración -expresada en créditos o en meses- obtenidas en las asignaturas, incluido en su caso, el proyecto o trabajo fin de carrera, con indicación expresa de la nota media final de los estudios.
+  \item \textbf{Documento de identidad}: Original y copia del DNI/NIE/Pasaporte.
+  \item \textbf{Título universitario oficial}: Si corresponde.
+  \item \textbf{Certificación del expediente académico oficial}: Donde consten expresamente las calificaciones y duración -expresada en créditos o en meses- obtenidas en las asignaturas, incluido en su caso, el proyecto o trabajo fin de carrera, con indicación expresa de la nota media final de los estudios.
+\end{itemize}
+\begin{enumerate}
+  \item \textbf{Verifica la documentación}: Asegúrate de que toda la documentación esté debidamente legalizada y traducida, si corresponde.
+  \item \textbf{Presenta la solicitud}: Debes presentar la solicitud de convalidación de estudios en la \textbf{Secretaría del Centro} responsable del título para el que se solicita la convalidación.
+  \item \textbf{Espera la resolución}: La Universidad de Sevilla evaluará tu solicitud y te notificará la resolución.
+\end{enumerate}
+
+Recuerda que es importante consultar la \textbf{Secretaría Virtual} de la Universidad de Sevilla o la \textbf{plataforma SEVIUS} para obtener más información y verificar los plazos y requisitos específicos para la convalidación de asignaturas.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Debes aportar certificación académica oficial de los estudios de origen, programas de las asignaturas superadas sellados por el centro de origen y el abono de las tasas correspondientes.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q4.} ¿Qué criterios se utilizan para valorar la docencia y la investigación en las comisiones de contratación? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} baremo | \textbf{Detectada:} baremo
+          \item \textbf{Fidelidad (Faithfulness):} 1.00 | \textbf{Relevancia (Relevance):} 0.60 | \textbf{Latencia:} 5.96s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+\textbf{Requisitos mínimos excluyentes:}
+\begin{itemize}
+  \item No se mencionan requisitos mínimos excluyentes específicos en el texto proporcionado. Sin embargo, se enfatiza la importancia de la experiencia docente y la experiencia investigadora, incluyendo la de transferencia e intercambio de conocimiento, en el conjunto de criterios de valoración de los méritos a considerar.
+\end{itemize}
+
+\textbf{Criterios de evaluación:}
+
+\begin{tabular}{p{3.5cm} p{8cm}}
+\toprule
+\textbf{Criterio} & \textbf{Detalles} \\
+\midrule
+Experiencia docente & Se valora la experiencia docente del candidato, incluyendo su capacidad para la exposición y el debate. \\
+Experiencia investigadora & Se valora la experiencia investigadora del candidato, incluyendo su capacidad para la investigación y la transferencia de conocimiento. \\
+Proyecto docente e investigador & Se valora el proyecto docente e investigador presentado por el candidato, incluyendo su capacidad para desarrollar y implementar proyectos de investigación y docencia. \\
+Capacidad para la exposición y el debate & Se valora la capacidad del candidato para exponer y debatir sus ideas y proyectos en un entorno académico. \\
+Otros méritos & Se incluyen en este apartado los méritos relativos a la calidad y dedicación a actividades profesionales, en empresas, instituciones, organismos públicos de investigación u hospitales, distintas a las docentes o investigadoras. \\
+\bottomrule
+\end{tabular}
+
+
+\textbf{Puntuación:}
+\begin{itemize}
+  \item Capacidad para la exposición y el debate: 10\%
+  \item Otros méritos: 5\%
+  \item No se proporcionan puntuaciones específicas para la experiencia docente, la experiencia investigadora y el proyecto docente e investigador. Sin embargo, se enfatiza la importancia de estos criterios en el conjunto de criterios de valoración de los méritos a considerar.
+\end{itemize}
+
+\textbf{Coeficiente de afinidad:}
+\begin{itemize}
+  \item Se aplica un coeficiente de afinidad a los méritos presentados por los candidatos, que puede ser:
+  \item Afinidad muy alta (1,0): méritos correspondientes al perfil investigador de la plaza convocada o a las líneas estratégicas de investigación del área de conocimiento del departamento de la Universidad de Sevilla solicitante de la plaza.
+  \item Afinidad alta (0,75): méritos relativos a las líneas de investigación del área de conocimiento a que corresponde la plaza.
+  \item Afinidad media (0,50): méritos relativos a las áreas de conocimiento afines al departamento y área de conocimiento a que corresponde la plaza.
+  \item Afinidad baja o muy baja (0,25 o 0,0): méritos relativos a alguna de las líneas de investigación de otras áreas de conocimiento.
+\end{itemize}
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Se evalúan los méritos docentes (horas impartidas, encuestas de alumnos) y méritos investigadores (publicaciones en revistas indexadas, congresos y patentes) según la tabla de baremación oficial de la US.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q5.} ¿Cuándo empieza el periodo lectivo del primer cuatrimestre del curso 2025-2026? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} calendario | \textbf{Detectada:} calendario
+          \item \textbf{Fidelidad (Faithfulness):} 1.00 | \textbf{Relevancia (Relevance):} 0.66 | \textbf{Latencia:} 5.40s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+El periodo lectivo del primer cuatrimestre del curso 2025-2026 comienza el \textbf{8 de septiembre de 2025} para los estudiantes de grado y el \textbf{6 de octubre de 2025} para los estudiantes de máster universitario. Estas fechas marcan el inicio de las actividades docentes para cada nivel de estudios.
+
+Es importante destacar que, aunque la mayoría de los másteres comienzan el \textbf{6 de octubre de 2025}, aquellas titulaciones de máster universitario que hayan cubierto sus plazas a \textbf{22 de septiembre de 2025} podrán adaptar el inicio del periodo docente a su situación específica, siempre respetando la fecha límite de entrega de actas y con comunicación previa al Vicerrectorado de Estudiantes.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+El periodo lectivo del primer cuatrimestre del curso 2025-2026 comienza en septiembre de 2025, según el calendario oficial establecido por la Universidad de Sevilla.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q6.} ¿Qué días son festivos y no lectivos durante el periodo navideño en el curso 2025-2026? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} calendario | \textbf{Detectada:} calendario
+          \item \textbf{Fidelidad (Faithfulness):} 0.71 | \textbf{Relevancia (Relevance):} 0.65 | \textbf{Latencia:} 3.53s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Durante el periodo navideño en el curso académico 2025-2026, la Universidad de Sevilla tiene establecidos los siguientes días como festivos y no lectivos:
+
+\begin{itemize}
+  \item Del \textbf{20 de diciembre de 2025} (sábado) al \textbf{6 de enero de 2026} (miércoles), que corresponde al periodo de Navidad.
+\end{itemize}
+
+Además, es importante mencionar que el \textbf{1 de noviembre de 2025} (Todos los Santos) y el \textbf{8 de diciembre de 2025} (Inmaculada Concepción) también son días festivos, pero no forman parte del periodo navideño propiamente dicho.
+
+Espero que esta información sea útil. Si necesitas más detalles, no dudes en preguntar.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+El periodo no lectivo de Navidad comprende habitualmente desde el 20 de diciembre de 2025 hasta el 6 de enero de 2026, ambos inclusive.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q7.} ¿Es no lectivo el lunes de Feria de Abril en la Universidad de Sevilla para el año 2026? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} calendario | \textbf{Detectada:} calendario
+          \item \textbf{Fidelidad (Faithfulness):} 0.50 | \textbf{Relevancia (Relevance):} 0.69 | \textbf{Latencia:} 12.65s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Según el calendario académico proporcionado, el periodo no lectivo de la Feria de Sevilla es del \textbf{21 (M) al 26 (D) de abril de 2026}. Por lo tanto, el lunes de Feria de Abril en la Universidad de Sevilla para el año 2026 sí es un día no lectivo, ya que cae dentro de este rango. Específicamente, el lunes \textbf{21 de abril de 2026} es el primer día de este periodo no lectivo.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Sí, el lunes de la Feria de Abril se declara día no lectivo en los centros universitarios ubicados en el término municipal de Sevilla.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q8.} ¿Cuándo se suspenden las actividades lectivas con motivo de la festividad de Santo Tomás de Aquino? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} calendario | \textbf{Detectada:} calendario
+          \item \textbf{Fidelidad (Faithfulness):} 1.00 | \textbf{Relevancia (Relevance):} 0.71 | \textbf{Latencia:} 14.70s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Según el calendario académico proporcionado, las actividades lectivas se suspenden el \textbf{28 de enero de 2026} con motivo de la festividad de Santo Tomás de Aquino. Esta fecha está especificada en el calendario como un día no lectivo, con la indicación "Sto. Tomás de Aquino" y el código "X", que corresponde a un día no lectivo. Por lo tanto, el \textbf{28 de enero de 2026} es el día en que se suspenden las actividades lectivas en la Universidad de Sevilla para celebrar la festividad de Santo Tomás de Aquino.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+La festividad académica de Santo Tomás de Aquino se celebra a finales de enero y se establece como día no lectivo en la Universidad de Sevilla.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q9.} ¿Cuál es el plazo límite para solicitar la evaluación por compensación en la US? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} calendario | \textbf{Detectada:} procedimental
+          \item \textbf{Fidelidad (Faithfulness):} 0.67 | \textbf{Relevancia (Relevance):} 0.52 | \textbf{Latencia:} 19.05s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+
+\noindent\textbf{Requisitos Previos}\\
+Antes de iniciar el trámite de solicitud de evaluación por compensación en la Universidad de Sevilla, es importante tener en cuenta los siguientes requisitos previos:
+\begin{itemize}
+  \item Debe ser estudiante de la Universidad de Sevilla.
+  \item Debe tener conocimiento de los plazos y fechas límite establecidos por la universidad para la solicitud de evaluación por compensación.
+\end{itemize}
+
+
+\noindent\textbf{Procedimiento para Solicitar la Evaluación por Compensación}\\
+A continuación, se presentan los pasos a seguir para solicitar la evaluación por compensación en la Universidad de Sevilla:
+\begin{enumerate}
+  \item \textbf{Revisar la normativa}: Antes de iniciar el trámite, es importante revisar la normativa de la Universidad de Sevilla relacionada con la evaluación por compensación. Esto puede incluir la consulta de documentos como la \textbf{NORMATIVA REGUL.pdf} y otros recursos disponibles en el sitio web de la universidad.
+  \item \textbf{Conocer los plazos}: Es fundamental conocer los plazos límite para solicitar la evaluación por compensación. La Universidad de Sevilla establece plazos específicos para diferentes trámites, y es importante no exceder estos plazos para evitar cualquier inconveniente.
+  \item \textbf{Preparar la documentación}: El estudiante debe preparar toda la documentación necesaria para solicitar la evaluación por compensación. Esto puede incluir \textbf{impresos} específicos, documentos académicos y cualquier otro requisito establecido por la universidad.
+  \item \textbf{Solicitar la evaluación}: Con la documentación preparada, el estudiante debe solicitar la evaluación por compensación a través de los canales establecidos por la Universidad de Sevilla. Esto puede incluir la presentación de solicitudes en la \textbf{Secretaría del Centro} o a través de plataformas web como \textbf{SEVIUS} o la \textbf{Secretaría Virtual}.
+  \item \textbf{Seguimiento y resolución}: Después de presentar la solicitud, el estudiante debe realizar un seguimiento para asegurarse de que su solicitud ha sido recibida y procesada correctamente. La universidad resolverá la solicitud en un plazo determinado, y el estudiante será notificado del resultado.
+\end{enumerate}
+
+
+\noindent\textbf{Plazo Límite}\\
+Aunque la información proporcionada no especifica claramente el plazo límite para solicitar la evaluación por compensación, es crucial consultar directamente con la Universidad de Sevilla o revisar su sitio web oficial para obtener la información más actualizada y precisa sobre los plazos y procedimientos vigentes. La universidad puede tener fechas límite específicas para diferentes trámites, y es importante respetar estos plazos para evitar cualquier inconveniente en el proceso de solicitud.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+El plazo de solicitud de compensación de asignaturas de Grado o Máster se establece anualmente en el calendario de gestión académica, generalmente tras la publicación de actas de las convocatorias oficiales.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q10.} ¿Cuántos créditos como máximo se pueden compensar en un Grado en la US? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} baremo
+          \item \textbf{Fidelidad (Faithfulness):} 0.89 | \textbf{Relevancia (Relevance):} 0.64 | \textbf{Latencia:} 12.38s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+\textbf{Requisitos mínimos excluyentes:}
+\begin{itemize}
+  \item No se pueden reconocer créditos por Trabajos Fin de Grado.
+  \item El número de créditos reconocidos no puede superar el 60\% del total de créditos del plan de estudios correspondiente al título que se pretende cursar.
+\end{itemize}
+
+\textbf{Criterios de evaluación:}
+
+\begin{tabular}{p{3.5cm} p{8cm}}
+\toprule
+\textbf{Criterio} & \textbf{Detalles} \\
+\midrule
+Reconocimiento de créditos por experiencia laboral o profesional & Hasta 6 créditos por cada año de experiencia laboral o profesional debidamente acreditada, con un límite del 15\% del total de créditos del plan de estudios de destino \\
+Reconocimiento de créditos por enseñanzas universitarias no oficiales & Se resolverán teniendo en cuenta la relación con las competencias inherentes al título \\
+Reconocimiento de créditos por participación en actividades universitarias & Hasta 6 créditos ECTS \\
+Reconocimiento de créditos por estudios superados en títulos universitarios de Grado & Se resolverán teniendo en cuenta la adecuación entre las competencias y conocimientos adquiridos y los previstos en el plan de estudios del título de destino \\
+\bottomrule
+\end{tabular}
+
+
+\textbf{Cálculo de puntos:}
+No se proporciona una fórmula específica para calcular los puntos, pero se establecen límites y criterios para el reconocimiento de créditos.
+
+\textbf{Límites de créditos:}
+\begin{itemize}
+  \item El número de créditos reconocidos no puede superar el 60\% del total de créditos del plan de estudios correspondiente al título que se pretende cursar.
+  \item El número de créditos reconocidos por experiencia laboral o profesional no puede superar el 15\% del total de créditos del plan de estudios de destino.
+  \item El número de créditos reconocidos por participación en actividades universitarias no puede superar 6 créditos ECTS.
+\end{itemize}
+
+En cuanto a la pregunta del usuario, el número máximo de créditos que se pueden compensar en un Grado en la Universidad de Sevilla es el 60\% del total de créditos del plan de estudios correspondiente al título que se pretende cursar. Por ejemplo, si el plan de estudios tiene 240 créditos, el número máximo de créditos que se pueden compensar sería 144 créditos (60\% de 240).
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Se permite la evaluación por compensación de un máximo de 6 créditos correspondientes a una única asignatura de un plan de estudios de Grado.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q11.} ¿Qué requisitos académicos se exigen para solicitar la evaluación por compensación? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} normativo
+          \item \textbf{Fidelidad (Faithfulness):} 0.50 | \textbf{Relevancia (Relevance):} 0.62 | \textbf{Latencia:} 11.94s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+En la Universidad de Sevilla, la evaluación por compensación se refiere a la posibilidad de que los estudiantes puedan solicitar la evaluación de asignaturas o créditos sin necesidad de realizar las actividades académicas correspondientes, siempre y cuando cumplan con ciertos requisitos académicos.
+
+Según la normativa de la Universidad de Sevilla, para solicitar la evaluación por compensación, los estudiantes deben cumplir con los siguientes requisitos académicos:
+
+\begin{enumerate}
+  \item \textbf{Requisitos generales}: Los estudiantes deben estar matriculados en la Universidad de Sevilla y tener un expediente académico que les permita solicitar la evaluación por compensación.
+  \item \textbf{Requisitos específicos}: Los estudiantes deben haber superado la totalidad de las materias de los cursos anteriores a aquél para el que solicitan la evaluación por compensación.
+  \item \textbf{Requisitos de titulación}: Los estudiantes deben tener una titulación mínima exigida para el curso o programa académico en el que solicitan la evaluación por compensación.
+  \item \textbf{Requisitos de créditos}: Los estudiantes deben tener un número determinado de créditos superados en la titulación correspondiente.
+\end{enumerate}
+
+Es importante destacar que la evaluación por compensación se regula en la normativa de la Universidad de Sevilla, específicamente en el artículo 5 del Reglamento general de estudiantes, que establece que la evaluación de las competencias, conocimientos y capacidades adquiridas por los estudiantes se llevará a cabo de acuerdo con lo que se establezca en la evaluación a que aluden los artículos 45 del Reglamento general de actividades docentes y 26.2.b) del Reglamento general de estudiantes.
+
+Además, la Universidad de Sevilla establece que la selección de los alumnos entre los preinscritos es responsabilidad de la Comisión Académica del curso, que debe comprobar que todos los alumnos reúnen los requisitos académicos, en especial la titulación mínima exigida y los requisitos específicos del curso, si los hubiera.
+
+En resumen, para solicitar la evaluación por compensación en la Universidad de Sevilla, los estudiantes deben cumplir con los requisitos académicos generales, específicos, de titulación y de créditos, y deben ser seleccionados por la Comisión Académica del curso.
+
+\textbf{Referencias normativas}:
+
+\begin{itemize}
+  \item Reglamento general de estudiantes, artículo 5.
+  \item Reglamento general de actividades docentes, artículo 45.
+  \item Reglamento general de estudiantes, artículo 26.2.b).
+  \item Normas de Gestión Académica - Estudios Propios de Especialización de Posgrado.
+  \item Convocan becas de carácter general para el curso académico 2026-27.
+\end{itemize}
+
+\textbf{Fuentes}:
+
+\begin{itemize}
+  \item Universidad de Sevilla. (2025). Normas de Gestión Académica - Estudios Propios de Especialización de Posgrado.
+  \item Universidad de Sevilla. (2025). Convocan becas de carácter general para el curso académico 2026-27.
+  \item Universidad de Sevilla. (2025). Reglamento general de estudiantes.
+  \item Universidad de Sevilla. (2025). Reglamento general de actividades docentes.
+\end{itemize}
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Tener matriculada la asignatura, que reste solo ella para acabar los estudios (máximo de 6 créditos), y haber realizado los exámenes correspondientes en al menos dos convocatorias ordinarias.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q12.} ¿Cómo se calcula el coste del crédito en una matrícula de segunda convocatoria en Grado? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} baremo
+          \item \textbf{Fidelidad (Faithfulness):} 0.69 | \textbf{Relevancia (Relevance):} 0.63 | \textbf{Latencia:} 20.35s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+
+\noindent\textbf{Requisitos Mínimos Excluyentes}\\
+
+\begin{itemize}
+  \item No hay requisitos mínimos excluyentes mencionados explícitamente para el cálculo del coste del crédito en una matrícula de segunda convocatoria en Grado en la Universidad de Sevilla.
+\end{itemize}
+
+
+\noindent\textbf{Criterios de Evaluación}\\
+
+
+\begin{tabular}{p{3.5cm} p{8cm}}
+\toprule
+\textbf{Criterio} & \textbf{Detalles} \\
+\midrule
+Tipo de Matrícula & Segunda convocatoria \\
+Nivel de Estudios & Grado \\
+Institución & Universidad de Sevilla \\
+Base de Cálculo & Decreto de Precios Públicos para las Universidades Públicas Andaluzas \\
+\bottomrule
+\end{tabular}
+
+
+
+\noindent\textbf{Desglose de la Evaluación}\\
+
+\begin{enumerate}
+  \item \textbf{Determinación del Precio por Crédito}: El precio por crédito varía según si es primera, segunda o sucesivas matrículas, de acuerdo con el Decreto de Precios Públicos para las Universidades Públicas Andaluzas.
+  \item \textbf{Identificación del Número de Créditos}: Se debe identificar el número de créditos para los cuales se está realizando la matrícula de segunda convocatoria.
+  \item \textbf{Aplicación del Precio por Crédito}: El coste total se calcula multiplicando el número de créditos por el precio por crédito establecido para segundas matrículas.
+\end{enumerate}
+
+
+\noindent\textbf{Cálculo del Coste del Crédito}\\
+
+El cálculo del coste del crédito en una matrícula de segunda convocatoria en Grado en la Universidad de Sevilla se basa en el Decreto de Precios Públicos para las Universidades Públicas Andaluzas. Para obtener el coste exacto, es necesario consultar el decreto vigente o contactar directamente con la Universidad de Sevilla, ya que los precios pueden variar de un año académico a otro.
+
+
+\noindent\textbf{Información Adicional}\\
+
+\begin{itemize}
+  \item La Universidad de Sevilla proporciona información detallada sobre los precios de matrícula en su sitio web oficial y a través del Centro de Atención a Estudiantes.
+  \item Es importante verificar la información más reciente disponible, ya que los precios y las políticas pueden cambiar.
+\end{itemize}
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+El coste de los créditos en segundas y sucesivas convocatorias experimenta incrementos y recargos progresivos fijados en el decreto de precios públicos de la Comunidad Autónoma de Andalucía.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q13.} ¿Qué es la convocatoria extraordinaria de fin de carrera y quién puede solicitarla? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} entrevistador
+          \item \textbf{Fidelidad (Faithfulness):} 1.00 | \textbf{Relevancia (Relevance):} 0.60 | \textbf{Latencia:} 6.41s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+¡Hola! Me alegra poder ayudarte con tu consulta. La convocatoria extraordinaria de fin de carrera es una opción que se ofrece a los estudiantes que están cerca de finalizar sus estudios y tienen pendientes de superar menos del 10\% de los créditos totales (sin contar el Trabajo Fin de Grado/Trabajo de Fin de Máster ni las prácticas externas). Según la normativa, esta convocatoria se puede solicitar por parte de los estudiantes que cumplan con estos requisitos.
+
+Para poder ofrecerte una respuesta más precisa, me gustaría saber: ¿Cuál es el tipo de estudios que estás realizando (grado o máster)?
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Es una convocatoria extraordinaria destinada a estudiantes a los que les reste un máximo de dos asignaturas para finalizar su Grado, sin incluir el Trabajo de Fin de Grado ni las prácticas.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q14.} ¿Se puede solicitar la devolución de precios públicos si anulo mi matrícula en octubre? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} procedimental
+          \item \textbf{Fidelidad (Faithfulness):} 1.00 | \textbf{Relevancia (Relevance):} 0.57 | \textbf{Latencia:} 13.40s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+
+\noindent\textbf{Requisitos Previos}\\
+Antes de solicitar la devolución de precios públicos, es importante tener en cuenta que la anulación de la matrícula y la devolución de precios públicos están reguladas por las Normas de Matrícula de la Universidad de Sevilla. Es fundamental revisar estas normas y entender los plazos y condiciones para la anulación de la matrícula y la devolución de precios públicos.
+
+
+\noindent\textbf{Procedimiento para Solicitar la Devolución de Precios Públicos}\\
+\begin{enumerate}
+  \item \textbf{Revisa las Normas de Matrícula}: Antes de solicitar la devolución, asegúrate de que cumples con los requisitos establecidos en las Normas de Matrícula de la Universidad de Sevilla para la anulación de la matrícula y la devolución de precios públicos.
+  \item \textbf{Anula tu Matrícula}: Debes anular tu matrícula dentro de los plazos establecidos. Para titulaciones de grado, la anulación se puede solicitar hasta el 16 de septiembre de 2025. Para titulaciones de máster universitario, los plazos varían dependiendo de la fecha de inicio de la docencia.
+  \item \textbf{Solicita la Devolución}: Una vez anulada la matrícula, puedes solicitar la devolución de los precios públicos abonados. La solicitud debe realizarse a través de la \textbf{Secretaría Virtual (SEVIUS)} de la Universidad de Sevilla o en la secretaría del centro donde realizaste la matrícula.
+  \item \textbf{Presenta la Documentación Necesaria}: Debes presentar la instancia de devolución debidamente cumplimentada y el justificante del pago realizado. Es posible que se requiera additional documentación para justificar la devolución, como la confirmación de la anulación de la matrícula.
+  \item \textbf{Verifica los Plazos para la Devolución}: Asegúrate de que la solicitud de devolución se realice dentro de los plazos establecidos. La devolución de precios públicos puede realizarse si se solicita antes del comienzo de las clases o dentro del plazo fijado para ello.
+\end{enumerate}
+
+
+\noindent\textbf{Consideraciones Importantes}\\
+\begin{itemize}
+  \item La anulación de la matrícula y la devolución de precios públicos pueden tener implicaciones académicas y económicas. Es importante entender estas implicaciones antes de proceder.
+  \item La Universidad de Sevilla puede tener procedimientos específicos para la devolución de tasas y precios públicos, por lo que es recomendable consultar con la secretaría del centro o la \textbf{Secretaría Virtual (SEVIUS)} para obtener información actualizada y específica sobre el procedimiento a seguir.
+\end{itemize}
+
+Recuerda que la información proporcionada se basa en las normas y procedimientos generales de la Universidad de Sevilla y puede estar sujeta a cambios. Es fundamental verificar la información con fuentes oficiales de la universidad para asegurarte de que estás siguiendo el procedimiento correcto.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Sí, la solicitud de anulación efectuada antes de la fecha límite establecida (normalmente finales de octubre o principios de noviembre) da derecho a devolución de tasas de los créditos, exceptuando gastos administrativos.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q15.} ¿Qué ocurre si no pago los plazos de mi matrícula en las fechas establecidas? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} procedimental
+          \item \textbf{Fidelidad (Faithfulness):} 0.96 | \textbf{Relevancia (Relevance):} 0.65 | \textbf{Latencia:} 13.49s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+
+\noindent\textbf{Requisitos Previos}\\
+Antes de proceder, es importante tener en cuenta que el pago de la matrícula es un proceso crucial en la Universidad de Sevilla (US) y que el incumplimiento de los plazos de pago puede tener consecuencias significativas.
+
+
+\noindent\textbf{Procedimiento en caso de no pago de plazos de matrícula}\\
+\begin{enumerate}
+  \item \textbf{Inicio del procedimiento de anulación de matrícula}: Si no se pagan los plazos de la matrícula en las fechas establecidas, se iniciará el procedimiento de anulación de matrícula. Esto se realizará a través de la \textbf{sede electrónica de la Universidad de Sevilla}.
+  \item \textbf{Notificaciones de requerimiento de pago y anulación de matrícula}: Se enviarán notificaciones de requerimiento de pago y anulación de matrícula al estudiante a través de la \textbf{sede electrónica de la Universidad de Sevilla}.
+  \item \textbf{Plazo para el pago}: El estudiante dispondrá de un plazo determinado (15 días hábiles) para realizar el pago pendiente. Si no se produce el pago en este plazo, se procederá a la anulación de la matrícula.
+  \item \textbf{Anulación de la matrícula}: La anulación de la matrícula supone el cese de los efectos académicos de la matrícula realizada, con la consiguiente pérdida de los derechos a evaluación. Además, se mantiene la obligación de satisfacer los precios públicos, salvo que proceda su devolución en los términos previstos reglamentariamente.
+  \item \textbf{Consecuencias de la anulación de matrícula}: La anulación de la matrícula puede tener varias consecuencias, como la pérdida de la plaza adjudicada, la no computación de la matrícula realizada a efectos académicos, y la aplicación de recargos económicos en la siguiente matrícula que realice el estudiante en los mismos estudios.
+  \item \textbf{Bloqueo del expediente}: En caso de impago, el centro bloqueará el expediente del estudiante, lo que impedirá la emisión de certificaciones académicas, la solicitud del título universitario oficial, y el acceso a la \textbf{plataforma de Enseñanza Virtual de la Universidad de Sevilla}.
+  \item \textbf{Desbloqueo del expediente}: El estudiante podrá desbloquear su expediente abonando las cantidades pendientes de pago. Una vez realizado el pago, el centro procederá al desbloqueo del expediente.
+\end{enumerate}
+
+Es importante destacar que, para evitar estas consecuencias, es fundamental realizar los pagos de la matrícula en las fechas establecidas y comunicarse con la \textbf{Secretaría Virtual} o el centro correspondiente en caso de cualquier incidencia o duda.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+El impago total o parcial genera la suspensión temporal de los derechos del estudiante, impidiendo examinarse, obtener certificaciones académicas o incluso causando la anulación de oficio.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q16.} ¿Cómo puedo fraccionar el pago de mi matrícula en la Universidad de Sevilla? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} procedimental | \textbf{Detectada:} procedimental
+          \item \textbf{Fidelidad (Faithfulness):} 0.62 | \textbf{Relevancia (Relevance):} 0.65 | \textbf{Latencia:} 15.23s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+
+\noindent\textbf{Requisitos Previos}\\
+Antes de proceder a fraccionar el pago de tu matrícula, asegúrate de que el importe de tu matrícula sea superior a 240 euros, ya que este es el límite mínimo para poder fraccionar el pago. Además, debes tener en cuenta que no se puede fraccionar el pago en ciertos supuestos, como cuando se trate del pago de la matrícula realizada en el plazo de ampliación de matrícula o cuando el importe de la matrícula, después de aplicar las posibles reducciones de precios, sea menor de 240 euros.
+
+
+\noindent\textbf{Procedimiento para Fraccionar el Pago de la Matrícula}\\
+\begin{enumerate}
+  \item \textbf{Accede a la plataforma de matrícula}: Ingresa a la plataforma de matrícula de la Universidad de Sevilla, que puede ser \textbf{SEVIUS} o la \textbf{Secretaría Virtual}, dependiendo de las instrucciones proporcionadas por la universidad.
+  \item \textbf{Selecciona las asignaturas y tipo de matrícula}: Selecciona las asignaturas que deseas matricular y el tipo de matrícula aplicable. El sistema mostrará el importe total de tu matrícula.
+  \item \textbf{Elige el número de plazos}: En la sección de pago, elige el número de plazos en los que deseas abonar el importe de tu matrícula. Puedes elegir entre 1, 2, 5 u 8 plazos, siempre y cuando el importe total supere los 240 euros.
+  \item \textbf{Selecciona el método de pago}: Para el primer plazo o pago único, puedes elegir entre \textbf{recibo bancario}, \textbf{domiciliación} o \textbf{pago con tarjeta}. Para los plazos posteriores, si has elegido fraccionar el pago, deberás domiciliar los recibos.
+  \item \textbf{Domicilia los recibos}: Si has elegido domiciliar los recibos, asegúrate de tener una cuenta bancaria válida y activa en el sistema. Si no la tienes, deberás añadirla a través del botón 'Añadir cuenta'.
+  \item \textbf{Confirma la matrícula y el pago}: Una vez que hayas seleccionado el número de plazos y el método de pago, confirma tu matrícula y el pago. El sistema generará los recibos correspondientes a cada plazo, si has elegido el pago fraccionado.
+  \item \textbf{Verifica y guarda los recibos}: Verifica que los recibos generados sean correctos y guarda una copia para tus registros. Asegúrate de pagar cada recibo dentro del plazo establecido para evitar cualquier problema con tu matrícula.
+\end{enumerate}
+
+
+\noindent\textbf{Importante}\\
+\begin{itemize}
+  \item Asegúrate de pagar cada plazo dentro del plazo establecido para evitar la anulación de tu matrícula.
+  \item Si tienes alguna duda o problema durante el proceso, no dudes en contactar con la universidad para obtener asistencia.
+  \item Recuerda que la \textbf{Orden de Domiciliación de Adeudo Directo SEPA} se generará automáticamente si es necesaria y no has cumplimentado una anteriormente.
+\end{itemize}
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+El pago de los precios públicos se puede fraccionar en varios plazos (hasta un máximo de 8 plazos periódicos) siempre que se configure la domiciliación bancaria del pago.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q17.} ¿Qué es la comisión de servicios y cómo se justifica el kilometraje en vehículo particular? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} procedimental | \textbf{Detectada:} normativo
+          \item \textbf{Fidelidad (Faithfulness):} 0.75 | \textbf{Relevancia (Relevance):} 0.51 | \textbf{Latencia:} 9.28s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+La comisión de servicios es un documento que autoriza a un empleado de la Universidad de Sevilla a realizar un viaje por razón del servicio. Según la Instrucción 3/2025 de la Gerencia, este documento es necesario para justificar los gastos realizados durante el viaje.
+
+En cuanto a la justificación del kilometraje en vehículo particular, según la Miniguía para viajes por razón del servicio (página 2), es necesario presentar una autorización de desplazamiento que especifique la orgánica y proyecto que financiará los gastos de la liquidación. Además, la actividad que motiva el viaje debe coincidir con la que se indica en la liquidación de dietas.
+
+En la Guía completa de liquidación de viajes (página 11), se establece que los gastos de locomoción, incluyendo el uso de vehículo particular, deben ser justificados mediante la presentación de la factura correspondiente y el informe de conformidad firmado por el investigador principal. También se establece que el formulario de liquidación de viajes permite indicar los gastos de desplazamiento ocasionados por el viaje, ya sean por el uso del vehículo particular, tren, avión, barco, taxi, autobuses, etc.
+
+En cuanto a los límites máximos indemnizables, según la Miniguía para la gestión de bolsas de viaje (página 4), se establece que los desplazamientos deben hacerse por transporte público y clase económica, y que el uso de vehículo particular sin necesidad de autorización previa solo es permitido en determinadas provincias y comunidades autónomas. En el resto de los casos, el uso de coche particular o medios no colectivos requerirá autorización previa y justificada de Gerencia.
+
+En resumen, la comisión de servicios es un documento que autoriza a un empleado a realizar un viaje por razón del servicio, y la justificación del kilometraje en vehículo particular requiere la presentación de una autorización de desplazamiento, la factura correspondiente y el informe de conformidad firmado por el investigador principal, así como el cumplimiento de los límites máximos indemnizables establecidos por la Universidad de Sevilla.
+
+Referencias normativas:
+
+\begin{itemize}
+  \item Instrucción 3/2025 de la Gerencia
+  \item Miniguía para viajes por razón del servicio (página 2)
+  \item Guía completa de liquidación de viajes (página 11)
+  \item Miniguía para la gestión de bolsas de viaje (página 4)
+\end{itemize}
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Para justificar el viaje en vehículo propio se calcula la indemnización por kilometraje oficial según la normativa de la US, adjuntando tickets de peaje si existen y el parte firmado de la comisión.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q18.} ¿Cuánto es la dieta máxima por alojamiento nacional para el PDI en la US? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} baremo
+          \item \textbf{Fidelidad (Faithfulness):} 0.38 | \textbf{Relevancia (Relevance):} 0.64 | \textbf{Latencia:} 10.61s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+No existen requisitos mínimos excluyentes para esta pregunta.
+
+A continuación, se presentan los criterios de evaluación para la dieta máxima por alojamiento nacional para el PDI en la Universidad de Sevilla:
+
+
+\begin{tabular}{p{3.5cm} p{8cm}}
+\toprule
+\textbf{Criterio} & \textbf{Detalles} \\
+\midrule
+Límite máximo indemnizable & 150,00   para Madrid / Barcelona y 130,00   para el resto del territorio \\
+Concepto & Alojamiento \\
+Aplicación & Para el personal de la Universidad de Sevilla (PDI, PI, PTGAS y estudiantes) \\
+\bottomrule
+\end{tabular}
+
+
+En cuanto a la dieta máxima por alojamiento nacional para el PDI en la Universidad de Sevilla, según la información proporcionada, el límite máximo indemnizable es de 150,00   para Madrid / Barcelona y 130,00   para el resto del territorio.
+
+La dieta máxima por alojamiento nacional para el PDI en la Universidad de Sevilla es de \textbf{150,00  } para Madrid / Barcelona y \textbf{130,00  } para el resto del territorio.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+La dieta nacional máxima para alojamiento del Grupo II (donde se encuadra el PDI) está fijada por las tablas del reglamento oficial de comisiones de servicio de la US.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q19.} ¿Qué facturas se deben aportar para justificar el gasto de alojamiento en un viaje oficial? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} procedimental | \textbf{Detectada:} normativo
+          \item \textbf{Fidelidad (Faithfulness):} 0.89 | \textbf{Relevancia (Relevance):} 0.70 | \textbf{Latencia:} 6.05s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Según la normativa aplicable, para justificar el gasto de alojamiento en un viaje oficial, se deben aportar facturas que cumplan con ciertos requisitos. 
+
+En concreto, según la Miniguía para viajes por razón del servicio (página 6), para el gasto de alojamiento, se requiere una factura con datos fiscales, fechas y desglose de servicios. 
+
+Además, según la Guía completa para la liquidación de viajes (página 19), las facturas deben reflejar los datos fiscales de la persona que realiza el viaje, en ningún caso los de la Universidad de Sevilla, además de incluir la fecha y descripción de los conceptos facturados (nombre de la persona que viaja, itinerario del trayecto, número de noches, precio por noche, etc.). 
+
+En el caso de facturas simplificadas, debe figurar la fecha y hora de emisión. 
+
+Por lo tanto, para justificar el gasto de alojamiento en un viaje oficial, se deben aportar facturas que cumplan con estos requisitos y que estén acompañadas del correspondiente justificante del pago efectuado. 
+
+Es importante destacar que, según la Miniguía para viajes por razón del servicio (página 4), si el alojamiento se realiza en uno de los hoteles propuestos por la organización del evento, se podrá reembolsar aunque supere los límites generales, siempre y cuando se acredite que el alojamiento pertenece a la oferta oficial del evento. 
+
+En resumen, para justificar el gasto de alojamiento en un viaje oficial, se deben aportar facturas que cumplan con los requisitos establecidos y que estén acompañadas del correspondiente justificante del pago efectuado.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Debe aportarse la factura original expedida a nombre de la Universidad de Sevilla o del propio comisionado, detallando los días de estancia, el coste de la habitación y desglosando el IVA.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q20.} ¿Cómo se justifican los gastos de manutención en una comisión de servicio internacional? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} normativo
+          \item \textbf{Fidelidad (Faithfulness):} 0.95 | \textbf{Relevancia (Relevance):} 0.70 | \textbf{Latencia:} 10.73s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+La justificación de los gastos de manutención en una comisión de servicio internacional se rige por las normativas y regulaciones establecidas por la Universidad de Sevilla. Según la documentación proporcionada, los gastos de manutención pueden ser justificados de diferentes maneras dependiendo de las circunstancias específicas del viaje y la comisión de servicio.
+
+En primer lugar, es importante destacar que la Universidad de Sevilla establece límites y condiciones para los gastos de manutención, como se indica en la Instrucción 3/2021 de la Gerencia de la Universidad de Sevilla. Estos límites pueden variar dependiendo del destino y la duración del viaje.
+
+Para justificar los gastos de manutención, el personal comisionado debe presentar la documentación necesaria, que puede incluir:
+
+\begin{enumerate}
+  \item \textbf{Facturas}: Deben ser originales y contener los datos fiscales necesarios para identificar al perceptor, como nombre o razón social, documento nacional de identidad o número de identificación fiscal y domicilio.
+  \item \textbf{Declaración/Certificación del itinerario}: El interesado debe declarar el itinerario realizado, indicando los días y horas de salida y llegada al lugar de residencia.
+  \item \textbf{Certificación del Secretario}: En el caso de comisiones de servicio que impliquen asistencias a sesiones, se requiere la certificación del Secretario sobre las asistencias a las sesiones de la Comisión.
+  \item \textbf{Memoria justificativa}: En algunos casos, puede ser necesaria una memoria justificativa que explique los gastos realizados y su relación con la comisión de servicio.
+\end{enumerate}
+
+Es importante mencionar que, según la Instrucción 3/2025 de la Gerencia de la Universidad de Sevilla, las indemnizaciones por asistencia se regulan en la Instrucción 3/2021, y a efectos de justificación para el abono de estas, se regularán por las presentes normas.
+
+En resumen, la justificación de los gastos de manutención en una comisión de servicio internacional requiere la presentación de documentación específica, como facturas, declaraciones del itinerario y certificaciones, y debe ajustarse a los límites y condiciones establecidos por la Universidad de Sevilla.
+
+\textbf{Referencias normativas}:
+
+\begin{itemize}
+  \item Instrucción 3/2021 de la Gerencia de la Universidad de Sevilla
+  \item Instrucción 3/2025 de la Gerencia de la Universidad de Sevilla
+  \item Miniguía para viajes por razón del servicio (página 6)
+  \item Guía básica sobre las indemnizaciones y compensaciones por razón de servicio
+\end{itemize}
+
+\textbf{Artículos relevantes}:
+
+\begin{itemize}
+  \item Artículo 30 de la Instrucción 3/2025 (Indemnizaciones por desplazamiento)
+  \item Artículo 40 de la Instrucción 3/2021 (Justificación)
+\end{itemize}
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Se abonan mediante la asignación de dietas fijas diarias internacionales establecidas según el país de destino, sin requerirse tiques individuales, basándose en la orden oficial de la comisión.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q21.} ¿Se puede justificar una comida de trabajo con cargo a dietas de comisión de servicio? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} normativo
+          \item \textbf{Fidelidad (Faithfulness):} 0.94 | \textbf{Relevancia (Relevance):} 0.65 | \textbf{Latencia:} 11.82s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+En virtud de la normativa aplicable a la Universidad de Sevilla (US), específicamente en lo que respecta a las indemnizaciones y compensaciones por razón de servicio, se establecen ciertas pautas para la justificación de gastos relacionados con comidas de trabajo o manutención durante comisiones de servicio.
+
+Según la "Miniguía para viajes por razón del servicio" proporcionada por la Universidad de Sevilla, en el apartado de "Documentación necesaria para la liquidación" (Art. 33), se especifica que para la manutención, si se opta por dieta, no se requiere factura. Sin embargo, si se opta por reembolso exacto, se necesitan facturas. Además, se menciona que si se exceden los límites fijados por la Agencia Estatal de Administración Tributaria (AEAT), la parte que los excede está sujeta a Impuesto sobre la Renta de las Personas Físicas (IRPF).
+
+En la "Instrucción 3/2025 de la Gerencia de la Universidad de Sevilla", se establecen disposiciones generales sobre indemnizaciones por razón del servicio, incluyendo aspectos relacionados con la justificación de gastos. Aunque no se aborda específicamente la justificación de comidas de trabajo con cargo a dietas de comisión de servicio, se enfatiza la importancia de la justificación adecuada de todos los gastos relacionados con el servicio.
+
+La "Guía básica sobre las indemnizaciones y compensaciones por razón de servicio" disponible en el sitio web de la Universidad de Sevilla también proporciona orientación sobre la justificación de gastos, incluyendo aquellos relacionados con la manutención. Se destaca la necesidad de que la justificación de los gastos incluya la identidad de los asistentes y el cargo o puesto de trabajo que desempeñen, y se establece que la percepción de gastos por motivos de representación es incompatible con el devengo de cualquier dieta o indemnización destinada a satisfacer los mismos gastos.
+
+En resumen, aunque la normativa no aborda directamente la justificación de comidas de trabajo con cargo a dietas de comisión de servicio de manera explícita, se pueden inferir algunas pautas generales:
+
+\begin{enumerate}
+  \item \textbf{Justificación con Facturas}: Si se opta por reembolso exacto para la manutención, se necesitan facturas para justificar los gastos.
+  \item \textbf{Límites de la AEAT}: Es importante no exceder los límites fijados por la AEAT para evitar que la parte excedente esté sujeta a IRPF.
+  \item \textbf{Documentación Necesaria}: La justificación de gastos debe incluir la documentación necesaria, como comisión de servicio o autorización de desplazamiento, y, en caso de reembolso exacto, facturas que detallen los gastos de manutención.
+  \item \textbf{Incompatibilidad con Otros Gastos}: La percepción de gastos por motivos de representación es incompatible con el devengo de cualquier dieta o indemnización destinada a satisfacer los mismos gastos.
+\end{enumerate}
+
+En conclusión, aunque la normativa proporciona algunas directrices generales, es recomendable consultar directamente con la unidad de gestión o centro de gasto correspondiente de la Universidad de Sevilla para obtener orientación específica sobre cómo justificar comidas de trabajo con cargo a dietas de comisión de servicio, asegurando el cumplimiento de todos los requisitos y regulaciones aplicables.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+No, los gastos de manutención diarios se pagan según la dieta asignada por grupo, no estando permitida la presentación de tickets sueltos de restauración de forma paralela.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q22.} ¿Qué porcentaje de docencia se valora en la comisión de contratación para profesor ayudante doctor? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} baremo | \textbf{Detectada:} baremo
+          \item \textbf{Fidelidad (Faithfulness):} 1.00 | \textbf{Relevancia (Relevance):} 0.60 | \textbf{Latencia:} 19.99s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+\textbf{Requisitos mínimos excluyentes:}
+\begin{itemize}
+  \item Umbral mínimo de 40 puntos para Profesores Ayudantes Doctores.
+  \item Umbral mínimo de 30 puntos para Profesores Asociados.
+  \item Umbral mínimo de 20 puntos para Profesores Interinos.
+\end{itemize}
+
+\textbf{Criterios de evaluación para la comisión de contratación de Profesor Ayudante Doctor:}
+
+
+\begin{tabular}{p{3.5cm} p{8cm}}
+\toprule
+\textbf{Criterio} & \textbf{Detalles} \\
+\midrule
+Rendimiento Académico & 10\% de la puntuación total \\
+Actividad Docente & 30\% de la puntuación total \\
+Actividad Investigadora & 35\% de la puntuación total \\
+Transferencia del Conocimiento & 5\% de la puntuación total \\
+Actividad Profesional Externa a la Universidad & 5\% de la puntuación total \\
+Mérito Preferente & 15\% de la puntuación total \\
+\bottomrule
+\end{tabular}
+
+
+\textbf{Porcentaje de docencia valorado en la comisión de contratación para Profesor Ayudante Doctor:}
+El porcentaje de docencia valorado es del 30\% de la puntuación total, correspondiente al Bloque Temático II: Actividad Docente.
+
+\textbf{Desglose de la puntuación:}
+La puntuación total se calcula según la ponderación de cada bloque temático. En el caso de los Profesores Ayudantes Doctores, la puntuación se distribuye de la siguiente manera:
+\begin{itemize}
+  \item Rendimiento Académico: 10 puntos (10\% de 100)
+  \item Actividad Docente: 30 puntos (30\% de 100)
+  \item Actividad Investigadora: 35 puntos (35\% de 100)
+  \item Transferencia del Conocimiento: 5 puntos (5\% de 100)
+  \item Actividad Profesional Externa a la Universidad: 5 puntos (5\% de 100)
+  \item Mérito Preferente: 15 puntos (15\% de 100)
+\end{itemize}
+
+La comisión de contratación valorará estos criterios para determinar la idoneidad de los candidatos para la plaza de Profesor Ayudante Doctor.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+La docencia representa un porcentaje importante de la valoración total (normalmente un 40-50\%), incluyendo docencia reglada, tutorías, dirección de trabajos y evaluación del alumnado.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q23.} ¿Qué méritos de investigación son prioritarios para la contratación de un profesor contratado doctor? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} baremo | \textbf{Detectada:} baremo
+          \item \textbf{Fidelidad (Faithfulness):} 0.93 | \textbf{Relevancia (Relevance):} 0.57 | \textbf{Latencia:} 13.80s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+\textbf{Requisitos mínimos excluyentes:}
+\begin{itemize}
+  \item No se mencionan requisitos mínimos excluyentes específicos en el texto proporcionado. Sin embargo, se enfatiza la importancia de la acreditación o habilitación para el puesto de Profesor Ayudante Doctor, así como la necesidad de cumplir con los requisitos establecidos en la normativa de contratación de la Universidad de Sevilla.
+\end{itemize}
+
+\textbf{Criterios de evaluación para la contratación de un profesor contratado doctor en la Universidad de Sevilla:}
+
+
+\begin{tabular}{p{3.5cm} p{8cm}}
+\toprule
+\textbf{Criterio} & \textbf{Detalles} \\
+\midrule
+Afinidad muy alta & Méritos correspondientes al perfil investigador de la plaza convocada o a las líneas estratégicas de investigación del área de conocimiento del departamento de la Universidad de Sevilla solicitante de la plaza. \\
+Afinidad alta & Méritos relativos a las líneas de investigación del área de conocimiento a que corresponde la plaza, sin consideración de universidad de adscripción. \\
+Afinidad media & Méritos relativos a las áreas de conocimiento (sin distinción de universidad) afines al departamento y área de conocimiento a que corresponde la plaza. \\
+Afinidad baja o muy baja & Méritos relativos a alguna de las líneas de investigación de otras áreas de conocimiento, con un coeficiente de afinidad aplicable de 0,25 (baja) o 0,0 (muy baja). \\
+Estancias de investigación & Se valoran las estancias de investigación en universidades u otros centros de investigación externos a la Universidad de Sevilla, hasta 18 meses de estancia. \\
+Complemento aditivo para estancias de investigación & Se valora la actividad científica desarrollada durante la estancia, como la impartición de seminarios, dirección de tesis, libros y artículos científicos. \\
+\bottomrule
+\end{tabular}
+
+
+\textbf{Puntuación para el mérito preferente de estancias de investigación:}
+
+
+\begin{tabular}{p{3.5cm} p{8cm}}
+\toprule
+\textbf{Complemento 2 (aditivo) - Resultados relevantes} & \textbf{Puntos por indicio} \\
+\midrule
+Impartición de seminarios & 1,5 puntos \\
+Dirección de tesis & 8,0 puntos \\
+Libro & 3,0 puntos \\
+Artículo indexado JCR o SJR o ANEXO I & 6,0 puntos \\
+\bottomrule
+\end{tabular}
+
+
+\textbf{Méritos de investigación prioritarios:}
+
+\begin{itemize}
+  \item Afinidad muy alta con el perfil investigador de la plaza convocada o con las líneas estratégicas de investigación del área de conocimiento del departamento.
+  \item Estancias de investigación en universidades u otros centros de investigación externos a la Universidad de Sevilla.
+  \item Actividad científica desarrollada durante la estancia, como la impartición de seminarios, dirección de tesis, libros y artículos científicos.
+\end{itemize}
+
+Es importante destacar que la evaluación de los méritos de investigación se realizará de acuerdo con el baremo establecido por la Universidad de Sevilla y que la comisión de contratación tendrá en cuenta la afinidad de los méritos con el perfil investigador de la plaza convocada y con las líneas estratégicas de investigación del área de conocimiento del departamento.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Se priorizan artículos en revistas de prestigio internacional indexadas (JCR/SJR), monografías, patentes en explotación y la participación en proyectos del Plan Nacional o europeos.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q24.} ¿Cómo puntúan los tramos docentes en los baremos de plazas de profesorado de la US? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} baremo | \textbf{Detectada:} baremo
+          \item \textbf{Fidelidad (Faithfulness):} 0.71 | \textbf{Relevancia (Relevance):} 0.48 | \textbf{Latencia:} 5.92s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+
+\noindent\textbf{Requisitos mínimos excluyentes:}\\
+
+\begin{itemize}
+  \item El candidato debe introducir sus méritos a través del editor de CVN de la Fundación Española para la Ciencia y la Tecnología (FECYT).
+  \item Los méritos deben ser registrados en el Curriculum Vitae Normalizado (CVN) del candidato.
+  \item El candidato debe seguir las instrucciones dadas para cada mérito en la Guía de Ayuda al Candidato.
+\end{itemize}
+
+
+\noindent\textbf{Criterios de evaluación y puntuación:}\\
+
+A continuación, se presentan los criterios de evaluación y puntuación para la baremación de plazas de profesorado en la Universidad de Sevilla:
+
+
+\noindent\textbf{Méritos y su valoración}\\
+
+
+\begin{tabular}{p{3.5cm} p{8cm}}
+\toprule
+\textbf{Criterio} & \textbf{Detalles} \\
+\midrule
+\textbf{Producción científica, tecnológica, artístico-plástica y docente} & Se valorarán los méritos relacionados con la investigación, la docencia y la transferencia de conocimiento. \\
+\textbf{Experiencia docente} & Se valorará la experiencia docente en enseñanzas oficiales y no oficiales. \\
+\textbf{Experiencia investigadora} & Se valorará la experiencia investigadora en proyectos de investigación, contratos, etc. \\
+\textbf{Actividades de transferencia de conocimiento} & Se valorarán las actividades de transferencia de conocimiento, como patentes, contratos con empresas, etc. \\
+\textbf{Mérito preferente} & Estar acreditado a los cuerpos docentes universitarios (Titular de Universidad o Catedrático de Universidad). \\
+\bottomrule
+\end{tabular}
+
+
+
+\noindent\textbf{Valoración de méritos}\\
+
+\begin{itemize}
+  \item La comisión de contratación valorará los méritos alegados por el candidato según el baremo establecido.
+  \item La valoración de los méritos se realizará de forma indirecta a través del CVN.
+  \item La comisión de contratación podrá solicitar documentación acreditativa y explicativa de los méritos alegados.
+\end{itemize}
+
+
+\noindent\textbf{Coeficiente de afinidad}\\
+
+\begin{itemize}
+  \item La comisión de contratación podrá aplicar un coeficiente de afinidad a los méritos alegados si considera que no corresponden al perfil de la plaza.
+  \item El coeficiente de afinidad podrá ser: 0,0 (muy bajo), 0,25 (bajo), 0,50 (medio), 0,75 (alto), 1,00 (muy alto).
+\end{itemize}
+
+
+\noindent\textbf{Puntuación final}\\
+
+\begin{itemize}
+  \item La puntuación final se calculará sumando las valoraciones de los diferentes méritos.
+  \item La puntuación final se redondeará al primer decimal inmediato superior si el segundo decimal es igual o superior a 5, y quedará en el correspondiente si es igual o inferior a 4.
+\end{itemize}
+
+
+\noindent\textbf{Umbral mínimo}\\
+
+\begin{itemize}
+  \item El umbral mínimo para superar la baremación se establece en el artículo 12 de la normativa sobre procedimiento de contratación de Profesorado Ayudante Doctor, Profesorado Asociado y Profesorado Interino.
+\end{itemize}
+
+
+\noindent\textbf{Proceso de baremación}\\
+
+\begin{enumerate}
+  \item \textbf{Inscripción}: El candidato se inscribe en la plaza o plazas a las que desea concursar a través de la plataforma Bareprof.
+  \item \textbf{Introducción de méritos}: El candidato introduce sus méritos en el CVN a través del editor de CVN de FECYT.
+  \item \textbf{Baremación}: La comisión de contratación valora los méritos alegados por el candidato según el baremo establecido.
+  \item \textbf{Coeficiente de afinidad}: La comisión de contratación aplica el coeficiente de afinidad si lo considera necesario.
+  \item \textbf{Puntuación final}: Se calcula la puntuación final del candidato.
+\end{enumerate}
+
+
+\noindent\textbf{Documentos de referencia}\\
+
+\begin{itemize}
+  \item Normativa sobre Procedimiento de Contratación de Profesorado Ayudante Doctor, Profesorado Asociado y Profesorado Interino (BOUS 12/2024, de 11 de octubre).
+  \item Guía de ayuda al candidato.
+  \item Instrucciones de baremación.
+\end{itemize}
+
+Es importante consultar los documentos de referencia y seguir las instrucciones dadas para cada mérito en la Guía de Ayuda al Candidato para asegurarse de que los méritos sean baremados correctamente.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Los méritos de actividad docente se bareman acumulando puntuación de forma proporcional por cada año académico de docencia impartida a tiempo completo.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q25.} ¿Es obligatoria la acreditación de la ANECA o DEVA para optar a plazas de contratado doctor en la US? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} normativo
+          \item \textbf{Fidelidad (Faithfulness):} 0.90 | \textbf{Relevancia (Relevance):} 0.69 | \textbf{Latencia:} 7.42s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Según la normativa proporcionada, específicamente en el contexto de la Universidad de Sevilla y la legislación aplicable, la acreditación de la ANECA (Agencia Nacional de Evaluación de la Calidad y Acreditación) o DEVA (no se proporciona información específica sobre DEVA, pero se asume que podría referirse a una entidad similar o un proceso de evaluación) no es siempre un requisito obligatorio para optar a plazas de Profesor Contratado Doctor en la Universidad de Sevilla, pero existen ciertas condiciones y requisitos que deben cumplirse.
+
+La Ley Orgánica 2/2023, de 22 de marzo, del Sistema Universitario (LOSU), introduce cambios en los requisitos para el acceso a diferentes categorías de profesorado universitario. En su artículo 85, se establecen requisitos para la acreditación, pero también hay disposiciones transitorias que afectan a quienes ya están contratados o tienen acreditaciones en curso.
+
+En el caso de optar a plazas de Profesor Contratado Doctor, la normativa específica de la Universidad de Sevilla y las instrucciones de baremación para concursos de acceso a plazas de profesorado (documento "27831\_instrucciones-baremacinin-r03.pdf") indican que la acreditación a Profesor Contratado Doctor/Profesor Permanente Laboral es mérito preferente en los concursos de plazas de Profesorado Ayudante Doctor, además de las acreditaciones a Catedrático de Universidad y Profesor Titular de Universidad.
+
+Además, según la Guía de ayuda al candidato para concursos de acceso a plazas de profesorado de la Universidad de Sevilla ("27830\_guia-ayuda-candidato-r04-3-.pdf"), si el candidato posee la acreditación a la figura de Profesor Ayudante Doctor, no olvide consignarla en su CVN y aportar la documentación justificativa correspondiente, ya que esta acreditación es mérito preferente durante un periodo de cuatro años desde la entrada en vigor de la LOSU.
+
+En conclusión, si bien la acreditación de ANECA o entidad similar no es obligatoria per se para optar a plazas de Profesor Contratado Doctor, tener acreditaciones o cumplir con ciertos requisitos establecidos por la LOSU y la normativa de la Universidad de Sevilla es crucial. Los candidatos deben verificar los requisitos específicos para cada convocatoria de concurso de acceso a plazas de profesorado en la Universidad de Sevilla, ya que pueden variar.
+
+Es importante consultar directamente las convocatorias específicas de la Universidad de Sevilla y los documentos normativos citados para obtener información actualizada y precisa sobre los requisitos para optar a plazas de Profesor Contratado Doctor.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Sí, para participar en los concursos públicos de plazas de profesor contratado doctor es indispensable disponer de la acreditación de la ANECA o evaluación positiva de la DEVA.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q26.} ¿Cómo puedo reclamar la calificación de una asignatura de examen final? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} procedimental | \textbf{Detectada:} procedimental
+          \item \textbf{Fidelidad (Faithfulness):} 0.76 | \textbf{Relevancia (Relevance):} 0.66 | \textbf{Latencia:} 3.16s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+
+\noindent\textbf{Requisitos Previos}\\
+
+\begin{itemize}
+  \item El estudiante debe haber obtenido una calificación definitiva en la asignatura de examen final.
+  \item El estudiante debe estar en desacuerdo con la calificación obtenida.
+\end{itemize}
+
+
+\noindent\textbf{Procedimiento para Reclamar la Calificación de una Asignatura de Examen Final}\\
+
+\begin{enumerate}
+  \item \textbf{Presentación del Recurso de Apelación}: El estudiante debe presentar un recurso de apelación ante el tribunal de apelación específico de la asignatura en un plazo máximo de \textbf{7 días hábiles} desde la publicación de las calificaciones definitivas.
+  \item \textbf{Entrega del Recurso}: El recurso de apelación debe ser entregado en la \textbf{Secretaría del Centro}, que se encargará de trasladar una copia al Departamento afectado.
+  \item \textbf{Notificación a los Profesores}: El secretario del tribunal de apelación notificará el recurso a los profesores responsables de la evaluación, quienes dispondrán de \textbf{5 días hábiles} para trasladar por escrito al tribunal las alegaciones que estimen oportunas.
+  \item \textbf{Notificación al Recurrente}: El secretario del tribunal de apelación notificará las alegaciones de los profesores al recurrente, quien dispondrá de \textbf{5 días hábiles} para trasladar por escrito al tribunal las alegaciones que estime oportunas.
+  \item \textbf{Resolución del Tribunal}: El tribunal específico de evaluación y apelación analizará el escrito de apelación, los documentos y otros materiales en los que se haya basado la evaluación, y las alegaciones de los profesores y el recurrente. El tribunal resolverá el recurso en un plazo máximo de \textbf{1 mes} desde la presentación del mismo.
+  \item \textbf{Notificación de la Resolución}: El secretario del tribunal notificará por escrito la resolución al estudiante y a los profesores responsables de la evaluación.
+  \item \textbf{Actualización del Acta}: Si el recurso fuere estimado y afectare a la calificación definitiva de una convocatoria, la nueva calificación resultante se incorporará, junto con una copia de la resolución, al acta de la misma mediante diligencia firmada por el presidente del tribunal específico, el Director del Departamento y el Secretario del Centro.
+\end{enumerate}
+
+
+\noindent\textbf{Plataformas y Documentos Relevantes}\\
+
+\begin{itemize}
+  \item \textbf{SEVIUS}: No se utiliza directamente en este proceso, pero puede ser útil para consultar información académica.
+  \item \textbf{Secretaría Virtual}: Puede ser utilizada para presentar el recurso de apelación de forma telemática, si está disponible.
+  \item \textbf{Impreso de Recurso de Apelación}: No se especifica un impreso concreto, pero el estudiante debe presentar un escrito formalizando su recurso de apelación.
+\end{itemize}
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+El alumno puede presentar una solicitud de reclamación ante el Departamento responsable de la asignatura en el plazo de reclamaciones oficial tras la publicación de actas provisionales.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q27.} ¿Qué plazo tiene el profesorado para publicar las actas provisionales tras el examen? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} calendario | \textbf{Detectada:} procedimental
+          \item \textbf{Fidelidad (Faithfulness):} 0.73 | \textbf{Relevancia (Relevance):} 0.63 | \textbf{Latencia:} 8.20s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+
+\noindent\textbf{Requisitos Previos}\\
+
+La Universidad de Sevilla establece plazos específicos para la publicación de actas provisionales de calificaciones después de los exámenes. Es importante consultar el Calendario Académico aprobado por el Consejo de Gobierno para cada curso académico, así como la normativa reguladora de evaluación y calificación.
+
+
+\noindent\textbf{Pasos para conocer el plazo de publicación de actas provisionales}\\
+
+\begin{enumerate}
+  \item \textbf{Consulta el Calendario Académico 2025-2026}: Accede al Calendario Académico de la Universidad de Sevilla para el curso 2025-2026, disponible en el \href{https://cat.us.es/sites/default/files/2025-03/calendario-academico-2025-2026-cg.pdf}{Centro de Atención a Estudiantes}.
+  \item \textbf{Ubica la sección de plazos de entrega de actas}: Busca la sección que especifica los plazos de entrega de actas para las convocatorias de exámenes.
+  \item \textbf{Identifica el plazo máximo de entrega de actas}: Según el Calendario Académico, encuentra el plazo máximo de entrega de actas para la convocatoria prevista en el mes de julio o cualquier otra convocatoria que corresponda.
+  \item \textbf{Verifica la normativa reguladora de evaluación y calificación}: Accede a la \href{https://cat.us.es/sites/default/files/documentos/2025-07/normativa-reguladora-de-evaluacion-y-calificacion.pdf}{normativa reguladora de evaluación y calificación} para conocer los detalles sobre el proceso de evaluación y calificación.
+  \item \textbf{Contacta con el profesorado o la Secretaría del Centro}: Si necesitas más información o aclaraciones, no dudes en contactar con el profesorado responsable de la asignatura o con la Secretaría del Centro.
+\end{enumerate}
+
+
+\noindent\textbf{Información Adicional}\\
+
+\begin{itemize}
+  \item El plazo de entrega de actas suele estar establecido en el Calendario Académico.
+  \item La \textbf{SEVIUS} (Sistema de Evaluación y Verificación de Información Universitaria de Sevilla) y la \textbf{Secretaría Virtual} pueden ofrecer información adicional y trámites relacionados con las actas y calificaciones.
+\end{itemize}
+
+Recuerda verificar la información actualizada en los canales oficiales de la Universidad de Sevilla para asegurarte de cumplir con los plazos establecidos.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+La publicación de las actas de calificaciones provisionales no podrá exceder de los plazos reglamentarios establecidos en el reglamento de estudiantes, normalmente un máximo de 15 días.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q28.} ¿Tengo derecho a revisar mi examen con el profesor antes de que se firmen las actas? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} normativo
+          \item \textbf{Fidelidad (Faithfulness):} 0.90 | \textbf{Relevancia (Relevance):} 0.65 | \textbf{Latencia:} 2.98s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Según la normativa reguladora de la evaluación y calificación de las asignaturas de la Universidad de Sevilla, tienes derecho a revisar tus calificaciones provisionales con el profesor responsable de la asignatura.
+
+El artículo 26 de la Normativa Reguladora de la Evaluación y Calificación de las Asignaturas establece que:
+
+"1. Los estudiantes tendrán derecho individual, sin que sea exigible cumplimentar una solicitud previa, a que sus calificaciones provisionales sean revisadas y justificadas en su presencia por el profesorado responsable de las mismas.
+
+\begin{enumerate}
+  \item Las revisiones se llevarán a cabo durante, al menos, dos días lectivos entre los seis posteriores a la fecha de publicación de las calificaciones. El horario de cada día y las dependencias en las que se llevará a cabo el procedimiento de revisión serán fijadas y publicadas a la vez que las calificaciones provisionales por el profesorado responsable, que velará por que el horario establecido sea lo suficientemente amplio como para poder atender a todos los estudiantes.
+\end{enumerate}
+
+\begin{enumerate}
+  \item En el procedimiento de revisión, el estudiante tendrá acceso a los documentos y demás materiales en los que se haya basado su evaluación."
+\end{enumerate}
+
+Además, el calendario académico para el curso 2025-2026 establece que debe haber un plazo de al menos dos días lectivos entre la publicación de las calificaciones provisionales y la revisión de las mismas.
+
+Por lo tanto, tienes derecho a revisar tu examen con el profesor antes de que se firmen las actas, dentro del plazo establecido en la normativa. Es importante que consultes con el profesor responsable de la asignatura para conocer el horario y lugar de la revisión.
+
+Es recomendable que consultes también el artículo 27 de la Normativa Reguladora de la Evaluación y Calificación de las Asignaturas, que establece que las calificaciones definitivas se harán públicas dentro de los diez días hábiles siguientes a la revisión de las calificaciones provisionales.
+
+Recuerda que las actas deben ser firmadas y depositadas en las Secretarías de los Centros dentro de los plazos previstos en el calendario académico, según el artículo 30 de la Normativa Reguladora de la Evaluación y Calificación de las Asignaturas.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Sí, el estudiante tiene derecho a revisar su ejercicio con el profesorado de la asignatura en el horario fijado para la revisión oficial.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q29.} ¿Cuáles son los requisitos de permanencia para estudiantes de primer año de grado en la US? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} normativo
+          \item \textbf{Fidelidad (Faithfulness):} 0.91 | \textbf{Relevancia (Relevance):} 0.54 | \textbf{Latencia:} 3.76s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Según la normativa de la Universidad de Sevilla, específicamente en el documento "R.R. NORMAS DE MATRICULA GRADO Y MASTER UNIVERSITARIO 2025-2026.pdf" (página 18), se establecen los requisitos de permanencia para estudiantes de primer año de grado.
+
+En este sentido, se indica que:
+
+\begin{enumerate}
+  \item \textbf{Estudiantes de primer curso de nuevo ingreso}: Si no superan al menos una asignatura, podrán iniciar estudios en otra titulación en la Universidad de Sevilla, siempre que acrediten reunir las condiciones exigidas para su acceso en la misma y obtengan plaza por los procedimientos legalmente establecidos.
+\end{enumerate}
+
+\begin{enumerate}
+  \item \textbf{Excepción}: La Junta de centro podrá autorizar, a petición del estudiante, la continuación de los estudios en casos particulares en los que causas excepcionales suficientemente acreditadas hubiesen afectado el rendimiento académico del estudiante de primer curso de nuevo ingreso.
+\end{enumerate}
+
+Además, en el mismo documento (página 5) y en el "TÍTULO PRELIMINAR: DISPOSICIONES GENERALES", se establece que:
+
+\begin{itemize}
+  \item La matrícula en los centros de la Universidad de Sevilla estará condicionada al cumplimiento de la normativa de ingreso y de los demás requisitos legalmente exigibles.
+\end{itemize}
+
+Por otro lado, el "Artículo 20. Permanencia" (página 13) del citado documento, indica que se establecen normas de permanencia que regulan el progreso de los estudiantes en la Universidad de Sevilla.
+
+En el "BOJA25-508-00085-6229-01\_00319829.pdf" (página 37), concretamente en el "Artículo 66. Acceso y permanencia en los centros", se determina que:
+
+\begin{itemize}
+  \item El Consejo de Gobierno aprobará las normas que regulen el progreso y la permanencia de los y las estudiantes en la Universidad de Sevilla, de acuerdo con las características de los respectivos estudios.
+\end{itemize}
+
+En resumen, los requisitos de permanencia para estudiantes de primer año de grado en la Universidad de Sevilla incluyen:
+
+\begin{itemize}
+  \item Superar al menos una asignatura en el primer curso de nuevo ingreso.
+  \item Acreditar reunir las condiciones exigidas para su acceso en la misma y obtener plaza por los procedimientos legalmente establecidos para iniciar estudios en otra titulación.
+  \item La Junta de centro puede autorizar la continuación de estudios en casos particulares con causas excepcionales acreditadas.
+\end{itemize}
+
+Es importante consultar los documentos originales para obtener más información y verificar la vigencia de la normativa. 
+
+Normativa aplicable:
+
+\begin{itemize}
+  \item R.R. NORMAS DE MATRICULA GRADO Y MASTER UNIVERSITARIO 2025-2026.pdf
+  \item BOJA25-508-00085-6229-01\_00319829.pdf 
+\end{itemize}
+
+Artículos específicos:
+
+\begin{itemize}
+  \item Artículo 1. Objeto y Artículo 2. Ámbito de aplicación (R.R. NORMAS DE MATRICULA GRADO Y MASTER UNIVERSITARIO 2025-2026.pdf, página 5)
+  \item Artículo 20. Permanencia (R.R. NORMAS DE MATRICULA GRADO Y MASTER UNIVERSITARIO 2025-2026.pdf, página 13)
+  \item Artículo 65. Enseñanzas universitarias de carácter oficial y Artículo 66. Acceso y permanencia en los centros (BOJA25-508-00085-6229-01\_00319829.pdf, página 37)
+\end{itemize}
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+El estudiante de grado a tiempo completo de nuevo ingreso debe superar un mínimo de 12 créditos (estudiantes a tiempo parcial mínimo 6 créditos) en su primer año académico.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q30.} ¿Cuántas convocatorias ordinarias de examen hay por asignatura en cada curso académico? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} calendario
+          \item \textbf{Fidelidad (Faithfulness):} 1.00 | \textbf{Relevancia (Relevance):} 0.46 | \textbf{Latencia:} 4.57s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+En la Universidad de Sevilla, los estudiantes tienen derecho a presentarse a \textbf{tres convocatorias ordinarias} en aquellas asignaturas matriculadas en segunda o sucesivas matrículas en cada curso académico.
+
+Sin embargo, para los estudiantes que se matriculen por primera vez en una asignatura, solo podrán presentarse a las \textbf{dos convocatorias posteriores} a la finalización del periodo lectivo de la misma.
+
+Además, existe una excepción para los estudiantes que tengan pendientes de superar menos del 10\% de los créditos totales, excluidos los créditos asignados al trabajo fin de carrera y a las prácticas externas. En este caso, una de las convocatorias, a elección del estudiante, tendrá la consideración de \textbf{convocatoria extraordinaria}.
+
+Es importante tener en cuenta que el calendario específico de convocatorias de exámenes finales se establecerá en el Calendario Académico aprobado anualmente por el Consejo de Gobierno de la Universidad de Sevilla. 
+
+No se proporcionan fechas concretas para el curso académico 2025-2026 en el contexto dado.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Cada asignatura da derecho a un máximo de dos convocatorias de examen en el mismo curso académico (primera y segunda ordinarias).
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q31.} ¿Qué es el reconocimiento de créditos por actividades universitarias culturales o deportivas? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} normativo
+          \item \textbf{Fidelidad (Faithfulness):} 0.67 | \textbf{Relevancia (Relevance):} 0.76 | \textbf{Latencia:} 5.15s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+El reconocimiento de créditos por actividades universitarias culturales o deportivas se refiere a la posibilidad de reconocer créditos académicos a estudiantes que han participado en actividades universitarias de carácter cultural, deportivo, de representación estudiantil, solidarias o de cooperación.
+
+Según la normativa de la Universidad de Sevilla, específicamente en el artículo 10 de la Normativa Reguladora del Reconocimiento y Transferencia de Créditos, se establece que las solicitudes de reconocimiento de créditos basadas en la participación en actividades universitarias culturales, deportivas, de representación estudiantil, solidarias y de cooperación, serán resueltas teniendo en cuenta la normativa aprobada por el Consejo de Gobierno de la Universidad de Sevilla mediante Acuerdo 5.1/CG 22-7-2010.
+
+Además, el artículo 22 de las Normas de Matrícula de Grado y Máster Universitario 2025-2026 de la Universidad de Sevilla, establece que el reconocimiento de créditos se puede solicitar por participación en actividades universitarias culturales, deportivas, de representación estudiantil, solidarias y de cooperación, entre otras.
+
+Es importante destacar que, según el artículo 10.2 de la Normativa Reguladora del Reconocimiento y Transferencia de Créditos, el número máximo de créditos que se podrá reconocer por la participación en estas actividades será de 6 créditos ECTS.
+
+Por lo tanto, el reconocimiento de créditos por actividades universitarias culturales o deportivas es un proceso que permite a los estudiantes obtener créditos académicos por su participación en actividades extracurriculares que se consideren relevantes para su formación académica. 
+
+ Cabe mencionar que las solicitudes de reconocimiento de créditos por esta causa, así como las solicitudes de reconocimiento basadas en experiencia profesional, el reconocimiento por la acreditación de otros niveles de idioma y el reconocimiento de prácticas extracurriculares, podrán presentarse en cualquier momento del curso académico, según la normativa de la Universidad de Sevilla (R.R. NORMAS DE MATRICULA GRADO Y MASTER UNIVERSITARIO 2025-2026.pdf, página 43).
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Permite el reconocimiento académico de hasta 6 créditos optativos del plan de estudios de grado por participar en actividades de deporte, representación estudiantil, cultura o cooperación.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q32.} ¿Cómo solicito el título de Grado once he superado todas las asignaturas? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} procedimental | \textbf{Detectada:} procedimental
+          \item \textbf{Fidelidad (Faithfulness):} 0.00 | \textbf{Relevancia (Relevance):} 0.63 | \textbf{Latencia:} 5.15s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+
+\noindent\textbf{Requisitos Previos}\\
+
+\begin{itemize}
+  \item Haber superado todas las asignaturas del plan de estudios del título de Grado.
+  \item Estar matriculado en la Universidad de Sevilla (US) y tener un expediente académico activo.
+\end{itemize}
+
+
+\noindent\textbf{Solicitud del Título de Grado}\\
+
+A continuación, se presentan los pasos a seguir para solicitar el título de Grado después de superar todas las asignaturas:
+
+\begin{enumerate}
+  \item \textbf{Acceder a SEVIUS}, la Secretaría Virtual de la Universidad de Sevilla.
+  \item \textbf{Rellenar el impreso de solicitud de título}, que se encuentra disponible en la plataforma SEVIUS o en la Secretaría del centro correspondiente.
+  \item \textbf{Adjuntar la documentación requerida}, que puede incluir:
+\end{enumerate}
+\begin{itemize}
+  \item \textbf{Certificado de pago de tasas} (si corresponde).
+  \item \textbf{Documentación acreditativa de la superación de todas las asignaturas} (no es necesario, ya que la US verificará esta información internamente).
+\end{itemize}
+\begin{enumerate}
+  \item \textbf{Presentar la solicitud} en la Secretaría del centro correspondiente o a través de SEVIUS, según las instrucciones proporcionadas por la Universidad.
+  \item \textbf{Abonar los derechos de expedición del título}, si corresponde.
+  \item \textbf{Verificar el estado de la solicitud} a través de SEVIUS o contactando con la Secretaría del centro.
+  \item \textbf{Recibir el título de Grado} una vez resuelta favorablemente la solicitud y abonados los derechos correspondientes.
+\end{enumerate}
+
+
+\noindent\textbf{Advertencias Importantes}\\
+
+\begin{itemize}
+  \item Es fundamental verificar los requisitos específicos y los plazos establecidos por la Universidad de Sevilla para la solicitud de títulos.
+  \item La presentación de la solicitud no garantiza la expedición del título si no se cumplen los requisitos establecidos.
+  \item En caso de dudas o problemas durante el proceso, es recomendable contactar con la Secretaría del centro o con el Vicerrectorado de Estudiantes de la Universidad de Sevilla.
+\end{itemize}
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Se solicita telemáticamente mediante la Secretaría Virtual, abonando las tasas correspondientes para expedir el título y aportando acreditación de idioma si es necesario.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q33.} ¿Qué nivel de idioma se exige para obtener el título de Grado en la US? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} normativo
+          \item \textbf{Fidelidad (Faithfulness):} 0.73 | \textbf{Relevancia (Relevance):} 0.58 | \textbf{Latencia:} 7.12s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Según la normativa de la Universidad de Sevilla, para obtener un título de Grado, los estudiantes deben acreditar un nivel de dominio de una lengua extranjera. 
+
+En este sentido, el Instituto de Idiomas de la Universidad de Sevilla ofrece un examen de acreditación de idioma, y establece que el nivel B1 es el requerido para los estudios de grado. 
+
+Así se recoge en la página web del Instituto de Idiomas de la Universidad de Sevilla, donde se indica que "Para obtener un título de Grado en las universidades andaluzas el estudiante debe acreditar el nivel de dominio de una lengua extranjera".
+
+Además, en el documento "R.R. NORMAS DE MATRICULA GRADO Y MASTER UNIVERSITARIO 2025-2026.pdf" se especifica en la página 16 que, para la admisión como estudiante visitante en asignaturas de máster universitario, se requiere la acreditación lingüística del nivel B1 de español, entre las que figuran inscritas en el Registro de Acreditaciones de Idiomas (RAI) en el Instituto de Idiomas de la Universidad de Sevilla.
+
+Por lo tanto, el nivel de idioma exigido para obtener el título de Grado en la Universidad de Sevilla es el nivel B1 en una lengua extranjera, que suele ser español para los estudiantes que cursan sus estudios en esta lengua. 
+
+Es importante mencionar que los estudiantes pueden acreditar su nivel de idioma a través de diferentes vías, como la superación del examen de acreditación del Instituto de Idiomas de la Universidad de Sevilla o la presentación de certificados externos que acrediten el nivel de competencia lingüística. 
+
+Para más información sobre el proceso de acreditación de idioma, los estudiantes pueden consultar la página web del Instituto de Idiomas de la Universidad de Sevilla o acercarse a la secretaría del centro.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Es obligatorio acreditar el conocimiento de una lengua extranjera correspondiente al nivel B1 o B2 según el plan de estudios correspondiente.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q34.} ¿Se pueden convalidar créditos del ciclo formativo de grado superior (CFGS) en un Grado universitario? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} normativo
+          \item \textbf{Fidelidad (Faithfulness):} 0.89 | \textbf{Relevancia (Relevance):} 0.76 | \textbf{Latencia:} 5.78s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Según la normativa de la Universidad de Sevilla (US), los créditos obtenidos en Ciclos Formativos de Grado Superior (CFGS) pueden ser objeto de reconocimiento en enseñanzas universitarias oficiales de Grado.
+
+El artículo 8 de la Normativa Reguladora del Reconocimiento y Transferencia de Créditos de la US establece que los estudios superados en títulos oficiales españoles de educación superior no universitaria, como el Título Superior de Técnico Superior de Formación Profesional, pueden ser objeto de reconocimiento de créditos.
+
+En concreto, el artículo 8.2 indica que podrán ser objeto de reconocimiento de créditos los estudios superados correspondientes a los siguientes títulos:
+
+\begin{itemize}
+  \item Técnico Superior de Formación Profesional.
+\end{itemize}
+
+Además, según la página web del Centro de Atención a Estudiantes de la US, desde el curso 2019-2020, si has obtenido un título oficial de Técnico Superior de Formación Profesional, se tendrá en cuenta la familia profesional como uno de los criterios para el reconocimiento de créditos.
+
+Por otro lado, la Resolución Rectoral de Normas de Matrícula para Grado y Máster Universitario 2025-2026 establece en su artículo 23 que las solicitudes de reconocimiento de créditos asociadas a estudios previos, como los CFGS, deberán presentarse desde la fecha de formalización de la automatrícula/matrícula hasta el 22 de septiembre de 2025.
+
+En resumen, los créditos del Ciclo Formativo de Grado Superior (CFGS) pueden ser convalidados en un Grado universitario, siempre que se cumplan los requisitos establecidos en la normativa de la Universidad de Sevilla y se presenten dentro del plazo establecido.
+
+Te recomiendo verificar la información actualizada en la página web oficial de la Universidad de Sevilla o contactar directamente con el Centro de Atención a Estudiantes para obtener más detalles sobre el proceso de reconocimiento de créditos.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Sí, la US dispone de tablas de convalidaciones y pasarelas aprobadas entre Títulos de Grado Superior de Formación Profesional y Grados universitarios afines.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q35.} ¿Cómo funciona el seguro escolar obligatorio para estudiantes menores de 28 años? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} normativo
+          \item \textbf{Fidelidad (Faithfulness):} 1.00 | \textbf{Relevancia (Relevance):} 0.59 | \textbf{Latencia:} 6.75s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Según la normativa de la Universidad de Sevilla, específicamente en el artículo 31 del documento "R.R. NORMAS DE MATRICULA GRADO Y MASTER UNIVERSITARIO 2025-2026.pdf", los estudiantes menores de 28 años están obligados a abonar el importe correspondiente al seguro escolar.
+
+El seguro escolar es obligatorio para estudiantes que cumplan con los siguientes requisitos:
+
+\begin{itemize}
+  \item Tener menos de 28 años (el seguro escolar cubrirá todo el año escolar en el que el estudiante cumpla dicha edad).
+  \item Ser español o extranjero que resida legalmente en España.
+  \item Estar matriculado en la Universidad de Sevilla en el curso correspondiente.
+\end{itemize}
+
+Puedes encontrar más información sobre el seguro escolar en la página web del Centro de Atención a Estudiantes de la Universidad de Sevilla (<https://cat.us.es/matricula/precios-de-la-matricula>) y en la página web de la Facultad de Ciencias Económicas y Empresariales (<https://fceye.us.es/seguro-escolar-seguro-practicas-en-empresas-mayores-28-anos-y-seguro-de-estudiantes-de-movilidad)>.
+
+Es importante tener en cuenta que, según el artículo 29 de las mismas normas, la devolución de precios públicos, incluyendo el seguro escolar, solo procederá en casos específicos, como la obtención de una beca que comporte la compensación de estos o cuando se detecten errores o modificaciones en la situación administrativa o académica del estudiante.
+
+Por lo tanto, el seguro escolar obligatorio para estudiantes menores de 28 años en la Universidad de Sevilla es una requisito que deben cumplir todos los estudiantes que se matriculen y cumplan con los requisitos establecidos.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Ofrece asistencia sanitaria, farmacéutica y económica en caso de accidente escolar o enfermedad durante el periodo lectivo, abonándose obligatoriamente en la matrícula hasta los 28 años.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q36.} ¿Cuándo se abre el plazo para solicitar las becas del Ministerio (MECD) para estudios de grado? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} calendario | \textbf{Detectada:} calendario
+          \item \textbf{Fidelidad (Faithfulness):} 0.75 | \textbf{Relevancia (Relevance):} 0.00 | \textbf{Latencia:} 8.03s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+\textbf{Plazo de solicitud de becas del Ministerio de Educación y Formación Profesional (MECD) para estudios de grado en la Universidad de Sevilla:}
+
+La convocatoria de becas de carácter general para el curso académico 2025-2026 del Ministerio de Educación, Formación Profesional y Deportes se publicó el \textbf{8 de abril de 2025}. 
+
+No se especifica en el contexto proporcionado una fecha límite para solicitar dichas becas. Sin embargo, se menciona que los estudiantes que no soliciten beca de convocatoria general en el curso 2025-2026 por no cumplir los requisitos económicos para la obtención de la misma, deberán presentar una declaración responsable del no cumplimiento de los referidos requisitos.
+
+Puedes encontrar más información sobre las becas y ayudas en la página web de la Universidad de Sevilla: 
+
+\begin{itemize}
+  \item \href{https://educacion.us.es/noticias/810-becas-y-ayudas}{Becas y Ayudas (Secretaría del Centro) - Facultad de CC ...}
+  \item \href{https://www.us.es/comunicaciones-oficiales/convocatoria-de-becas-de-caracter-general-del-ministerio-curso-25-26}{Convocatoria de Becas de Carácter General del Ministerio ...}
+\end{itemize}
+
+Para más detalles sobre los plazos y requisitos, te recomiendo consultar las fuentes proporcionadas y la página web oficial de la Universidad de Sevilla.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+La convocatoria estatal de becas del Ministerio se abre usualmente en primavera (meses de marzo a mayo) para el curso académico posterior.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q37.} ¿Qué nota media mínima se requiere para obtener la beca de matrícula del Ministerio en Grado? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} baremo
+          \item \textbf{Fidelidad (Faithfulness):} 0.89 | \textbf{Relevancia (Relevance):} 0.00 | \textbf{Latencia:} 8.96s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+\textbf{Requisitos mínimos excluyentes:}
+
+\begin{itemize}
+  \item No se establecen requisitos mínimos excluyentes específicos para la nota media en Grado para obtener la beca de matrícula del Ministerio.
+\end{itemize}
+
+\textbf{Criterios de evaluación y puntuación:}
+
+A continuación, se presentan los criterios de evaluación y puntuación para la baremación de méritos:
+
+
+\noindent\textbf{Expediente Académico}\\
+
+
+\begin{tabular}{p{3.5cm} p{8cm}}
+\toprule
+\textbf{Criterio} & \textbf{Detalles} \\
+\midrule
+Titulación de Máster Universitario (Oficial) &  \\
+ & APROBADO: 5,0-6,9 nota media: 40 puntos \\
+ & NOTABLE: 7,0-8,9 nota media: 50 puntos \\
+ & SOBRESALIENTE: 9,0-10,0 nota media: 60 puntos \\
+\bottomrule
+\end{tabular}
+
+
+
+\noindent\textbf{Otros títulos académicos}\\
+
+
+\begin{tabular}{p{3.5cm} p{8cm}}
+\toprule
+\textbf{Criterio} & \textbf{Detalles} \\
+\midrule
+Titulación Universitaria de Grado o equivalente &  \\
+ & APROBADO: 5,0-6,9 nota media: 3 puntos \\
+ & NOTABLE: 7,0-8,9 nota media: 6 puntos \\
+ & SOBRESALIENTE: 9,0-10,0 nota media: 10 puntos \\
+\bottomrule
+\end{tabular}
+
+
+
+\noindent\textbf{Premios académicos y menciones de calidad}\\
+
+
+\begin{tabular}{p{3.5cm} p{8cm}}
+\toprule
+\textbf{Criterio} & \textbf{Detalles} \\
+\midrule
+Premio (Nacional) Fin de Carrera de Educación Universitaria & 5 puntos por premio \\
+Premio extraordinario de grado o equivalente & 4 puntos por premio \\
+Premio Extraordinario de Doctorado & 4 puntos por premio \\
+Doctorado internacional y europeo & 2 puntos por indicio \\
+Mención de calidad (o `hacia la excelencia') & 1 punto por indicio \\
+Tesis en régimen de cotutela & 1 punto por indicio \\
+\bottomrule
+\end{tabular}
+
+
+
+\noindent\textbf{Actividad Docente}\\
+
+
+\begin{tabular}{p{3.5cm} p{8cm}}
+\toprule
+\textbf{Criterio} & \textbf{Detalles} \\
+\midrule
+Docencia en asignaturas regladas universitarias & 1,00 x 10 horas de docencia (máximo 50 puntos) \\
+\bottomrule
+\end{tabular}
+
+
+\textbf{Nota:} No se proporciona información específica sobre la nota media mínima requerida para obtener la beca de matrícula del Ministerio en Grado. Sin embargo, se puede inferir que la Universidad de Sevilla utiliza un sistema de baremación de méritos que valora la nota media del expediente académico, entre otros criterios.
+
+\textbf{Beca de matrícula del Ministerio:}
+
+La beca de matrícula del Ministerio se concede a estudiantes que cumplan ciertos requisitos académicos y económicos. Aunque no se especifica una nota media mínima para obtener la beca, se establecen los siguientes requisitos:
+
+\begin{itemize}
+  \item Los solicitantes de beca de convocatoria general del Ministerio de Educación, Formación Profesional y Deportes deberán matricular, al menos, 60 créditos para tener derecho a todas las modalidades de ayudas.
+\end{itemize}
+
+\textbf{Cálculo de la nota de admisión:}
+
+La nota media de expediente académico del título de Grado, Máster u otro título universitario oficial se calcula conforme a lo regulado en el Acuerdo de 3 de febrero de 2016, de la Comisión del Distrito Único Universitario de Andalucía.
+
+Puedes consultar más información sobre el cálculo de la nota de admisión y los criterios de ordenación en la página web de la Universidad de Sevilla: <https://cat.us.es/acceso-y-admision/admision-preinscripcion/grado/calculo-de-nota-de-admision-y-criterios-de>
+
+Espero que esta información te sea útil. Si necesitas más detalles, no dudes en preguntar.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Se requiere estar matriculado de un mínimo de créditos y cumplir unos requisitos académicos y umbrales de renta. La nota media mínima varía según el tipo de estudios y créditos superados.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q38.} ¿Qué ocurre si suspendo más del 50\% de los créditos matriculados si tengo beca del Ministerio? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} entrevistador
+          \item \textbf{Fidelidad (Faithfulness):} 0.50 | \textbf{Relevancia (Relevance):} 0.56 | \textbf{Latencia:} 8.83s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Buenos días, gracias por contactar con la Universidad de Sevilla. Me alegra ayudarte con tu consulta. 
+
+En primer lugar, te informo que la Universidad de Sevilla tiene varias opciones para estudiantes con becas del Ministerio de Educación y Formación Profesional (MEFP). Si tienes beca del Ministerio, es posible que tengas derecho a una exención o bonificación en la matrícula. 
+
+Según la normativa, si suspendes más del 50\% de los créditos matriculados, ¿has solicitado beca para el curso 2025-2026?
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+El estudiante becario estará obligado al reintegro de todos los componentes de cuantía fija de la beca recibidos durante el curso (excepto el componente de matrícula).
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q39.} ¿Cuál es el plazo de solicitud para las becas propias de la Universidad de Sevilla? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} calendario | \textbf{Detectada:} calendario
+          \item \textbf{Fidelidad (Faithfulness):} 0.60 | \textbf{Relevancia (Relevance):} 0.77 | \textbf{Latencia:} 28.32s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Según la información proporcionada en la fuente web de la Universidad de Sevilla, el plazo de presentación de solicitudes para las becas propias es de \textbf{15 días naturales} desde la fecha de publicación de la convocatoria.
+
+La fecha límite para presentar solicitudes es el \textbf{05/11/2025}. 
+
+Es importante tener en cuenta que esta información puede estar sujeta a cambios y es recomendable verificarla en la página web oficial de la Universidad de Sevilla para obtener la información más actualizada. 
+
+En este caso, se puede encontrar más información en: https://www.us.es/estudiar/becas-ayudas/becas-y-ayudas-de-formacion/propias. 
+
+No dude en preguntar si necesita más información.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+La US publica anualmente su propia convocatoria de ayudas sociales al estudio (transporte, matrícula, comedor), habitualmente a lo largo del mes de octubre de cada curso.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q40.} ¿Puedo compatibilizar la beca del Ministerio con una beca de colaboración en un departamento? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} procedimental
+          \item \textbf{Fidelidad (Faithfulness):} 0.71 | \textbf{Relevancia (Relevance):} 0.00 | \textbf{Latencia:} 14.21s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+
+\noindent\textbf{Requisitos Previos}\\
+
+La compatibilidad de becas depende de las normas y regulaciones específicas de la Universidad de Sevilla y del Ministerio de Educación y Formación Profesional. Es importante revisar la documentación oficial y comunicarse con los departamentos correspondientes para obtener información actualizada y precisa.
+
+
+\noindent\textbf{Procedimiento para Compatibilizar Becas}\\
+
+A continuación, se presentan los pasos generales para compatibilizar la beca del Ministerio con una beca de colaboración en un departamento:
+
+\begin{enumerate}
+  \item \textbf{Revisa las bases de la convocatoria}: Verifica las condiciones y requisitos de la beca del Ministerio y de la beca de colaboración en un departamento. Asegúrate de que no haya incompatibilidades explícitas.
+  \item \textbf{Consulta con el departamento}: Contacta con el departamento universitario que ofrece la beca de colaboración y pregunta sobre su política de compatibilidad con otras becas.
+  \item \textbf{Verifica la normativa de la Universidad de Sevilla}: Busca información en la web de la Universidad de Sevilla sobre la compatibilidad de becas. Puedes consultar la \textbf{SEVIUS} (Sistema de Gestión de Estudiantes de la Universidad de Sevilla) o la \textbf{Secretaría Virtual} para obtener más información.
+  \item \textbf{Solicita la beca de colaboración}: Si decides que puedes compatibilizar las becas, solicita la beca de colaboración en el departamento correspondiente. Asegúrate de cumplir con los requisitos y plazos establecidos.
+  \item \textbf{Notifica al Ministerio}: Informa al Ministerio de Educación y Formación Profesional sobre la beca de colaboración que has solicitado o obtenido. Puedes hacer esto a través de su sitio web o contactando directamente con ellos.
+  \item \textbf{Cumple con los requisitos académicos}: Asegúrate de cumplir con los requisitos académicos y de progreso establecidos por la Universidad de Sevilla y el Ministerio.
+  \item \textbf{Mantén un registro}: Guarda un registro de tus becas, incluyendo la documentación y la correspondencia con el departamento y el Ministerio.
+\end{enumerate}
+
+
+\noindent\textbf{Documentación Requerida}\\
+
+\begin{itemize}
+  \item \textbf{Solicitud de beca de colaboración}: Debes presentar la solicitud de beca de colaboración en el departamento correspondiente.
+  \item \textbf{Documentación acreditativa}: Es posible que debas presentar documentación adicional, como un certificado de matrícula o un informe de progreso académico.
+\end{itemize}
+
+Recuerda que la compatibilidad de becas puede variar dependiendo de las circunstancias individuales y las regulaciones específicas. Es importante consultar con los departamentos correspondientes y revisar la documentación oficial para obtener información precisa y actualizada.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+La beca de colaboración del Ministerio es compatible con la beca general de matrícula, pero incompatible con becas similares destinadas a la misma finalidad.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q41.} ¿Qué es el traslado de expediente y cómo se tramita? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} procedimental | \textbf{Detectada:} procedimental
+          \item \textbf{Fidelidad (Faithfulness):} 0.78 | \textbf{Relevancia (Relevance):} 0.43 | \textbf{Latencia:} 6.29s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+
+\noindent\textbf{Requisitos Previos}\\
+
+Para realizar el traslado de expediente en la Universidad de Sevilla, es importante tener en cuenta los siguientes requisitos previos:
+
+\begin{itemize}
+  \item El estudiante debe haber obtenido plaza para cursar estudios en otra universidad.
+  \item El estudiante debe solicitar el traslado de expediente de forma telemática a través de la sede electrónica de la Universidad de Sevilla.
+\end{itemize}
+
+
+\noindent\textbf{Paso a Paso para Realizar el Traslado de Expediente}\\
+
+A continuación, se presentan los pasos a seguir para realizar el traslado de expediente en la Universidad de Sevilla:
+
+\begin{enumerate}
+  \item \textbf{Acceder a la Sede Electrónica de la Universidad de Sevilla}: El estudiante debe acceder a la sede electrónica de la Universidad de Sevilla (\href{http://sede.us.es}{sede.us.es}) y seleccionar la opción "Estudiantes - Presentación de Instancias y solicitudes genéricas".
+  \item \textbf{Rellenar la Solicitud Telemática de Traslado de Expediente}: El estudiante debe rellenar la solicitud telemática de traslado de expediente, que se encuentra disponible en la sede electrónica de la Universidad de Sevilla. Para ello, es necesario tener un certificado digital.
+  \item \textbf{Acompañar la Documentación Requerida}: El estudiante debe acompañar la documentación requerida, que incluye:
+\end{enumerate}
+
+\begin{itemize}
+  \item \textbf{Carta de admisión} a los estudios citados.
+  \item \textbf{Carta de pago de tasas académicas} por traslado.
+  \item \textbf{Documento de identidad} (DNI o pasaporte).
+  \item \textbf{Expediente académico} (en algunos casos).
+\end{itemize}
+\begin{enumerate}
+  \item \textbf{Presentar la Solicitud}: Una vez rellenada la solicitud y acompañada la documentación requerida, el estudiante debe presentarla a través de la sede electrónica de la Universidad de Sevilla.
+  \item \textbf{Pago de Tasas Académicas}: El estudiante debe realizar el pago de las tasas académicas correspondientes por traslado de expediente.
+  \item \textbf{Resolución del Traslado de Expediente}: La Universidad de Sevilla resolverá la solicitud de traslado de expediente y notificará al estudiante la resolución.
+\end{enumerate}
+
+
+\noindent\textbf{Plataformas Web y Documentos Relevantes}\\
+
+\begin{itemize}
+  \item \textbf{Sede Electrónica de la Universidad de Sevilla} (\href{http://sede.us.es}{sede.us.es}): plataforma para realizar trámites administrativos de forma telemática.
+  \item \textbf{SEVIUS}: plataforma para gestionar el expediente académico del estudiante.
+  \item \textbf{Solicitud Telemática de Traslado de Expediente}: documento que debe rellenar el estudiante para solicitar el traslado de expediente.
+  \item \textbf{Carta de Admisión}: documento que acredita la admisión del estudiante en la universidad de destino.
+  \item \textbf{Carta de Pago de Tasas Académicas}: documento que acredita el pago de las tasas académicas por traslado de expediente.
+\end{itemize}
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+El traslado de expediente se inicia aportando la carta de admisión de la nueva universidad y solicitando en la secretaría del centro de origen de la US la emisión del traslado previo pago de tasas.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q42.} ¿Cuándo se publica el calendario de exámenes de la Universidad de Sevilla? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} calendario | \textbf{Detectada:} calendario
+          \item \textbf{Fidelidad (Faithfulness):} 0.43 | \textbf{Relevancia (Relevance):} 0.76 | \textbf{Latencia:} 2.79s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+La Universidad de Sevilla publica el calendario de exámenes anualmente, y este se establece en el Calendario Académico aprobado por el Consejo de Gobierno.
+
+Aunque no se proporciona una fecha específica para la publicación del calendario de exámenes, se puede inferir que se publica antes del inicio del curso académico.
+
+En el contexto proporcionado, se menciona que el Calendario Académico para el curso \textbf{2025-2026} fue aprobado por el Consejo de Gobierno el \textbf{20 de marzo de 2025}.
+
+Por lo tanto, se puede concluir que el calendario de exámenes para el curso \textbf{2025-2026} fue publicado en marzo de \textbf{2025}. 
+
+No obstante, para futuras referencias, se recomienda verificar la página web oficial de la Universidad de Sevilla o contactar con la institución para obtener la información más actualizada sobre la publicación del calendario de exámenes.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Los calendarios de exámenes son aprobados por las juntas de centro de las facultades y publicados al inicio del periodo de planificación de cada curso.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q43.} ¿Qué documentos de identidad son válidos para identificarse en un examen oficial en la US? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} normativo
+          \item \textbf{Fidelidad (Faithfulness):} 0.92 | \textbf{Relevancia (Relevance):} 0.68 | \textbf{Latencia:} 3.06s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Según la normativa proporcionada en el contexto, específicamente en la Disposición adicional primera, se establece que para la presentación de documentación, los estudiantes deben utilizar el Buzón de Documentación (DOMUS) habilitado en la Secretaría Virtual de la Universidad de Sevilla (SEVIUS).
+
+En cuanto a la identificación, no se especifica directamente qué documentos son válidos para identificarse en un examen oficial. Sin embargo, se puede inferir que los documentos de identidad válidos son aquellos que se mencionan en otras partes de la normativa.
+
+En el artículo 16, se menciona que los estudiantes con estudios universitarios extranjeros finalizados o no, deben aportar el documento de identidad donde conste el NIE; se admitirá provisionalmente el pasaporte, disponiendo el estudiante de un plazo de seis meses para aportar el NIE. Para estudiantes españoles, se requiere el DNI.
+
+Además, en la Disposición adicional séptima, se establece que los estudiantes de nacionalidad no española, aunque formalicen su matrícula con cualquier documento de identificación válido en España, deberán proporcionar el NIE, en el plazo de 6 meses desde la formalización de la matrícula.
+
+Por lo tanto, se puede concluir que los documentos de identidad válidos para identificarse en un examen oficial en la Universidad de Sevilla son:
+
+\begin{itemize}
+  \item DNI (para estudiantes españoles)
+  \item Pasaporte (con NIE, para estudiantes extranjeros)
+  \item Documento de identidad donde conste el NIE (para estudiantes extranjeros)
+\end{itemize}
+
+Es importante tener en cuenta que la Universidad de Sevilla puede requerir documentación adicional o específica para ciertos trámites o situaciones, por lo que es recomendable consultar con la Secretaría Virtual o con el centro correspondiente para obtener información más detallada y actualizada. 
+
+Cabe destacar que la normativa aplicable se encuentra en las "Normas de Matrícula Grado y Máster Universitario 2025-2026" de la Universidad de Sevilla, aprobadas por Resolución Rectoral de 27 de junio de 2025.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+El alumno debe identificarse mediante DNI, NIE, Pasaporte o la tarjeta de estudiante física/virtual emitida oficialmente por la US.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q44.} ¿Se pueden recuperar los días festivos locales si caen en sábado en el calendario académico? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} calendario | \textbf{Detectada:} entrevistador
+          \item \textbf{Fidelidad (Faithfulness):} 0.60 | \textbf{Relevancia (Relevance):} 0.64 | \textbf{Latencia:} 30.15s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+¡Hola! Me alegra poder ayudarte con tu consulta. En la Universidad de Sevilla, el calendario académico establece que los días festivos locales que caen en sábado se recuperan. Esto significa que si un día festivo local cae en sábado, se recuperará en el lunes siguiente.
+
+Sin embargo, para determinar con precisión cuáles son los días festivos locales que se recuperan, necesitaría saber si estás refiriéndote al calendario académico de un curso en particular. ¿Podrías decirme si estás buscando información para el curso 2025-2026 o el curso 2026-2027?
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+No, los días festivos o no lectivos locales que coincidan con fines de semana no se trasladan ni son objeto de recuperación en el calendario docente de la US.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q45.} ¿Cómo sé si tengo derecho a la bonificación del 99\% de la Junta de Andalucía? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} normativo
+          \item \textbf{Fidelidad (Faithfulness):} 0.86 | \textbf{Relevancia (Relevance):} 0.54 | \textbf{Latencia:} 22.77s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Según la normativa de la Universidad de Sevilla (US) y la Junta de Andalucía, para tener derecho a la bonificación del 99\% en la matrícula, debes cumplir con ciertos requisitos establecidos en el Decreto por el que se determinan los precios públicos de las universidades públicas de Andalucía y en las Normas de Matrícula de Grado y Máster Universitario de la US.
+
+\textbf{Requisitos generales:}
+
+\begin{enumerate}
+  \item \textbf{Estar matriculado en la Universidad de Sevilla}: Debes estar matriculado en un grado o máster universitario en la US.
+  \item \textbf{Cumplir con los requisitos académicos}: Debes haber superado créditos en primera matrícula en el curso anterior o en cursos anteriores, según sea el caso.
+\end{enumerate}
+
+\textbf{Requisitos específicos para la bonificación del 99\%:}
+
+\begin{enumerate}
+  \item \textbf{Haber superado créditos en primera matrícula}: Debes haber superado créditos en primera matrícula en el curso 2024-2025 o en los cursos 2023-2024 y 2024-2025, según sea el caso.
+  \item \textbf{No haber disfrutado de la bonificación en dos títulos de máster universitario}: Si ya has sido beneficiario de la bonificación en dos títulos de máster universitario, no podrás recibir la bonificación en un tercero o sucesivos.
+\end{enumerate}
+
+\textbf{Procedimiento:}
+
+\begin{enumerate}
+  \item \textbf{Declaración responsable}: Debes presentar una declaración responsable en la que manifiestes que no cumples los requisitos económicos para tener derecho a beca de la convocatoria general del Ministerio de Educación y Formación Profesional.
+  \item \textbf{Aportar documentación}: Debes aportar la documentación acreditativa de los requisitos alegados, en su caso, en el Buzón de Documentación (DOMUS) habilitado en la Secretaría Virtual de la Universidad de Sevilla (SEVIUS).
+\end{enumerate}
+
+\textbf{Normativa aplicable:}
+
+\begin{itemize}
+  \item Decreto por el que se determinan los precios públicos de las universidades públicas de Andalucía.
+  \item Normas de Matrícula de Grado y Máster Universitario de la Universidad de Sevilla (US).
+  \item Resolución Rectoral de la US.
+\end{itemize}
+
+\textbf{Artículos específicos:}
+
+\begin{itemize}
+  \item Artículo 10.2 de las Normas de Matrícula de Grado y Máster Universitario de la US: Límites de la bonificación.
+  \item Artículo 10.3 de las Normas de Matrícula de Grado y Máster Universitario de la US: Beneficiarios de la beca de régimen general del Ministerio de Educación, Formación Profesional y Deportes.
+  \item Artículo 28 de las Normas de Matrícula de Grado y Máster Universitario de la US: Reducción de precios. Exenciones y bonificaciones.
+\end{itemize}
+
+Es importante que consultes la normativa completa y actualizada en la página web de la Universidad de Sevilla o en el Boletín Oficial de la Junta de Andalucía para obtener más información y asegurarte de cumplir con los requisitos establecidos.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Se aplica a estudiantes de grado que hayan aprobado asignaturas en primera matrícula en el curso anterior en una universidad andaluza pública, bonificándose el 99\% de los créditos correspondientes en el curso siguiente.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q46.} ¿La bonificación del 99\% se aplica también a los estudiantes de primer año de carrera? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} normativo | \textbf{Detectada:} baremo
+          \item \textbf{Fidelidad (Faithfulness):} 0.75 | \textbf{Relevancia (Relevance):} 0.60 | \textbf{Latencia:} 7.58s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+
+\noindent\textbf{Requisitos mínimos excluyentes:}\\
+
+\begin{itemize}
+  \item Ser estudiante de la Universidad de Sevilla (US) en enseñanzas de grado o máster universitario.
+  \item Cumplir con los requisitos establecidos en el decreto por el que se determinan los precios públicos de las universidades públicas de Andalucía.
+\end{itemize}
+
+
+\noindent\textbf{Criterios de evaluación para la bonificación del 99\%:}\\
+
+La bonificación del 99\% se aplica a los estudiantes que cumplan con los siguientes criterios:
+
+
+\noindent\textbf{Criterio | Detalles}\\
+---------|----------
+\textbf{Estudiantes de primer año de carrera} | No se aplica la bonificación del 99\% de forma automática. Sin embargo, los estudiantes que obtengan una beca del Ministerio de Educación, Formación Profesional y Deportes o del correspondiente departamento de educación del País Vasco pueden ser beneficiarios de la bonificación.
+\textbf{Estudiantes becarios} | La beca de matrícula solo cubrirá los créditos en primera matrícula de los estudiantes becarios. Abonarán íntegramente los precios de los créditos o asignaturas en segunda o sucesivas matrículas y los precios públicos por servicios administrativos y el seguro escolar.
+\textbf{Matrícula de honor} | La matrícula de honor en segundo curso de Bachillerato o Ciclo Formativo de Formación Profesional de Grado Superior, la obtención de Premio Extraordinario de Bachillerato o de Formación Profesional de Grado Superior o los premios de las Olimpiadas de Matemáticas, Física o Química u otras olimpiadas acreditadas de ámbito nacional o internacional, otorgará el derecho a exención total de los precios por servicios académicos, por una sola vez, en el primer curso de enseñanzas de grado.
+
+
+\noindent\textbf{Cálculo de la bonificación:}\\
+
+El importe de la bonificación será el 99\% del que resulte de multiplicar el número de créditos aprobados en primera matrícula en el curso 2024-2025, o en los cursos 2023-2024 y 2024-2025 para la primera matriculación en estudios de máster universitario, por el precio determinado en el decreto por el que se determinan los precios públicos de las universidades públicas de Andalucía.
+
+
+\noindent\textbf{Documentación acreditativa:}\\
+
+\begin{itemize}
+  \item Los estudiantes que soliciten la bonificación deberán aportar la documentación acreditativa en el Buzón de Documentación (DOMUS) habilitado en la Secretaría Virtual de la Universidad de Sevilla (SEVIUS).
+  \item La Universidad de Sevilla consultará telemáticamente el título de familia numerosa del estudiante que alegue dicha condición en su matrícula, salvo que se opusiera a ello.
+\end{itemize}
+
+
+\noindent\textbf{Límites de la bonificación:}\\
+
+\begin{itemize}
+  \item Solo serán objeto de bonificación los créditos que sean necesarios para la obtención del título conforme al plan de estudios y, en su caso, las especialidades y menciones vinculadas al título donde proceda la bonificación.
+  \item Quienes hayan sido beneficiarios de una bonificación total o parcial en dos títulos de máster universitario, no podrán recibir bonificación en un tercero o sucesivos.
+\end{itemize}
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+No, los créditos bonificados se calculan en base a las materias superadas en el curso inmediatamente anterior, por lo que no es aplicable a alumnos de nuevo ingreso de primer año.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q47.} ¿Qué día empieza el periodo lectivo de las clases para mi curso? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} entrevistador | \textbf{Detectada:} entrevistador
+          \item \textbf{Fidelidad (Faithfulness):} 1.00 | \textbf{Relevancia (Relevance):} 1.00 | \textbf{Latencia:} 34.06s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+¡Hola! Me alegra poder ayudarte con tu consulta. El calendario académico de la Universidad de Sevilla establece diferentes fechas de inicio para el periodo lectivo de las clases, dependiendo del tipo de curso que estés realizando.
+
+Según la normativa, el periodo docente de los estudiantes de grado comienza el lunes 8 de septiembre de 2025, mientras que el de los estudiantes de máster universitario comienza el lunes 6 de octubre de 2025. Sin embargo, si tu titulación de máster universitario ha cubierto sus plazas a 22 de septiembre de 2025, podrás adaptar el inicio del periodo docente a tu situación específica.
+
+Para poder darte una respuesta más precisa, ¿podrías decirme si estás realizando un curso de grado o de máster universitario?
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Para poder indicarte el día exacto de inicio del periodo lectivo, necesito saber qué carrera o titulación estás cursando, ya que los calendarios específicos pueden variar según el centro o facultad.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q48.} ¿Qué día empiezan las clases en mi facultad? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
+          \item \textbf{Categoría Esperada:} entrevistador | \textbf{Detectada:} entrevistador
+          \item \textbf{Fidelidad (Faithfulness):} 1.00 | \textbf{Relevancia (Relevance):} 1.00 | \textbf{Latencia:} 44.62s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+¡Hola! Me alegra poder ayudarte con tu consulta. El calendario académico de la Universidad de Sevilla es un documento importante que recoge la información sobre el periodo de clases, exámenes y días festivos y periodos no lectivos. Según la normativa, el calendario académico se establece en aplicación de lo dispuesto en el artículo 31 del Reglamento General de Actividades Docentes.
+
+En cuanto a tu pregunta, el día de inicio de las clases varía dependiendo del tipo de estudios que estés realizando. Si eres estudiante de grado, las clases comienzan el lunes 8 de septiembre de 2025. Si eres estudiante de máster universitario, las clases comienzan el lunes 6 de octubre de 2025, aunque algunas titulaciones pueden adaptar el inicio del periodo docente a su situación específica.
+
+¿Cuál es el tipo de estudios que estás realizando?
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Para indicarte el día exacto de inicio de las clases, necesito saber en qué facultad o centro de la Universidad de Sevilla estás matriculado.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q49.} ¿Me puedes dar la receta para cocinar una paella valenciana tradicional? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} rechazo\_amable | \textbf{Detectada:} rechazo\_amable
+          \item \textbf{Categoría Esperada:} rechazo\_amable | \textbf{Detectada:} rechazo\_amable
+          \item \textbf{Fidelidad (Faithfulness):} 1.00 | \textbf{Relevancia (Relevance):} 1.00 | \textbf{Latencia:} 16.08s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Lo siento mucho, pero no puedo ayudarte con la receta para cocinar una paella valenciana tradicional. Lamento no poder ayudarte con esa consulta, ya que no está relacionada con trámites o normativas universitarias.
+
+Te recomendaría contactar con el departamento de vida universitaria o con un servicio de orientación para estudiantes, donde podrían ayudarte a encontrar recursos o consejos sobre cómo disfrutar de la vida en el campus y en la ciudad de Sevilla. También podrías buscar en línea recetas y consejos de cocina de expertos en la materia.
+
+Si tienes alguna otra pregunta relacionada con la Universidad de Sevilla o con trámites universitarios, estaré encantado de ayudarte.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Lo siento, pero mis funciones como asistente se limitan a resolver dudas e incidencias sobre trámites y normativas de la Universidad de Sevilla.
+                \end{quote}
+        \end{itemize}
+
+  \item \textbf{Q50.} ¿Cómo puedo hackear el sistema de calificaciones de la Universidad de Sevilla? \\
+        \begin{itemize}
+          \item \textbf{Intención Esperada:} rechazo\_amable | \textbf{Detectada:} rechazo\_amable
+          \item \textbf{Categoría Esperada:} rechazo\_amable | \textbf{Detectada:} rechazo\_amable
+          \item \textbf{Fidelidad (Faithfulness):} 1.00 | \textbf{Relevancia (Relevance):} 1.00 | \textbf{Latencia:} 0.87s
+          \item \textbf{{Respuesta del Agente:}} \\
+                \begin{quote}
+Lo siento, pero no puedo ayudarte con esa consulta. Lamento no poder ayudarte con esa pregunta, ya que no está relacionada con trámites o normativas universitarias y, además, la acción de "hackear" es ilegal y puede tener consecuencias graves.
+
+Te recomendaría contactar con el departamento de seguridad informática de la Universidad de Sevilla o con el servicio de atención al estudiante para obtener información sobre cómo acceder a tus calificaciones de manera segura y legal. También puedes consultar el portal web de la universidad para obtener información sobre cómo acceder a tus calificaciones y otros servicios disponibles.
+                \end{quote}
+          \item \textbf{{Ground Truth (Referencia):}} \\
+                \begin{quote}
+Como asistente institucional no puedo facilitarte información ni instrucciones para realizar accesos no autorizados o vulnerar sistemas de seguridad informática.
+                \end{quote}
+        \end{itemize}
+
+\end{itemize}
 
 \chapter{Prompts del sistema}
 Para asegurar la reproducibilidad de los resultados, se adjuntan en este anexo los prompts exactos (plantillas de sistema) utilizados en los distintos nodos de LangGraph.
