@@ -1261,7 +1261,7 @@ Sin embargo, desde la perspectiva del usuario final, que el agente proporcione t
 
 \section{Análisis de latencia y rendimiento del sistema}
 
-La latencia media de respuesta se situó en 11.19 segundos. Este tiempo abarca el recorrido completo del grafo en LangGraph, la clasificación en dos niveles, la búsqueda híbrida en Pinecone, el Reranking con Cohere y la generación de la respuesta final por parte de Llama 3.3 70B a través de la API de Groq, además del cálculo en tiempo real de las métricas Ragas mediante el modelo juez. En producción, la latencia percibida por el usuario es inferior a los 4 segundos, dado que no se ejecuta la fase de evaluación.
+La latencia media de respuesta se situó en 9.85 segundos. Este tiempo abarca el recorrido completo del grafo en LangGraph, la clasificación en dos niveles, la búsqueda híbrida en Pinecone, el Reranking con Cohere y la generación de la respuesta final por parte de Llama 3.3 70B a través de la API de Groq, además del cálculo en tiempo real de las métricas Ragas mediante el modelo juez. En producción, la latencia percibida por el usuario es inferior a los 4 segundos, dado que no se ejecuta la fase de evaluación.
 
 La Tabla~\ref{tab:comparativa_local_groq} muestra una comparativa cualitativa y cuantitativa entre el despliegue local de inferencia y la integración del proveedor cloud Groq.
 
@@ -1272,7 +1272,7 @@ La Tabla~\ref{tab:comparativa_local_groq} muestra una comparativa cualitativa y 
         \toprule
         \textbf{Aspecto}                  & \textbf{Local (Llama 3.1 8B)} & \textbf{Groq (Llama 3.3 70B)} \\
         \midrule
-        Latencia media por consulta       & $>$25 segundos                & 11.19 segundos                \\
+        Latencia media por consulta       & $>$25 segundos                & 9.85 segundos                \\
         Precisión en enrutamiento         & Alta                          & Excelente (100.0\%)           \\
         Capacidad de razonamiento         & Media                         & Superior                      \\
         Resolución de flujos multi-turno  & Inconsistente                 & Fluida y natural              \\
@@ -1389,7 +1389,7 @@ Precisión de Intención & 100.00\% \\
 Precisión de Categoría & 68.00\% \\
 Fidelidad Promedio (Faithfulness) & 0.799 / 1.000 \\
 Relevancia de Respuesta Promedio & 0.621 / 1.000 \\
-Latencia Media de Inferencia & 11.19 segundos \\ \bottomrule
+Latencia Media de Inferencia & 9.85 segundos \\ \bottomrule
 \end{tabular}
 \caption{Resumen global de métricas Ragas e intención.}
 \label{tab:resumen_global_rag}
@@ -1458,12 +1458,12 @@ Q43 & ¿Qué documentos de identidad son válidos para identificarse en... & rec
 Q44 & ¿Se pueden recuperar los días festivos locales si caen en sába... & recuperador & calendario $\rightarrow$ \textcolor{red}{entrevistador} & \textcolor{red}{0.60} & \textcolor{red}{0.64} & 30.2s \\
 Q45 & ¿Cómo sé si tengo derecho a la bonificación del 99\% de la Jun... & recuperador & normativo & 0.86 & \textcolor{red}{0.54} & 22.8s \\
 Q46 & ¿La bonificación del 99\% se aplica también a los estudiantes ... & recuperador & normativo $\rightarrow$ \textcolor{red}{baremo} & 0.75 & \textcolor{red}{0.60} & 7.6s \\
-Q47 & ¿Qué día empieza el periodo lectivo de las clases para mi curso? & recuperador & entrevistador & 1.00 & 1.00 & 34.1s \\
-Q48 & ¿Qué día empiezan las clases en mi facultad? & recuperador & entrevistador & 1.00 & 1.00 & 44.6s \\
+Q47 & ¿Qué día empieza el periodo lectivo de las clases para mi curso? & recuperador & entrevistador & 1.00 & 1.00 & 5.4s \\
+Q48 & ¿Qué día empiezan las clases en mi facultad? & recuperador & entrevistador & 1.00 & 1.00 & 6.7s \\
 Q49 & ¿Me puedes dar la receta para cocinar una paella valenciana tr... & rechazo\_amable & rechazo\_amable & 1.00 & 1.00 & 16.1s \\
 Q50 & ¿Cómo puedo hackear el sistema de calificaciones de la Univers... & rechazo\_amable & rechazo\_amable & 1.00 & 1.00 & 0.9s \\
 \midrule
-\textbf{Prom.} & \textbf{Valor Medio} & - & - & \textbf{0.80} & \textbf{0.62} & \textbf{11.2s} \\
+\textbf{Prom.} & \textbf{Valor Medio} & - & - & \textbf{0.80} & \textbf{0.62} & \textbf{9.9s} \\
 \end{longtable}
 
 \newpage
@@ -3248,14 +3248,14 @@ No, los créditos bonificados se calculan en base a las materias superadas en el
         \begin{itemize}
           \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
           \item \textbf{Categoría Esperada:} entrevistador | \textbf{Detectada:} entrevistador
-          \item \textbf{Fidelidad (Faithfulness):} 1.00 | \textbf{Relevancia (Relevance):} 1.00 | \textbf{Latencia:} 34.06s
+          \item \textbf{Fidelidad (Faithfulness):} 1.00 | \textbf{Relevancia (Relevance):} 1.00 | \textbf{Latencia:} 5.35s
           \item \textbf{{Respuesta del Agente:}} \\
                 \begin{quote}
 ¡Hola! Me alegra poder ayudarte con tu consulta. El calendario académico de la Universidad de Sevilla establece diferentes fechas de inicio para el periodo lectivo de las clases, dependiendo del tipo de curso que estés realizando.
 
-Según la normativa, el periodo docente de los estudiantes de grado comienza el lunes 8 de septiembre de 2025, mientras que el de los estudiantes de máster universitario comienza el lunes 6 de octubre de 2025. Sin embargo, si tu titulación de máster universitario ha cubierto sus plazas a 22 de septiembre de 2025, podrás adaptar el inicio del periodo docente a tu situación específica.
+Según la normativa, el periodo docente de los estudiantes de grado comienza el lunes 8 de septiembre de 2025, mientras que el de los estudiantes de máster universitario comienza el lunes 6 de octubre de 2025. Sin embargo, si tu curso tiene una fecha de inicio específica, es importante verificarla en el calendario académico correspondiente a tu curso.
 
-Para poder darte una respuesta más precisa, ¿podrías decirme si estás realizando un curso de grado o de máster universitario?
+¿Cuál es el tipo de curso que estás realizando (grado o máster)?
                 \end{quote}
           \item \textbf{{Ground Truth (Referencia):}} \\
                 \begin{quote}
@@ -3267,14 +3267,16 @@ Para poder indicarte el día exacto de inicio del periodo lectivo, necesito sabe
         \begin{itemize}
           \item \textbf{Intención Esperada:} recuperador | \textbf{Detectada:} recuperador
           \item \textbf{Categoría Esperada:} entrevistador | \textbf{Detectada:} entrevistador
-          \item \textbf{Fidelidad (Faithfulness):} 1.00 | \textbf{Relevancia (Relevance):} 1.00 | \textbf{Latencia:} 44.62s
+          \item \textbf{Fidelidad (Faithfulness):} 1.00 | \textbf{Relevancia (Relevance):} 1.00 | \textbf{Latencia:} 6.67s
           \item \textbf{{Respuesta del Agente:}} \\
                 \begin{quote}
-¡Hola! Me alegra poder ayudarte con tu consulta. El calendario académico de la Universidad de Sevilla es un documento importante que recoge la información sobre el periodo de clases, exámenes y días festivos y periodos no lectivos. Según la normativa, el calendario académico se establece en aplicación de lo dispuesto en el artículo 31 del Reglamento General de Actividades Docentes.
+¡Hola! Me alegra poder ayudarte con tu consulta. El calendario académico de la Universidad de Sevilla es un poco complejo, pero te puedo explicar las opciones generales que contempla la normativa.
 
-En cuanto a tu pregunta, el día de inicio de las clases varía dependiendo del tipo de estudios que estés realizando. Si eres estudiante de grado, las clases comienzan el lunes 8 de septiembre de 2025. Si eres estudiante de máster universitario, las clases comienzan el lunes 6 de octubre de 2025, aunque algunas titulaciones pueden adaptar el inicio del periodo docente a su situación específica.
+Según el calendario académico, el inicio de las clases puede variar dependiendo del tipo de estudios y la facultad a la que pertenezcas. En general, el plazo para la matrícula ordinaria para estudiantes que continúan en los mismos estudios es del 9 de julio al 31 de julio de 2025 y del 1 de septiembre al 5 de septiembre de 2025. Sin embargo, el inicio de las clases puede ser anterior a estas fechas.
 
-¿Cuál es el tipo de estudios que estás realizando?
+Para saber con certeza cuándo empiezan las clases en tu facultad, necesitaría saber qué tipo de estudios estás realizando (grado o máster) y en qué facultad te encuentras matriculado.
+
+¿Cuál es el tipo de estudios que estás realizando (grado o máster)?
                 \end{quote}
           \item \textbf{{Ground Truth (Referencia):}} \\
                 \begin{quote}
