@@ -790,6 +790,15 @@ El sistema se despliega mediante un archivo \texttt{docker-compose.yml} que defi
 
 Docker Compose crea automáticamente una red interna que permite la comunicación entre servicios por nombre de host. Las credenciales de bases de datos, claves API (Groq, Pinecone, Cohere, LlamaParse) y parámetros de configuración se gestionan mediante un archivo \texttt{.env} compartido, evitando la exposición de secretos en el código fuente.
 
+\subsection{Adaptación para despliegue y optimización en producción}
+
+Durante la fase de puesta en producción (especialmente en la plataforma Render), surgieron dos desafíos técnicos de infraestructura que obligaron a refactorizar las directivas de construcción y ejecución de los contenedores:
+
+\begin{enumerate}
+    \item \textbf{Puertos dinámicos en el backend:} Las plataformas de hosting en la nube no permiten mapear puertos fijos de forma externa, sino que asignan dinámicamente una variable de entorno llamada \texttt{PORT} a la instancia en tiempo de ejecución. Modifiqué la instrucción de arranque en el \texttt{Dockerfile} del backend, reemplazando el puerto estático por una evaluación de variable de entorno mediante Bash: \texttt{uvicorn main:app --host 0.0.0.0 --port \$\{PORT:-8000\}}. De este modo, el contenedor arranca por defecto en el puerto 8000 a nivel local pero se amolda de forma transparente a cualquier puerto requerido por el proveedor en la nube.
+    \item \textbf{Reducción de consumo de memoria en el frontend:} En las primeras pruebas, el contenedor del frontend consumía excesivos recursos de memoria RAM (llegando a superar el límite de 512 MB de la capa gratuita y forzando reinicios por OOM, o \textit{Out of Memory}). Para solucionarlo, reescribí el ciclo de construcción en su \texttt{Dockerfile}: en lugar de correr el servidor en caliente usando la herramienta de desarrollo (\texttt{next dev}), configuré una fase de compilación que ejecuta \texttt{npm run build} durante la creación de la imagen y lanza la aplicación final optimizada mediante \texttt{next start -p \$\{PORT:-8501\}}. Esto bajó el consumo de memoria a menos de la mitad y aceleró drásticamente la velocidad de carga de la página.
+\end{enumerate}
+
 \section{Base de datos PostgreSQL}
 
 Se utiliza PostgreSQL 15 como sistema de gestión de base de datos relacional. La interacción con la base de datos se realiza a través de SQLAlchemy ORM con la siguiente configuración:
@@ -799,6 +808,7 @@ Se utiliza PostgreSQL 15 como sistema de gestión de base de datos relacional. L
     \item Sesiones gestionadas mediante un generador (\texttt{get\_db}) que garantiza el cierre correcto de conexiones.
     \item Creación automática de tablas al iniciar la aplicación mediante \texttt{Base.metadata.create\_all}.
     \item \textbf{Inicialización de datos (seeding):} Para simplificar las pruebas del sistema, programé una rutina de inicio en \texttt{main.py} llamada \texttt{seed\_admin\_user()}. Si el sistema detecta que la base de datos está vacía de perfiles administradores al arrancar, genera automáticamente una cuenta de administración por defecto (\texttt{admin@us.es} con la clave \texttt{adminpassword}) para poder probar el panel de control sin pasos previos de configuración.
+    \item \textbf{Ordenación estable de mensajes:} Durante el testeo del chat con usuarios reales, detectamos un comportamiento molesto: a veces, al refrescar la página o enviar mensajes rápidos, el orden cronológico de la conversación se alteraba en pantalla (mensajes del asistente aparecían antes que la pregunta correspondiente). La causa era que las consultas SQL de SQLAlchemy no garantizaban un orden predeterminado en las relaciones bidireccionales. Para resolverlo, añadí una regla explícita de ordenación en la declaración del modelo en \texttt{models.py}, forzando a que la relación cargue los mensajes ordenados secuencialmente mediante \texttt{order\_by="Mensaje.id"}. Con este pequeño ajuste aseguramos la estabilidad del flujo visual.
 \end{itemize}
 
 \chapter{Pipeline de ingesta de documentos}
@@ -926,20 +936,22 @@ El estado compartido entre todos los nodos del grafo se define mediante un \text
 
 Todos los prompts del sistema se centralizan en un módulo \texttt{templates.py}, lo que facilita su mantenimiento y evolución iterativa.
 
-\subsection{Prompt de detección de intención}
-Determina si la consulta del usuario está relacionada con trámites burocráticos de la US. Devuelve exclusivamente ``recuperador'' o ``rechazo\_amable''. Se ejecuta con el LLM clasificador (max\_tokens=15) para minimizar latencia.
+\subsection{Consolidación del Análisis Inicial con Salida Estructurada}
 
-\subsection{Prompt de reformulación}
-Reformula la última intervención del usuario incorporando toda la información aclarada en turnos anteriores, generando una consulta autónoma que pueda utilizarse para la búsqueda semántica sin pérdida de contexto.
+En las primeras versiones del agente, la detección de la intención, la reformulación de la pregunta y la asignación de la categoría académica se ejecutaban en tres nodos distintos y consecutivos del grafo. Aunque el flujo lógico era correcto, esta secuencialidad castigaba severamente el rendimiento de la aplicación, pues obligaba a encadenar tres llamadas consecutivas al proveedor de LLM en la nube antes de poder siquiera buscar información en Pinecone. 
+
+Para resolver este cuello de botella, decidí unificar estas tres tareas en una sola llamada de red al inicio de la ejecución. Aprovechando las capacidades de salida estructurada de LangChain y Pydantic, definí un esquema estricto (\texttt{AnalisisInicial}) que le exige al modelo devolver un objeto JSON con tres campos bien definidos: \texttt{intencion}, \texttt{pregunta\_reformulada} y \texttt{categoria}. 
+
+Mediante el método \texttt{with\_structured\_output()}, el LLM ligero procesa la consulta actual del usuario y el historial del chat en un único turno. Esta consolidación redujo el número de peticiones iniciales al LLM en un 40\% y aceleró notablemente la respuesta del sistema, garantizando además que los datos extraídos sigan un formato predecible sin riesgo de fallos en el tipado durante el enrutamiento.
+
+\subsection{Prompt de análisis inicial estructurado}
+Este prompt (\texttt{PROMPT\_ANALISIS\_INICIAL}) agrupa tres análisis críticos en una sola ejecución para optimizar la latencia: determina si la pregunta es relevante (\textit{intención}), reformula la consulta apoyándose en el historial de chat, y asigna la categoría académica de destino (\textit{procedimental}, \textit{calendario}, \textit{normativo} o \textit{baremo}). La salida se fuerza a cumplir el esquema Pydantic mencionado para garantizar robustez.
 
 \subsection{Prompt de suficiencia de información}
-Analiza si el contexto recuperado contiene información suficiente para dar una respuesta directa o si es necesario preguntar al usuario. Implementa una ``Regla de Oro'' que prohíbe devolver ``entrevistador'' si la última intervención del asistente fue una pregunta, evitando bucles de clarificación.
-
-\subsection{Prompt clasificador de categorías}
-Clasifica la consulta en una de cuatro categorías: procedimental, calendario, normativo o baremo, basándose en el tipo de respuesta que necesita el usuario. Incluye ejemplos concretos para cada categoría (\textit{few-shot prompting}).
+Analiza si el contexto recuperado contiene información suficiente para dar una respuesta directa o si es necesario preguntar al usuario. Implementa una ``Regla de Oro'' que prohíbe devolver ``entrevistador'' si la última intervención del asistente fue una pregunta, evitando bucles de clarificación infinitos.
 
 \subsection{Prompts de los nodos resolutores}
-Cada nodo resolutor cuenta con un prompt especializado que define el formato, tono y nivel de detalle esperado. Los prompts incluyen instrucciones específicas sobre el uso de listas, tablas, negritas y emojis según la categoría.
+Cada nodo resolutor cuenta con un prompt especializado que define el formato, tono y nivel de detalle esperado. Los prompts incluyen instrucciones específicas sobre el uso de listas, tablas, negritas y emojis según la categoría académica seleccionada.
 
 \section{Pipeline de recuperación}
 
@@ -1004,6 +1016,16 @@ En la tabla de usuarios de PostgreSQL añadí una columna \texttt{perfil\_metada
 
 La siguiente vez que el usuario abre un chat, el backend recupera estos metadatos y los inyecta en el prompt del sistema. De esta forma, si el asistente ya sabe que el usuario estudia Medicina y este le pregunta "¿cuándo empiezan las clases?", el RAG buscará el calendario específico de esa facultad directamente, ahorrándole al usuario tener que dar explicaciones extra en cada conversación.
 
+\subsection{Prevención de saturación del contexto en el perfilado}
+
+Al probar el sistema de perfilado de forma intensiva, descubrí un problema crítico de acumulación de tokens: el modelo de lenguaje ligero que extraía la información del perfil tendía a alucinar y almacenar en la estructura JSON del usuario un historial redundante de las consultas anteriores o transcripciones completas de los mensajes bajo claves personalizadas (como \texttt{preguntas\_realizadas} o \texttt{conversaciones}). Esto provocaba que, a medida que el usuario charlaba más con el agente, el tamaño del perfil inyectado en el prompt creciera de forma desmedida, arriesgándose a saturar la ventana de contexto.
+
+Para evitar esta explosión de tokens, implementé una doble directiva de sanitización en el script de perfilado (\texttt{profiling.py}):
+\begin{itemize}
+    \item \textbf{Directivas negativas en el prompt:} Restringí estrictamente en las directrices del extractor la posibilidad de persistir fragmentos de texto conversacional, forzando valores atómicos y sencillos.
+    \item \textbf{Limpieza programática de claves:} Programé una subrutina que limpia e intercepta activamente la respuesta del LLM antes de guardarla en la base de datos, eliminando de raíz cualquier propiedad que contenga palabras clave sospechosas o prohibidas (tales como \texttt{preguntas}, \texttt{respuestas}, \texttt{conversaciones} o \texttt{historial}). Con esto aseguramos la estabilidad de la memoria a largo plazo del sistema.
+\end{itemize}
+
 \chapter{Implementación del frontend}
 
 \section{Arquitectura del Cliente (Next.js y React)}
@@ -1035,7 +1057,24 @@ El componente procesa dos tipos de eventos transmitidos por el backend:
     \item \textbf{data:} Fragmentos de texto generados por el LLM en tiempo real. El cliente los concatena de inmediato al cuerpo del mensaje activo.
 \end{enumerate}
 
-Para visualizar respuesta final, utilizo el componente \texttt{ReactMarkdown}, mapeando elementos estándar a componentes personalizados de TailwindCSS para que las listas (\texttt{ul/ol}), los enlaces (\texttt{a}) y las negritas (\texttt{strong}) mantengan un estilo visual premium y uniforme.
+Para visualizar la respuesta final, utilizo el componente \texttt{ReactMarkdown}, mapeando elementos estándar a componentes personalizados de TailwindCSS para que las listas (\texttt{ul/ol}), los enlaces (\texttt{a}) y las negritas (\texttt{strong}) mantengan un estilo visual premium y uniforme.
+
+\subsection{Resolución dinámica de la conexión backend}
+
+Durante la puesta en producción en Render, el frontend experimentó desconexiones persistentes (\texttt{fetch failed} y errores de tipo 502 \textit{Bad Gateway}). Inicialmente intenté configurar un proxy inverso mediante las directivas \texttt{rewrites} de Next.js en el servidor para enmascarar las llamadas al backend. Sin embargo, al tratarse de flujos continuos de eventos tipo SSE, el proxy de Next.js tendía a acumular el buffer de datos en memoria antes de mandarlo o daba fallos de resolución de DNS internos. 
+
+Para resolverlo de forma limpia y directa, eliminé el proxy intermedio y desarrollé un módulo utilitario de resolución en el cliente (\texttt{api.ts}). Este utilitario detecta en qué host se está ejecutando la aplicación desde el navegador: si es en desarrollo local, conecta directamente al puerto 8000; si detecta un dominio de producción, redirige todas las peticiones a la URL pública y segura del backend en Render. Con este cambio eliminamos cualquier capa intermedia inestable y garantizamos la llegada fluida e instantánea del flujo SSE.
+
+\subsection{Tratamiento amigable de fallos y límites de API (SSE)}
+
+Uno de los principales problemas de los servicios en la nube gratuitos como Groq son sus estrictos límites de peticiones (errores de tipo 429 \textit{Rate Limit Exceeded}). En las pruebas iniciales, cuando la API de Groq rechazaba una llamada por exceso de uso de tokens, el backend enviaba un evento crudo de error que provocaba que el chat del frontend se quedara congelado, sin dar feedback alguno al usuario de lo que estaba pasando.
+
+Para mejorar la experiencia de usuario, desarrollé una función formateadora en el frontend llamada \texttt{formatSSEError()}. Esta función analiza de forma detallada el mensaje de error interceptado en la conexión SSE:
+\begin{itemize}
+    \item \textbf{Límites de peticiones (429):} Si detecta un error de cuota del modelo, genera un mensaje con formato Markdown amigable explicando la situación. Además, mediante una expresión regular, extrae el tiempo de espera restante devuelto por Groq (por ejemplo, \texttt{try again in 1h32m26s}) y lo traduce a un formato legible por el usuario (indicando horas, minutos y segundos exactos) para que sepa exactamente cuándo puede volver a consultar al agente.
+    \item \textbf{Exceso de contexto:} Si la conversación se ha vuelto excesivamente pesada y supera los límites del modelo, sugiere de manera elocuente iniciar un nuevo chat para limpiar la memoria activa.
+    \item \textbf{Errores de red genéricos:} Si hay un problema de caída del servidor o falta de conexión, dibuja un aviso claro pidiendo que se revise la conexión de red, evitando cortes bruscos en el flujo de la aplicación.
+\end{itemize}
 
 \section{Diseño del Feedback Loop en Interfaz}
 
@@ -1057,7 +1096,7 @@ Para ofrecer una mejor accesibilidad visual, integré un sistema de modos de col
 La implementación técnica la estructuré en tres partes principales:
 \begin{itemize}
     \item \textbf{Variables CSS semánticas:} En el archivo \texttt{globals.css} definí los tokens de color del sistema de diseño (tales como \texttt{--color-background}, \texttt{--color-sidebar}, \texttt{--color-text-main}, \texttt{--color-border}, etc.) para ambos esquemas cromáticos, facilitando que Tailwind los referencie de manera dinámica sin necesidad de duplicar clases condicionales en el código.
-    \item \textbf{Detección y persistencia de preferencias:} En el componente raíz \texttt{page.tsx}, mediante un gancho de efecto (\texttt{useEffect}), programé la aplicación para que consulte en primer lugar si existe una preferencia previa guardada en el almacenamiento del navegador (\texttt{localStorage}). Si no existe, recurre a la consulta de medios \texttt{(prefers-\allowbreak color-\allowbreak scheme: \allowbreak dark)} mediante el método \texttt{window.\allowbreak matchMedia()} para alinear el tema de inicio con la configuración del sistema operativo del dispositivo del cliente.
+    \item \textbf{Detección y persistencia de preferencias:} En el componente raíz \texttt{page.tsx}, mediante un \textit{hook} de efecto (\texttt{useEffect}), programé la aplicación para que consulte en primer lugar si existe una preferencia previa guardada en el almacenamiento del navegador (\texttt{localStorage}). Si no existe, recurre a la consulta de medios \texttt{(prefers-\allowbreak color-\allowbreak scheme: \allowbreak dark)} mediante el método \texttt{window.\allowbreak matchMedia()} para alinear el tema de inicio con la configuración del sistema operativo del dispositivo del cliente.
     \item \textbf{Control de alternancia interactivo:} En la barra lateral (\texttt{Sidebar.tsx}), junto a los botones de navegación y cierre de sesión, añadí un botón con iconos adaptativos (\texttt{Sun} y \texttt{Moon} de \texttt{lucide-react}) para alternar el tema en tiempo de ejecución. Al pulsarse, se actualiza el estado de la aplicación, guardo la nueva configuración en \texttt{localStorage} y añado o elimino la clase \texttt{dark} en el objeto raíz \texttt{document.documentElement}.
 \end{itemize}
 
@@ -1302,7 +1341,7 @@ Otra vía que creo que tiene mucho potencial es conectar el agente con plataform
 
 \section{Despliegue en producción}
 
-Para llevar este sistema a un entorno real, la idea sería migrarlo a un servicio cloud (AWS, Google Cloud o Azure) con balanceo de carga y escalado automático. También sería necesario añadir monitorización de métricas en tiempo real y algún mecanismo para que los propios usuarios puedan reportar respuestas incorrectas, cerrando así el ciclo de mejora continua.
+Para llevar este sistema a un entorno real, la idea sería migrarlo a un servicio cloud (AWS, Google Cloud o Azure) con balanceo de carga y escalado automático. También sería necesario añadir monitorización de métricas en tiempo real, cerrando así el ciclo de mejora continua.
 
 % ============================================================
 % BIBLIOGRAFÍA
@@ -1339,24 +1378,28 @@ Para asegurar la reproducibilidad de los resultados, se adjuntan en este anexo l
 
 
 \begin{lstlisting}[language=Python, stringstyle=\color{black}]
-PROMPT_DETECCION = """
-        Dada la siguiente pregunta de un usuario, determina si su intencion es realizar una consulta o tramite que pueda estar relacionado con el ambito universitario de la Universidad de Sevilla (US).
-        Debes tener en cuenta que los usuarios en ocasiones se dirigen a la universidad de sevilla como la us.
-        
-        INSTRUCCIONES CLAVE:
-        1. POSIBLES RESPUESTAS: Unicamente podras responder con "recuperador" o "rechazo_amable".
-        2. CRITERIOS PARA "recuperador" (PERMISIVO): Clasifica aqui cualquier pregunta relacionada con tramites academicos, matricula, plazos, becas, normativas de evaluacion, baremos de contratacion, liquidacion de viajes de investigacion, solicitudes, convalidaciones, calendarios lectivos o cualquier consulta sobre el funcionamiento de la US.
-        3. CRITERIOS PARA "rechazo_amable" (ESTRICTO): Clasifica aqui UNICAMENTE preguntas que no tengan absolutamente ninguna relacion con la universidad (ejemplo: recetas de cocina, recomendaciones de series de ocio, resultados deportivos internacionales, consultas de programacion de ordenadores generales, chistes, etc.).
-        4. REGLA DE ORO: En caso de cualquier duda o ambiguedad, prioriza SIEMPRE clasificar como "recuperador" para permitir que el motor de RAG e indexacion de Pinecone busque la informacion en los documentos reales.
-        5. RECORDATORIO: UNICAMENTE RESPONDER CON UNA DE LAS DOS PALABRAS CLAVE ("recuperador" o "rechazo_amable") segun los criterios anteriores. NO EXPLICAR TU DECISION, SOLO DEVOLVER LA PALABRA CLAVE CORRESPONDIENTE.
-        
-        HISTORIAL DE CONVERSACION:
+PROMPT_ANALISIS_INICIAL = """
+        Analiza la conversacion actual y la ultima pregunta del usuario en el contexto de la Universidad de Sevilla (US).
+        Tu tarea es realizar tres tareas en una sola llamada:
+
+        1. INTENCION: Determina si el usuario desea hacer una consulta academica o tramite administrativo relacionado con la US (matricula, becas, plazos, normativas, expedientes, liquidacion de viajes de investigacion, etc.).
+           - Devuelve 'rechazo_amable' si la consulta no tiene relacion con el ambito universitario o burocratico de la US (ej: recetas de cocina, ocio, programacion general, chistes, deportes o torneos internacionales como la Champions, Europa League, La Liga, etc.).
+           - Devuelve 'recuperador' si esta relacionada con la universidad. En caso de duda razonable sobre si es un tema universitario, prioriza 'recuperador'.
+
+        2. PREGUNTA REFORMULADA: Reformula la ultima pregunta del usuario para que sea una pregunta independiente y clara, incorporando el contexto del historial de chat. Si la pregunta actual es independiente y ya es clara por si sola, conservala igual.
+
+        3. CATEGORIA: Clasifica la consulta academica del usuario segun el tipo de respuesta que requiere:
+           - 'procedimental': Si el usuario necesita instrucciones paso a paso para completar un tramite burocratico.
+           - 'calendario': Si el usuario pregunta por fechas, plazos o periodos del calendario academico.
+           - 'normativo': Si el usuario pregunta por reglas generales, derechos, articulos de reglamento, normativas o informacion general.
+           - 'baremo': Si el usuario pregunta por criterios de evaluacion, meritos o calculo de puntuaciones en contrataciones u oposiciones.
+           - 'ninguna': Si la consulta no esta relacionada con la universidad (intencion 'rechazo_amable').
+
+        Historial de conversacion:
         {historial}
-        
-        PREGUNTA DEL USUARIO:
+
+        Pregunta actual del usuario:
         {question}
-        
-        RESPUESTA DEL ASISTENTE:
         """
         
 PROMPT_CUESTIONA_AGENTE = """
@@ -1450,35 +1493,6 @@ PROMPT_RECHAZO_AMABLE = """
         {question}
 
         RESPUESTA DEL ASISTENTE:
-        """
-        
-PROMPT_CLASIFICADOR =  """
-        Eres un enrutador experto de la Universidad de Sevilla.
-        Tu trabajo es clasificar la consulta del usuario en una de estas 4 categorías según EL TIPO DE RESPUESTA QUE NECESITA:
-        
-        - 'procedimental': El usuario necesita instrucciones PASO A PASO para completar un trámite (matricularse, anular matrícula, liquidar un viaje, solicitar algo).
-        - 'calendario': El usuario pregunta por FECHAS, PLAZOS o PERIODOS concretos (cuándo empieza algo, hasta cuándo puede hacer algo).
-        - 'normativo': El usuario pregunta por REGLAS, REQUISITOS LEGALES o DERECHOS (qué dice la normativa, qué requisitos hay, qué artículo aplica).
-        - 'baremo': El usuario pregunta sobre PUNTUACIONES, MÉRITOS, CRITERIOS DE EVALUACIÓN o CÁLCULO DE NOTAS en procesos de selección.
-        
-        EJEMPLOS:
-        Pregunta: "¿Cuáles son los pasos para anular mi matrícula?" → procedimental
-        Pregunta: "¿Cuándo es el último día para matricularse?" → calendario
-        Pregunta: "¿Cuántos créditos puedo matricular como máximo?" → normativo
-        Pregunta: "¿Cómo se calculan los puntos de experiencia docente?" → baremo
-        Pregunta: "¿Qué documentos necesito para liquidar un viaje?" → procedimental
-        Pregunta: "¿Cuándo empiezan los exámenes de junio?" → calendario
-        Pregunta: "¿Qué requisitos hay para el reconocimiento de créditos?" → normativo
-        Pregunta: "¿Qué puntuación mínima se requiere para superar la fase de oposición?" → baremo
-        
-        Respuestas válidas: 'procedimental', 'calendario', 'normativo', 'baremo'. Responde ÚNICAMENTE con la palabra clave exacta, sin puntos finales, comillas, ni explicaciones extra.
-        
-        Historial de conversación:
-        {historial}
-        
-        Pregunta del usuario: {question}
-
-        Categoría:
         """
         
 PROMPT_RESULTOR_PROCEDIMENTAL =  """
