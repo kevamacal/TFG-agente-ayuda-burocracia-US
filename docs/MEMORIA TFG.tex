@@ -22,6 +22,8 @@
 
 \geometry{a4paper, margin=2.5cm}
 \onehalfspacing
+\setcounter{tocdepth}{2}
+
 
 \hypersetup{
     colorlinks=true,
@@ -693,9 +695,7 @@ Para facilitar la comprensión global de la plataforma, la Figura~\ref{fig:arqui
 
 La persistencia de información en el sistema se realiza mediante una base de datos relacional PostgreSQL. Para estructurar los datos del chat, la autenticación y el feedback de auditoría, se diseñó un modelo relacional robusto. Aunque a nivel de desarrollo estas tablas se definen mediante el mapeo objeto-relacional (ORM) de SQLAlchemy en el backend, la definición de su estructura y relaciones pertenece al diseño de la persistencia de datos.
 
-\paragraph{Modelo de datos relacional.}
-
-El modelo de datos se compone de tres entidades principales:
+\paragraph{Modelo de datos relacional.} El modelo de datos se compone de tres entidades principales:
 
 \begin{itemize}
     \item \textbf{Usuario:} Almacena el identificador único, el email, la contraseña hasheada, el rol de administrador, la marca temporal de creación y un campo de metadatos de perfil (\texttt{perfil\_metadata}) en formato JSON. Este último campo se utiliza para almacenar de forma persistente e incremental la memoria sobre el perfil del usuario (como su rol de alumno/docente o su titulación de interés). Tiene una relación uno a muchos con la entidad Conversación.
@@ -716,7 +716,7 @@ Las relaciones incluyen eliminación en cascada: al eliminar un usuario se elimi
 
 El backend del sistema se ha implementado utilizando FastAPI, un framework moderno y de alto rendimiento para la construcción de APIs en Python. Esta sección detalla la arquitectura de software del backend, sus puntos de entrada, seguridad y modularización.
 
-\paragraph{Endpoints de la API REST.}
+\paragraph{Endpoints de la API REST.} Con el fin de permitir la interacción con el sistema, se exponen en la Tabla 6.1 los puntos de entrada principales del backend:
 
 \begin{table}[H]
     \centering
@@ -746,13 +746,9 @@ El backend del sistema se ha implementado utilizando FastAPI, un framework moder
     \end{tabular}
 \end{table}
 
-\paragraph{Políticas de origen cruzado (CORS).}
+\paragraph{Políticas de origen cruzado (CORS).} Dado que el frontend (Next.js) y el backend (FastAPI) corren en puertos o subdominios independientes, los navegadores bloquean de forma nativa las peticiones HTTP cruzadas. Para solucionar esto, se configuró el middleware de CORS en FastAPI (\texttt{CORSMiddleware}) para permitir el acceso de forma controlada a los métodos y cabeceras necesarios, garantizando que el chat y el streaming por SSE funcionen correctamente sin bloqueos del navegador.
 
-Dado que el frontend (Next.js) y el backend (FastAPI) corren en puertos o subdominios independientes, los navegadores bloquean de forma nativa las peticiones HTTP cruzadas. Para solucionar esto, se configuró el middleware de CORS en FastAPI (\texttt{CORSMiddleware}) para permitir el acceso de forma controlada a los métodos y cabeceras necesarios, garantizando que el chat y el streaming por SSE funcionen correctamente sin bloqueos del navegador.
-
-\paragraph{Autenticación, Autorización y Roles.}
-
-El sistema implementa un control de accesos basado en tokens JWT (\textit{JSON Web Tokens}) firmado mediante el algoritmo simétrico HS256. Al iniciar sesión, el servidor valida las credenciales y devuelve el token, el cual expira a los 7 días. El cliente envía este token en la cabecera HTTP de autorización para cualquier operación.
+\paragraph{Autenticación, Autorización y Roles.} El sistema implementa un control de accesos basado en tokens JWT (\textit{JSON Web Tokens}) firmado mediante el algoritmo simétrico HS256. Al iniciar sesión, el servidor valida las credenciales y devuelve el token, el cual expira a los 7 días. El cliente envía este token en la cabecera HTTP de autorización para cualquier operación.
 
 A nivel de base de datos, se implementaron roles diferenciados mediante la columna booleana \texttt{is\_admin} en la tabla de usuarios. Esto habilita dos niveles de permisos:
 \begin{itemize}
@@ -765,9 +761,7 @@ A nivel de base de datos, se implementaron roles diferenciados mediante la colum
     \end{enumerate}
 \end{itemize}
 
-\paragraph{Modularización y Desacoplamiento (Capa CRUD y Servicios).}
-
-A medida que el backend crecía, se constató que mantener todo el código en un único archivo (\texttt{main.py}) resultaba ineficiente. El archivo principal acumulaba más de 500 líneas y mezclaba demasiadas responsabilidades: la definición de endpoints, la inyección de dependencias de usuario, la lógica de acceso a la base de datos con SQLAlchemy y la orquestación del streaming SSE con LangGraph. Esto no solo dificultaba notablemente la lectura y la depuración del código, sino que ponía en riesgo la escalabilidad del sistema.
+\paragraph{Modularización y Desacoplamiento (Capa CRUD y Servicios).} A medida que el backend crecía, se constató que mantener todo el código en un único archivo (\texttt{main.py}) resultaba ineficiente. El archivo principal acumulaba más de 500 líneas y mezclaba demasiadas responsabilidades: la definición de endpoints, la inyección de dependencias de usuario, la lógica de acceso a la base de datos con SQLAlchemy y la orquestación del streaming SSE con LangGraph. Esto no solo dificultaba notablemente la lectura y la depuración del código, sino que ponía en riesgo la escalabilidad del sistema.
 
 Para solucionar este problema de acoplamiento, se decidió llevar a cabo una refactorización profunda estructurando el backend en una arquitectura modular por capas:
 
@@ -812,8 +806,7 @@ El flujo general del grafo es:
     \label{fig:diag_estados_final}
 \end{figure}
 
-\paragraph{Nodo Estado Inicial.}
-Es el nodo de entrada del grafo y realiza un análisis estructurado consolidado en una sola llamada de inferencia al LLM ligero (Llama 3.1 8B) utilizando salida estructurada de Pydantic (\texttt{with\_structured\_output}). Sus funciones principales son:
+\paragraph{Nodo Estado Inicial.} Es el nodo de entrada del grafo y realiza un análisis estructurado consolidado en una sola llamada de inferencia al LLM ligero (Llama 3.1 8B) utilizando salida estructurada de Pydantic (\texttt{with\_structured\_output}). Sus funciones principales son:
 \begin{enumerate}
     \item Formatear el historial de mensajes de la sesión en un bloque de texto legible con etiquetas de rol.
     \item Determinar si la intención del usuario es de dominio (\texttt{recuperador}) o no (\texttt{rechazo\_amable}), lo cual sustituye la necesidad de un nodo router independiente reduciendo latencias.
@@ -821,8 +814,7 @@ Es el nodo de entrada del grafo y realiza un análisis estructurado consolidado 
     \item Pre-clasificar la categoría temática académica de la consulta para el posterior enrutamiento a los resolvedores expertos.
 \end{enumerate}
 
-\paragraph{Nodo Recuperador: pipeline RAG.}
-Este nodo ejecuta el pipeline de recuperación híbrida y compresión de información:
+\paragraph{Nodo Recuperador: pipeline RAG.} Este nodo ejecuta el pipeline de recuperación híbrida y compresión de información:
 \begin{enumerate}
     \item Recupera la pregunta reformulada del estado compartida (generada en el Nodo Estado Inicial).
     \item Genera el embedding de la consulta reformulada utilizando la API de Cohere.
@@ -833,16 +825,11 @@ Este nodo ejecuta el pipeline de recuperación híbrida y compresión de informa
     \item Formatea y estructura el contexto final asociando a cada fragmento sus metadatos de fuente y página.
 \end{enumerate}
 
-\paragraph{Nodo Búsqueda Web: recuperación externa fallback.}
+\paragraph{Nodo Búsqueda Web: recuperación externa fallback.} Este nodo se activa cuando el evaluador de suficiencia determina que los documentos internos recuperados de la base de conocimiento vectorial en Pinecone son insuficientes para resolver la pregunta. En este caso, se realiza una consulta a la API de DuckDuckGo filtrada estrictamente al dominio de la Universidad de Sevilla (\texttt{site:us.es}) para obtener información fresca de internet. Los extractos y referencias recuperados se anexan al contexto del grafo y la ejecución prosigue hacia el clasificador para responder de forma precisa.
 
-Este nodo se activa cuando el evaluador de suficiencia determina que los documentos internos recuperados de la base de conocimiento vectorial en Pinecone son insuficientes para resolver la pregunta. En este caso, se realiza una consulta a la API de DuckDuckGo filtrada estrictamente al dominio de la Universidad de Sevilla (\texttt{site:us.es}) para obtener información fresca de internet. Los extractos y referencias recuperados se anexan al contexto del grafo y la ejecución prosigue hacia el clasificador para responder de forma precisa.
+\paragraph{Nodo Entrevistador: gestión de ambigüedades.} Este nodo se activa cuando el sistema de suficiencia detecta que la consulta del usuario es ambigua o carece de parámetros clave para ofrecer una resolución definitiva (por ejemplo, al preguntar sobre "becas" de manera genérica). Para evitar que el agente formule preguntas de aclaración al vacío, se decidió dotar a este nodo de una herramienta de búsqueda web en tiempo de ejecución (filtrada al dominio \texttt{site:us.es}). De esta forma, el entrevistador realiza una consulta complementaria, enriquece el contexto inicial obtenido de Pinecone y presenta al usuario un resumen orientador de las opciones generales detectadas antes de formular la pregunta aclaratoria de seguimiento. Adicionalmente, se implementó una regla estricta en el grafo para impedir que el agente encadene dos preguntas aclaratorias consecutivas, evitando así cansar al usuario.
 
-\paragraph{Nodo Entrevistador: gestión de ambigüedades.}
-Este nodo se activa cuando el sistema de suficiencia detecta que la consulta del usuario es ambigua o carece de parámetros clave para ofrecer una resolución definitiva (por ejemplo, al preguntar sobre "becas" de manera genérica). Para evitar que el agente formule preguntas de aclaración al vacío, se decidió dotar a este nodo de una herramienta de búsqueda web en tiempo de ejecución (filtrada al dominio \texttt{site:us.es}). De esta forma, el entrevistador realiza una consulta complementaria, enriquece el contexto inicial obtenido de Pinecone y presenta al usuario un resumen orientador de las opciones generales detectadas antes de formular la pregunta aclaratoria de seguimiento. Adicionalmente, se implementó una regla estricta en el grafo para impedir que el agente encadene dos preguntas aclaratorias consecutivas, evitando así cansar al usuario.
-
-\paragraph{Nodos Resolutores: respuestas especializadas.}
-
-Se han diseñado cuatro nodos resolutores, cada uno con un prompt especializado:
+\paragraph{Nodos Resolutores: respuestas especializadas.} Se han diseñado cuatro nodos resolutores, cada uno con un prompt especializado:
 
 \begin{itemize}
     \item \textbf{Procedimental:} Genera respuestas paso a paso para trámites administrativos (matrícula, liquidación de viajes, etc.), usando listas numeradas y resaltando plataformas y documentos requeridos.
@@ -851,8 +838,7 @@ Se han diseñado cuatro nodos resolutores, cada uno con un prompt especializado:
     \item \textbf{Baremo:} Detalla criterios de evaluación, puntuaciones y méritos en procesos de selección de profesorado, utilizando tablas cuando es apropiado.
 \end{itemize}
 
-\paragraph{Nodo Rechazo Amable.}
-Genera una respuesta educada y empática indicando al usuario que su consulta no puede ser atendida, sugiriendo alternativas cuando es posible.
+\paragraph{Nodo Rechazo Amable.} Genera una respuesta educada y empática indicando al usuario que su consulta no puede ser atendida, sugiriendo alternativas cuando es posible.
 
 \section{Diseño del sistema Dual RAG}
 
@@ -1015,9 +1001,7 @@ Para conseguir que todos estos servicios funcionen de manera óptima, la configu
 
 En su lugar, Render permite inyectar estas variables en tiempo de ejecución de manera segura a través de su panel de administración. De esta forma, el \textit{backend} recibe las claves de acceso de los proveedores de servicios (\texttt{GROQ\_API\_KEY}, \texttt{COHERE\_API\_KEY}, \texttt{PINECONE\_API\_KEY} y \texttt{LLAMA\_CLOUD\_API\_KEY}), la clave secreta de firmado (\texttt{SECRET\_KEY}) y la dirección de conexión a la base de datos (\texttt{DATABASE\_URL}). Por su parte, el \textit{frontend} únicamente necesita conocer la URL pública de la API del backend (\texttt{API\_URL}) para poder enviarle las peticiones de los usuarios. Esta separación no solo protege la seguridad de las credenciales del sistema, sino que dota al sistema de una enorme flexibilidad para cambiar de entorno o actualizar \textit{API keys} sin necesidad de recompilar una sola línea de código.
 \section{Contenedorización con Docker}
-\paragraph{Docker Compose: orquestación de servicios.}
-
-El sistema se despliega mediante un archivo \texttt{docker-compose.yml} que define tres servicios:
+\paragraph{Docker Compose: orquestación de servicios.} El sistema se despliega mediante un archivo \texttt{docker-compose.yml} que define tres servicios:
 
 \begin{itemize}
     \item \textbf{db:} Contenedor PostgreSQL 15 con volumen persistente (\texttt{postgres\_data}) para la durabilidad de los datos. Se expone en el puerto 5434 del host.
@@ -1025,13 +1009,9 @@ El sistema se despliega mediante un archivo \texttt{docker-compose.yml} que defi
     \item \textbf{frontend:} Contenedor con la aplicación Next.js, construido desde el directorio \texttt{./frontend}. Se conecta al backend mediante la URL interna \texttt{http://backend:8000} (o resolviéndose dinámicamente en el cliente) y se expone en el puerto 8501 del host.
 \end{itemize}
 
-\paragraph{Configuración de red y variables de entorno.}
+\paragraph{Configuración de red y variables de entorno.} Docker Compose crea automáticamente una red interna que permite la comunicación entre servicios por nombre de host. Las credenciales de bases de datos, claves API (Groq, Pinecone, Cohere, LlamaParse) y parámetros de configuración se gestionan mediante un archivo \texttt{.env} compartido, evitando la exposición de secretos en el código fuente.
 
-Docker Compose crea automáticamente una red interna que permite la comunicación entre servicios por nombre de host. Las credenciales de bases de datos, claves API (Groq, Pinecone, Cohere, LlamaParse) y parámetros de configuración se gestionan mediante un archivo \texttt{.env} compartido, evitando la exposición de secretos en el código fuente.
-
-\paragraph{Adaptación para despliegue y optimización en producción.}
-
-Durante la fase de puesta en producción (especialmente en la plataforma Render), surgieron dos desafíos técnicos de infraestructura que obligaron a refactorizar las directivas de construcción y ejecución de los contenedores:
+\paragraph{Adaptación para despliegue y optimización en producción.} Durante la fase de puesta en producción (especialmente en la plataforma Render), surgieron dos desafíos técnicos de infraestructura que obligaron a refactorizar las directivas de construcción y ejecución de los contenedores:
 
 \begin{enumerate}
     \item \textbf{Puertos dinámicos en el backend:} Las plataformas de hosting en la nube no permiten mapear puertos fijos de forma externa, sino que asignan dinámicamente una variable de entorno llamada \texttt{PORT} a la instancia en tiempo de ejecución. Se modificó la instrucción de arranque en el \texttt{Dockerfile} del backend, reemplazando el puerto estático por una evaluación de variable de entorno mediante Bash: \texttt{uvicorn main:app --host 0.0.0.0 --port \$\{PORT:-8000\}}. De este modo, el contenedor arranca por defecto en el puerto 8000 a nivel local pero se amolda de forma transparente a cualquier puerto requerido por el proveedor en la nube.
@@ -1065,9 +1045,7 @@ LlamaParse se configura con un \texttt{system\_prompt} especializado en document
 La extracción se realiza mediante el método \texttt{get\_json\_result}, que devuelve los resultados organizados por página, permitiendo asociar cada fragmento con su página de origen en los metadatos.
 
 \section{Fragmentación semántica (chunking)}
-\paragraph{Evolución de la estrategia de fragmentación.}
-
-El desarrollo de este proyecto evidenció que la estrategia de fragmentación de los documentos posee un impacto crítico en la precisión de las respuestas del sistema. De hecho, la estrategia de fragmentación evolucionó a lo largo de tres fases hasta consolidar una solución satisfactoria:
+\paragraph{Evolución de la estrategia de fragmentación.} El desarrollo de este proyecto evidenció que la estrategia de fragmentación de los documentos posee un impacto crítico en la precisión de las respuestas del sistema. De hecho, la estrategia de fragmentación evolucionó a lo largo de tres fases hasta consolidar una solución satisfactoria:
 
 \begin{enumerate}
     \item \textbf{Fase inicial:} Fragmentación genérica con chunks de 1000 caracteres y solapamiento de 200. Los fragmentos carecían de contexto suficiente y las tablas quedaban rotas.
@@ -1075,15 +1053,11 @@ El desarrollo de este proyecto evidenció que la estrategia de fragmentación de
     \item \textbf{Fase final (LlamaParse):} La migración a LlamaParse resolvió la preservación de tablas y jerarquías documentales, produciendo Markdown estructurado de alta calidad.
 \end{enumerate}
 
-\paragraph{El problema del doble splitter.}
-
-Este representó uno de los errores más complejos de detectar en el pipeline de ingesta. En una fase intermedia del desarrollo, la calidad de las respuestas sobre baremos comenzó a degradarse. Tras un proceso detallado de depuración, se constató la ejecución redundante de dos procesos de fragmentación: aunque LlamaParse ya producía fragmentos semánticos de calidad, se aplicaba de manera adicional un \texttt{Mark\-down\-Text\-Split\-ter} que segmentaba de nuevo el texto, lo cual dividía las tablas y distorsionaba las referencias contextuales de las notas.
+\paragraph{El problema del doble splitter.} Este representó uno de los errores más complejos de detectar en el pipeline de ingesta. En una fase intermedia del desarrollo, la calidad de las respuestas sobre baremos comenzó a degradarse. Tras un proceso detallado de depuración, se constató la ejecución redundante de dos procesos de fragmentación: aunque LlamaParse ya producía fragmentos semánticos de calidad, se aplicaba de manera adicional un \texttt{Mark\-down\-Text\-Split\-ter} que segmentaba de nuevo el texto, lo cual dividía las tablas y distorsionaba las referencias contextuales de las notas.
 
 La solución fue sencilla una vez identificado el problema: confiar en la segmentación de LlamaParse para la estructura semántica, y usar el \texttt{Mark\-down\-Text\-Split\-ter} únicamente como red de seguridad para fragmentos que excedieran el tamaño máximo.
 
-\paragraph{Configuración final: MarkdownTextSplitter.}
-
-La configuración final del splitter utiliza:
+\paragraph{Configuración final: MarkdownTextSplitter.} La configuración final del splitter utiliza:
 \begin{itemize}
     \item \texttt{chunk\_size = 1500}: Tamaño suficiente para contener una sección completa con su contexto.
     \item \texttt{chunk\_overlap = 250}: Solapamiento que garantiza continuidad entre fragmentos adyacentes.
@@ -1105,9 +1079,7 @@ Los vectores se almacenan en un índice denominado \texttt{index-tfg} en Pinecon
 
 El diseño final del agente conversacional no surgió de manera inmediata; fue el resultado de un proceso iterativo de desarrollo y depuración a lo largo de varios sprints. Durante el diseño del flujo lógico en LangGraph, la arquitectura del grafo de estados evolucionó a través de tres fases preliminares antes de consolidar el diseño definitivo de ocho nodos que se utiliza actualmente.
 
-\paragraph{Primera aproximación: Pipeline RAG lineal (Versión 1).}
-
-Al comenzar el desarrollo del agente, se optó por la aproximación más directa y sencilla: un flujo lineal clásico de generación aumentada por recuperación. Esta primera versión constaba únicamente de dos nodos principales conectados en serie:
+\paragraph{Primera aproximación: Pipeline RAG lineal (Versión 1).} Al comenzar el desarrollo del agente, se optó por la aproximación más directa y sencilla: un flujo lineal clásico de generación aumentada por recuperación. Esta primera versión constaba únicamente de dos nodos principales conectados en serie:
 \begin{itemize}
     \item \textbf{Nodo Recuperador:} Recibía la consulta directa del usuario, realizaba la conversión a embedding y recuperaba los fragmentos más relevantes de la base de datos vectorial en Pinecone.
     \item \textbf{Nodo Resultor (Generador):} Tomaba la pregunta original junto con los fragmentos recuperados y redactaba la respuesta final que se entregaba al usuario.
@@ -1122,9 +1094,7 @@ Esta estructura inicial (representada en la Figura~\ref{fig:diag_v1}) pecaba de 
     \label{fig:diag_v1}
 \end{figure}
 
-\paragraph{Segunda aproximación: Incorporación de control y enrutamiento (Versión 2).}
-
-Para mitigar las limitaciones de la primera versión, se implementó una estructura más sofisticada orientada a la gestión de intenciones. Se introdujo un enrutador lógico que permitía derivar la ejecución hacia tres nodos especializados según el tipo de interacción, aunque todos ellos seguían estando precedidos por el paso de recuperación:
+\paragraph{Segunda aproximación: Incorporación de control y enrutamiento (Versión 2).} Para mitigar las limitaciones de la primera versión, se implementó una estructura más sofisticada orientada a la gestión de intenciones. Se introdujo un enrutador lógico que permitía derivar la ejecución hacia tres nodos especializados según el tipo de interacción, aunque todos ellos seguían estando precedidos por el paso de recuperación:
 \begin{itemize}
     \item \textbf{Nodo Rechazo Amable:} Diseñado para declinar de forma educada y empática las consultas detectadas fuera de dominio.
     \item \textbf{Nodo Consultor (Entrevistador):} Encargado de solicitar aclaraciones y realizar preguntas de seguimiento en caso de detectar ambigüedades en la consulta del usuario.
@@ -1140,9 +1110,7 @@ En esta segunda iteración (ver Figura~\ref{fig:diag_v2}), el nodo recuperador s
     \label{fig:diag_v2}
 \end{figure}
 
-\paragraph{Tercera aproximación: Recuperación condicional (Versión 3).}
-
-Para resolver el problema de rendimiento detectado en la segunda versión, reestructuré las conexiones del grafo de estados en una tercera versión que optimizaba el momento en el que se invocaba al recuperador.
+\paragraph{Tercera aproximación: Recuperación condicional (Versión 3).} Para resolver el problema de rendimiento detectado en la segunda versión, reestructuré las conexiones del grafo de estados en una tercera versión que optimizaba el momento en el que se invocaba al recuperador.
 
 En esta arquitectura (representada en la Figura~\ref{fig:diag_v3}), el flujo inicial ya no pasaba obligatoriamente por el recuperador. En su lugar, el sistema evaluaba en primer lugar si la consulta correspondía al dominio del agente. Si la entrada era ajena a la universidad, el flujo se desviaba de inmediato al nodo de \texttt{rechazo\_amable}, terminando la ejecución de forma instantánea sin realizar ninguna llamada de embedding ni búsqueda en base de datos. El nodo recuperador se reubicó de manera condicional, situándose única y exclusivamente en el camino hacia los nodos de \texttt{consultor} y \texttt{resultor}, que eran los que realmente requerían el contexto de la base de conocimiento normativa.
 
@@ -1175,28 +1143,22 @@ El estado compartido entre todos los nodos del grafo se define mediante un \text
 
 Todos los prompts del sistema se centralizan en un módulo \texttt{templates.py}, lo que facilita su mantenimiento y evolución iterativa.
 
-\paragraph{Consolidación del Análisis Inicial con Salida Estructurada.}
-
-En las primeras versiones del agente, la detección de la intención, la reformulación de la pregunta y la asignación de la categoría académica se ejecutaban en tres nodos distintos y consecutivos del grafo. Aunque el flujo lógico era correcto, esta secuencialidad castigaba severamente el rendimiento de la aplicación, pues obligaba a encadenar tres llamadas consecutivas al proveedor de LLM en la nube antes de poder siquiera buscar información en Pinecone. 
+\paragraph{Consolidación del Análisis Inicial con Salida Estructurada.} En las primeras versiones del agente, la detección de la intención, la reformulación de la pregunta y la asignación de la categoría académica se ejecutaban en tres nodos distintos y consecutivos del grafo. Aunque el flujo lógico era correcto, esta secuencialidad castigaba severamente el rendimiento de la aplicación, pues obligaba a encadenar tres llamadas consecutivas al proveedor de LLM en la nube antes de poder siquiera buscar información en Pinecone. 
 
 Para resolver este cuello de botella, se decidió unificar estas tres tareas en una sola llamada de red al inicio de la ejecución. Aprovechando las capacidades de salida estructurada de LangChain y Pydantic, se definió un esquema estricto (\texttt{AnalisisInicial}) que le exige al modelo devolver un objeto JSON con tres campos bien definidos: \texttt{intencion}, \texttt{pregunta\_reformulada} y \texttt{categoria}. 
 
 Mediante el método \texttt{with\_structured\_output()}, el LLM ligero procesa la consulta actual del usuario y el historial del chat en un único turno. Esta consolidación redujo el número de peticiones iniciales al LLM en un 40\% y aceleró notablemente la respuesta del sistema, garantizando además que los datos extraídos sigan un formato predecible sin riesgo de fallos en el tipado durante el enrutamiento.
 
-\paragraph{Prompt de análisis inicial estructurado.}
-Este prompt (\texttt{PROMPT\_ANALISIS\_INICIAL}) agrupa tres análisis críticos en una sola ejecución para optimizar la latencia: determina si la pregunta es relevante (\textit{intención}), reformula la consulta apoyándose en el historial de chat, y asigna la categoría académica de destino (\textit{procedimental}, \textit{calendario}, \textit{normativo} o \textit{baremo}). La salida se fuerza a cumplir el esquema Pydantic mencionado para garantizar robustez.
+\paragraph{Prompt de análisis inicial estructurado.} Este prompt (\texttt{PROMPT\_ANALISIS\_INICIAL}) agrupa tres análisis críticos en una sola ejecución para optimizar la latencia: determina si la pregunta es relevante (\textit{intención}), reformula la consulta apoyándose en el historial de chat, y asigna la categoría académica de destino (\textit{procedimental}, \textit{calendario}, \textit{normativo} o \textit{baremo}). La salida se fuerza a cumplir el esquema Pydantic mencionado para garantizar robustez.
 
-\paragraph{Prompt de suficiencia de información.}
-Analiza si el contexto recuperado contiene información suficiente para dar una respuesta directa o si es necesario preguntar al usuario. Implementa una ``Regla de Oro'' que prohíbe devolver ``entrevistador'' si la última intervención del asistente fue una pregunta, evitando bucles de clarificación infinitos.
+\paragraph{Prompt de suficiencia de información.} Analiza si el contexto recuperado contiene información suficiente para dar una respuesta directa o si es necesario preguntar al usuario. Implementa una ``Regla de Oro'' que prohíbe devolver ``entrevistador'' si la última intervención del asistente fue una pregunta, evitando bucles de clarificación infinitos.
 
-\paragraph{Prompts de los nodos resolutores.}
-Cada nodo resolutor cuenta con un prompt especializado que define el formato, tono y nivel de detalle esperado. Los prompts incluyen instrucciones específicas sobre el uso de listas, tablas, negritas y emojis según la categoría académica seleccionada.
+\paragraph{Prompts de los nodos resolutores.} Cada nodo resolutor cuenta con un prompt especializado que define el formato, tono y nivel de detalle esperado. Los prompts incluyen instrucciones específicas sobre el uso de listas, tablas, negritas y emojis según la categoría académica seleccionada.
+
 
 \section{Pipeline de recuperación}
 
-\paragraph{Búsqueda Híbrida (Dense + Sparse) y RRF.}
-
-En el diseño original, el sistema confiaba ciegamente en la búsqueda densa basada en embeddings vectoriales. Sin embargo, en un contexto burocrático universitario, esto presenta problemas. Las consultas que incluyen nombres específicos de trámites, siglas institucionales (como UVUS, automatrícula, baremación de contratos) o códigos de reglamentos a veces se diluyen en el espacio latente del modelo de embeddings, devolviendo fragmentos temáticamente cercanos pero sin el término exacto requerido.
+\paragraph{Búsqueda Híbrida (Dense + Sparse) y RRF.} En el diseño original, el sistema confiaba ciegamente en la búsqueda densa basada en embeddings vectoriales. Sin embargo, en un contexto burocrático universitario, esto presenta problemas. Las consultas que incluyen nombres específicos de trámites, siglas institucionales (como UVUS, automatrícula, baremación de contratos) o códigos de reglamentos a veces se diluyen en el espacio latente del modelo de embeddings, devolviendo fragmentos temáticamente cercanos pero sin el término exacto requerido.
 
 Para solucionar esto, se decidió implementar un motor de \textbf{Búsqueda Híbrida a nivel de aplicación}. Dado que el índice de Pinecone es denso y no se deseaba duplicar ni reestructurar todo el índice en producción, se optó por una estrategia de fusión:
 \begin{enumerate}
@@ -1208,20 +1170,15 @@ Para solucionar esto, se decidió implementar un motor de \textbf{Búsqueda Híb
 \end{enumerate}
 Los 12 fragmentos con mejor puntuación RRF se envían a la siguiente fase del pipeline.
 
-\paragraph{Reranking y Compresión con Cohere.}
-
-Los 12 mejores candidatos obtenidos tras la fusión RRF pasan por un filtro de reranking contextual con el modelo \texttt{rerank-v4.0-pro} de Cohere. Este modelo está especializado en calcular la relevancia directa de un fragmento de texto con respecto a una consulta en lenguaje natural.
+\paragraph{Reranking y Compresión con Cohere.} Los 12 mejores candidatos obtenidos tras la fusión RRF pasan por un filtro de reranking contextual con el modelo \texttt{rerank-v4.0-pro} de Cohere. Este modelo está especializado en calcular la relevancia directa de un fragmento de texto con respecto a una consulta en lenguaje natural.
 
 El reranking actúa como un embudo crítico: reduce los 12 candidatos híbridos a los 4 documentos finales con mayor relevancia contextual (\texttt{top\_n=4}). Esto disminuye la cantidad de tokens de ruido inyectados en la ventana de contexto del LLM generador, reduciendo costes y evitando la alucinación del modelo principal, además de asegurar que las tablas e instrucciones específicas de los reglamentos lleguen intactas.
 
 \section{Gestión de memoria conversacional}
-\paragraph{Ventana deslizante de mensajes.}
+\paragraph{Ventana deslizante de mensajes.} Para evitar exceder la ventana de contexto de los modelos de Groq, se implementó una ventana deslizante que envía al agente únicamente los últimos 5 mensajes de la conversación. El historial completo se almacena en la base de datos, pero solo el subconjunto reciente se utiliza para la inferencia.
 
-Para evitar exceder la ventana de contexto de los modelos de Groq, se implementó una ventana deslizante que envía al agente únicamente los últimos 5 mensajes de la conversación. El historial completo se almacena en la base de datos, pero solo el subconjunto reciente se utiliza para la inferencia.
+\paragraph{Compresión de memoria con resumen.} Cuando una conversación supera los 5 mensajes, se ejecuta una tarea en segundo plano (\texttt{BackgroundTasks} de FastAPI) que utiliza el LLM ligero para generar un resumen comprimido del historial antiguo. Este resumen se almacena en el campo \texttt{resumen\_memoria} de la conversación y se inyecta como mensaje de sistema al inicio del historial, preservando información clave (tipo de estudios, problema principal, fechas mencionadas) sin consumir tokens excesivos.
 
-\paragraph{Compresión de memoria con resumen.}
-
-Cuando una conversación supera los 5 mensajes, se ejecuta una tarea en segundo plano (\texttt{BackgroundTasks} de FastAPI) que utiliza el LLM ligero para generar un resumen comprimido del historial antiguo. Este resumen se almacena en el campo \texttt{resumen\_memoria} de la conversación y se inyecta como mensaje de sistema al inicio del historial, preservando información clave (tipo de estudios, problema principal, fechas mencionadas) sin consumir tokens excesivos.
 
 \section{Generación automática de títulos}
 
@@ -1255,9 +1212,7 @@ En la tabla de usuarios de PostgreSQL se añadió una columna \texttt{perfil\_me
 
 La siguiente vez que el usuario abre un chat, el backend recupera estos metadatos y los inyecta en el prompt del sistema. De esta forma, si el asistente ya sabe que el usuario estudia Medicina y este le pregunta "¿cuándo empiezan las clases?", el RAG buscará el calendario específico de esa facultad directamente, ahorrándole al usuario tener que dar explicaciones extra en cada conversación.
 
-\paragraph{Prevención de saturación del contexto en el perfilado.}
-
-Al realizar pruebas intensivas sobre el sistema de perfilado, se detectó un problema crítico de acumulación de tokens: el modelo de lenguaje ligero que extraía la información del perfil tendía a alucinar y almacenar en la estructura JSON del usuario un historial redundante de las consultas anteriores o transcripciones completas de los mensajes bajo claves personalizadas (como \texttt{preguntas\_realizadas} o \texttt{conversaciones}). Esto provocaba que, a medida que el usuario interactuaba más con el agente, el tamaño del perfil inyectado en el prompt creciera de forma desmedida, con el consiguiente riesgo de saturar la ventana de contexto.
+\paragraph{Prevención de saturación del contexto en el perfilado.} Al realizar pruebas intensivas sobre el sistema de perfilado, se detectó un problema crítico de acumulación de tokens: el modelo de lenguaje ligero que extraía la información del perfil tendía a alucinar y almacenar en la estructura JSON del usuario un historial redundante de las consultas anteriores o transcripciones completas de los mensajes bajo claves personalizadas (como \texttt{preguntas\_realizadas} o \texttt{conversaciones}). Esto provocaba que, a medida que el usuario interactuaba más con el agente, el tamaño del perfil inyectado en el prompt creciera de forma desmedida, con el consiguiente riesgo de saturar la ventana de contexto.
 
 Para evitar esta explosión de tokens, se implementó una doble directiva de sanitización en el script de perfilado (\texttt{profiling.py}):
 \begin{itemize}
@@ -1298,15 +1253,12 @@ El componente procesa dos tipos de eventos transmitidos por el backend:
 
 Para visualizar la respuesta final, se utiliza el componente \texttt{ReactMarkdown}, mapeando elementos estándar a componentes personalizados de TailwindCSS para que las listas (\texttt{ul/ol}), los enlaces (\texttt{a}) y las negritas (\texttt{strong}) mantengan un estilo visual premium y uniforme.
 
-\paragraph{Resolución dinámica de la conexión backend.}
-
-Durante la puesta en producción en Render, el frontend experimentó desconexiones persistentes (\texttt{fetch failed} y errores de tipo 502 \textit{Bad Gateway}). Inicialmente se intentó configurar un proxy inverso mediante las directivas \texttt{rewrites} de Next.js en el servidor para enmascarar las llamadas al backend. Sin embargo, al tratarse de flujos continuos de eventos tipo SSE, el proxy de Next.js tendía a acumular el buffer de datos en memoria antes de mandarlo o daba fallos de resolución de DNS internos. 
+\paragraph{Resolución dinámica de la conexión backend.} Durante la puesta en producción en Render, el frontend experimentó desconexiones persistentes (\texttt{fetch failed} y errores de tipo 502 \textit{Bad Gateway}). Inicialmente se intentó configurar un proxy inverso mediante las directivas \texttt{rewrites} de Next.js en el servidor para enmascarar las llamadas al backend. Sin embargo, al tratarse de flujos continuos de eventos tipo SSE, el proxy de Next.js tendía a acumular el buffer de datos en memoria antes de mandarlo o daba fallos de resolución de DNS internos. 
 
 Para resolver este inconveniente de forma limpia y directa, se eliminó el proxy intermedio y se desarrolló un módulo utilitario de resolución en el cliente (\texttt{api.ts}). Este utilitario detecta en qué host se está ejecutando la aplicación desde el navegador: si es en desarrollo local, conecta directamente al puerto 8000; si detecta un dominio de producción, redirige todas las peticiones a la URL pública y segura del backend en Render. Con este cambio se eliminó cualquier capa intermedia inestable, lo que garantiza la llegada fluida e instantánea del flujo SSE.
 
-\paragraph{Tratamiento amigable de fallos y límites de API (SSE).}
+\paragraph{Tratamiento amigable de fallos y límites de API (SSE).} Uno de los principales problemas de los servicios en la nube gratuitos como Groq son sus estrictos límites de peticiones (errores de tipo 429 \textit{Rate Limit Exceeded}). En las pruebas iniciales, cuando la API de Groq rechazaba una llamada por exceso de uso de tokens, el backend enviaba un evento crudo de error que provocaba que el chat del frontend se quedara congelado, sin dar feedback alguno al usuario de lo que estaba pasando.
 
-Uno de los principales problemas de los servicios en la nube gratuitos como Groq son sus estrictos límites de peticiones (errores de tipo 429 \textit{Rate Limit Exceeded}). En las pruebas iniciales, cuando la API de Groq rechazaba una llamada por exceso de uso de tokens, el backend enviaba un evento crudo de error que provocaba que el chat del frontend se quedara congelado, sin dar feedback alguno al usuario de lo que estaba pasando.
 
 Para mejorar la experiencia de usuario, se desarrolló una función formateadora en el frontend llamada \texttt{formatSSEError()}. Esta función analiza de forma detallada el mensaje de error interceptado en la conexión SSE:
 \begin{itemize}
@@ -1341,30 +1293,23 @@ La implementación técnica se estructuró en tres partes principales:
 
 \chapter{Selección y configuración de modelos}
 \section{Evolución de la infraestructura de inferencia}
-\paragraph{Fase 1: Modelos locales (Llama 3.1 8B).}
+\paragraph{Fase 1: Modelos locales (Llama 3.1 8B).} Al principio del proyecto, la idea era ejecutar todo en local usando Llama 3.1 8B a través de Ollama. El modelo cumplía bastante bien con las tareas de clasificación, pero los tiempos de inferencia eran completamente inaceptables: entre 30 y 60 segundos por cada llamada al modelo. Para un asistente que se supone que debe responder en tiempo real, esto era inviable. Además, la ejecución local hacía imposible cualquier tipo de despliegue más allá del entorno local de desarrollo.
 
-Al principio del proyecto, la idea era ejecutar todo en local usando Llama 3.1 8B a través de Ollama. El modelo cumplía bastante bien con las tareas de clasificación, pero los tiempos de inferencia eran completamente inaceptables: entre 30 y 60 segundos por cada llamada al modelo. Para un asistente que se supone que debe responder en tiempo real, esto era inviable. Además, la ejecución local hacía imposible cualquier tipo de despliegue más allá del entorno local de desarrollo.
+\paragraph{Fase 2: API de HuggingFace.} El siguiente paso fue migrar a los endpoints de inferencia de HuggingFace, lo que mejoró bastante los tiempos. Pero apareció otro problema que no se había previsto: el \textit{cold start}. La primera solicitud tras un periodo de inactividad podía tardar hasta 30 segundos mientras la instancia se aprovisionaba. Esto afectaba negativamente a la experiencia del usuario, ya que la primera respuesta tras pausas en el uso presentaba una latencia elevada.
 
-\paragraph{Fase 2: API de HuggingFace.}
+\paragraph{Fase 3: API de Groq.} La solución definitiva llegó con la API de Groq, que utiliza un hardware especializado llamado LPU (\textit{Language Processing Units}) diseñado específicamente para ejecutar modelos de lenguaje. El cambio fue drástico: los tiempos de respuesta bajaron a fracciones de segundo por invocación, sin ningún problema de inicio en frío. La única pega es que la capa gratuita tiene límites de tokens por minuto y por día, pero para el ámbito de este proyecto fue más que suficiente.
 
-El siguiente paso fue migrar a los endpoints de inferencia de HuggingFace, lo que mejoró bastante los tiempos. Pero apareció otro problema que no se había previsto: el \textit{cold start}. La primera solicitud tras un periodo de inactividad podía tardar hasta 30 segundos mientras la instancia se aprovisionaba. Esto afectaba negativamente a la experiencia del usuario, ya que la primera respuesta tras pausas en el uso presentaba una latencia elevada.
-
-\paragraph{Fase 3: API de Groq.}
-
-La solución definitiva llegó con la API de Groq, que utiliza un hardware especializado llamado LPU (\textit{Language Processing Units}) diseñado específicamente para ejecutar modelos de lenguaje. El cambio fue drástico: los tiempos de respuesta bajaron a fracciones de segundo por invocación, sin ningún problema de inicio en frío. La única pega es que la capa gratuita tiene límites de tokens por minuto y por día, pero para el ámbito de este proyecto fue más que suficiente.
 
 \section{Estrategia multi-modelo}
 
 Para optimizar el consumo de tokens y la latencia, se diseñó e implementó una estrategia de tres niveles de modelo:
 
-\paragraph{LLM clasificador (Llama 3.1 8B Instant).}
-Configurado con \texttt{temperature=0.0} y \texttt{max\_tokens=15}. Se utiliza exclusivamente para tareas de clasificación binaria (detección de intención, suficiencia de información, categorización). Su respuesta es una única palabra clave, lo que minimiza el consumo de tokens.
+\paragraph{LLM clasificador (Llama 3.1 8B Instant).} Configurado con \texttt{temperature=0.0} y \texttt{max\_tokens=15}. Se utiliza exclusivamente para tareas de clasificación binaria (detección de intención, suficiencia de información, categorización). Su respuesta es una única palabra clave, lo que minimiza el consumo de tokens.
 
-\paragraph{LLM ligero (Llama 3.1 8B Instant).}
-Configurado con \texttt{temperature=0.1} y \texttt{max\_tokens=300}. Se emplea para reformulación de consultas, generación de títulos, compresión de memoria y respuestas del nodo entrevistador y rechazo amable. Al tratarse de un modelo de 8B parámetros, ofrece baja latencia con calidad suficiente para estas tareas.
+\paragraph{LLM ligero (Llama 3.1 8B Instant).} Configurado con \texttt{temperature=0.1} y \texttt{max\_tokens=300}. Se emplea para reformulación de consultas, generación de títulos, compresión de memoria y respuestas del nodo entrevistador y rechazo amable. Al tratarse de un modelo de 8B parámetros, ofrece baja latencia con calidad suficiente para estas tareas.
 
-\paragraph{LLM principal (Llama 3.3 70B Versatile).}
-Configurado con \texttt{temperature=0.1} y \texttt{max\_tokens=1500}. Se reserva para los nodos resolutores, donde la calidad de la respuesta es crítica. El modelo de 70B parámetros demuestra una capacidad cognitiva superior para interpretar normativa compleja y sintetizar información de múltiples fragmentos.
+\paragraph{LLM principal (Llama 3.3 70B Versatile).} Configurado con \texttt{temperature=0.1} y \texttt{max\_tokens=1500}. Se reserva para los nodos resolutores, donde la calidad de la respuesta es crítica. El modelo de 70B parámetros demuestra una capacidad cognitiva superior para interpretar normativa compleja y sintetizar información de múltiples fragmentos.
+
 
 \section{Ajuste de hiperparámetros}
 
@@ -1402,14 +1347,12 @@ Para poder evaluar el sistema de forma rigurosa, se diseñó un dataset con 50 p
 Cada caso de prueba incluye: la pregunta del usuario, la ruta esperada del router y un \textit{ground truth} que describe la respuesta correcta esperada.
 
 \section{Métricas empleadas}
-\paragraph{Routing Accuracy.}
-Mide el porcentaje de consultas en las que el agente clasifica correctamente la intención del usuario y la enruta al nodo especializado adecuado. Es una métrica binaria: acierto (1) o fallo (0) por cada caso.
+\paragraph{Routing Accuracy.} Mide el porcentaje de consultas en las que el agente clasifica correctamente la intención del usuario y la enruta al nodo especializado adecuado. Es una métrica binaria: acierto (1) o fallo (0) por cada caso.
 
-\paragraph{Faithfulness.}
-Evalúa en una escala continua de 0.00 a 1.00 si la respuesta generada se basa exclusivamente en la información presente en el contexto recuperado, sin inventar datos. Una puntuación de 1.00 indica que toda la respuesta está fielmente soportada por los documentos.
+\paragraph{Faithfulness.} Evalúa en una escala continua de 0.00 a 1.00 si la respuesta generada se basa exclusivamente en la información presente en el contexto recuperado, sin inventar datos. Una puntuación de 1.00 indica que toda la respuesta está fielmente soportada por los documentos.
 
-\paragraph{Answer Relevancy.}
-Evalúa en una escala continua de 0.00 a 1.00 si la respuesta del agente aborda adecuadamente la pregunta del usuario. Una puntuación de 1.00 indica que la respuesta responde perfectamente y de forma completa a lo preguntado.
+\paragraph{Answer Relevancy.} Evalúa en una escala continua de 0.00 a 1.00 si la respuesta del agente aborda adecuadamente la pregunta del usuario. Una puntuación de 1.00 indica que la respuesta responde perfectamente y de forma completa a lo preguntado.
+
 
 \section{Evaluación con LLM como juez}
 
