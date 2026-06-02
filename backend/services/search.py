@@ -58,6 +58,21 @@ def procesar_resultados_busqueda(resultados: list, contexto_previo: str = "", re
         titulo = r.get("title", "")
         body = r.get("body", "")
         href = r.get("href", "")
+        
+        # Validar y limpiar la URL
+        if not href or not href.startswith("http"):
+            continue
+            
+        # Limpiar parámetros de tracking si es una redirección de buscador
+        if "?" in href and ("event=" in href or "url=" in href or "click" in href or "tracking" in href):
+            import re
+            dest_match = re.search(r'(?:[?&]url|[?&]q)=(https?://[^&]+)', href)
+            if dest_match:
+                import urllib.parse
+                href = urllib.parse.unquote(dest_match.group(1))
+            else:
+                href = href.split("?")[0]
+                
         contextos_web.append(f"FUENTE WEB (site:us.es): {titulo} ({href})\n{body}")
         referencias_web.append(f"{titulo} (Web US: {href})")
         
