@@ -58,9 +58,6 @@
 
 \begin{document}
 
-% ============================================================
-% PORTADA
-% ============================================================
 \begin{titlepage}
     \centering
 
@@ -161,7 +158,7 @@ Conviene dejar claro desde el principio qué abarca este proyecto y qué queda f
     \item Una \textbf{interfaz web} moderna e interactiva desarrollada con Next.js (React) y TypeScript, estilizada con TailwindCSS y optimizada para una navegación fluida.
     \item La \textbf{contenedorización} completa del sistema mediante Docker Compose.
     \item Una \textbf{evaluación cuantitativa} del sistema.
-    \item \textbf{Despliegue} en un entorno de producción con alta disponibilidad, como lo es Render
+    \item \textbf{Despliegue} en la nube (plataforma Render) con el frontend accesible en \url{https://agente-us.onrender.com/} y el backend en \url{https://tfg-agente-ayuda-burocracia-us.onrender.com/}
 \end{itemize}
 
 Queda fuera del alcance de este TFG la integración con sistemas internos de la US (como SEVIUS o la Secretaría Virtual), centrándose el trabajo en la lógica del asistente, la personalización del usuario y el sistema integrado de feedback.
@@ -1013,7 +1010,7 @@ Asimismo, se expone el proceso de contenedorización mediante Docker, explicando
 
 \subsection*{Lenguaje y Frameworks base}
 
-Como lenguaje principal se utilizó Python. Se tomó esta decisión de manera muy natural, dado que a día de hoy se considera que es el estándar en todo lo que rodea a la Inteligencia Artificial. Su ecosistema de bibliotecas es enorme y ofrece compatibilidad directa con las herramientas de orquestación que se detallan a continuación (LangChain, LangGraph), además de con prácticamente cualquier librería de procesamiento de datos que se requiera.
+Como lenguaje principal se seleccionó Python, debido a su posicionamiento como estándar en el desarrollo de aplicaciones de Inteligencia Artificial. Su extenso ecosistema de bibliotecas facilita la integración directa con los marcos de trabajo de orquestación detallados más adelante (LangChain y LangGraph), así como con una gran variedad de herramientas de procesamiento de datos.
 
 Sobre esta base, se estructuró el sistema utilizando dos \textit{frameworks} principales, cada uno orientado a una de las capas de la aplicación (frontend/backend):
 \begin{itemize}
@@ -1043,18 +1040,18 @@ LlamaParse \cite{llamaparse_docs} es un servicio de procesamiento de documentos 
 
 \subsection*{Encriptado de contraseñas}
 
-Para garantizar la seguridad y privacidad de los usuarios, se implementó un flujo de \textit{hashing} para las contraseñas utilizando el algoritmo bcrypt. Se eligió principalmente porque, además de ofrecer un cifrado unidireccional (irrecuperable), incorpora de forma nativa un sistema de \textit{salting}. Este consiste en añadir datos aleatorios a la contraseña antes de cifrarla, lo que permite ajustar el 'coste' computacional del algoritmo. Esto hace que el sistema sea resistente a ataques de fuerza bruta, garantizando que, incluso ante una filtración de la base de datos, los atacantes no puedan obtener las contraseñas reales.
+Para garantizar la seguridad y privacidad de los usuarios, se implementó un flujo de generación de valores hash (\textit{hashing}) para las contraseñas mediante el algoritmo bcrypt. Se seleccionó este método porque, además de proporcionar una función de dispersión unidireccional, incorpora de forma nativa un sistema de adición de sal (\textit{salting}). Esta técnica consiste en agregar datos aleatorios a la contraseña antes de procesarla, permitiendo además configurar el coste computacional del algoritmo. Esto dota al sistema de resistencia frente a ataques de fuerza bruta, garantizando que, en caso de una filtración de la base de datos, no sea posible revertir las contraseñas originales.
 
 \subsection*{Gestión de la base de datos relacional}
 
-Para la persistencia de los datos, se plantearon diversas opciones, tales como MySQL, SQLServer o Oracle. Para el objetivo de este proyecto, se consideró que la opción más adecuada era PostgreSQL. Se trata de un sistema de gestión de base de datos relacional que se caracteriza por:
+Para la persistencia de los datos, se evaluaron diversas alternativas relacionales como MySQL, SQL Server u Oracle. Sin embargo, se determinó que PostgreSQL representaba la opción más adecuada para los objetivos del proyecto. Se trata de un sistema de gestión de bases de datos relacional caracterizado por:
 \begin{itemize}
-    \item \textbf{Integridad y fiabilidad de datos:} garantiza el cumplimiento estricto de las propiedades ACID (Atomicidad, Consistencia, Aislamiento, Durabilidad), lo que le permite ser muy tolerante a fallos, garantizando así transacciones muy seguras.
-    \item \textbf{Código abierto y gratuito:} a diferencia de las bases de datos que requieren de una licencia comercial para poder hacer uso de todas sus funciones, esta tecnología al ser \textit{open source} no tiene ningun tipo de coste, conviertiéndola en una alternativa rentable frente a opciones privativas.
+    \item \textbf{Integridad y fiabilidad de datos:} garantiza el cumplimiento estricto de las propiedades ACID (Atomicidad, Consistencia, Aislamiento, Durabilidad), lo que le confiere una alta tolerancia a fallos y asegura la consistencia de las transacciones.
+    \item \textbf{Código abierto y gratuito:} al ser una tecnología de código abierto (\textit{open source}), no requiere licencias comerciales para el uso de sus funciones. Esto elimina los costes de adquisición de software, convirtiéndola en una alternativa altamente rentable frente a opciones privativas.
     \item \textbf{Rendimiento y escalabilidad:} está diseñado para manejar grandes volúmenes de datos y cargas de trabajo pesadas, lo que le permite ser altamente escalable y eficiente en consultas complejas.
 \end{itemize}
 
-Para poder interactuar con la base de datos desde el backend, aunque se valoró el uso de \textit{psycopg2}, la cual ofrece una gran velocidad a la hora de resolver tareas sencillas, se requería de un ORM (Object-Relational Mapping) más robusto. Finalmente, se optó por \textit{SQLAlchemy} dado que ofrece tanto el propio ORM como un \textit{SQL Expression Language}, facilitando enormemente la realización de consultas. Además, destaca por su facilidad para gestionar conexiones, migraciones y proteger el sistema frente a vulnerabilidades como la inyección SQL.
+Para la interacción con la base de datos desde el backend, aunque se valoró inicialmente el uso directo de \textit{psycopg2} por su velocidad de procesamiento en operaciones sencillas, se determinó la conveniencia de integrar un ORM (Object-Relational Mapping) más robusto. Finalmente, se seleccionó \textit{SQLAlchemy} debido a que proporciona tanto el propio mapeador relacional como un lenguaje de expresión SQL (\textit{SQL Expression Language}) que simplifica la construcción de consultas. Asimismo, destaca por su facilidad para gestionar la conexión y migración de datos, protegiendo al sistema frente a vulnerabilidades comunes como la inyección SQL.
 
 \subsection*{Arquitectura de despliegue}
 
@@ -1065,7 +1062,7 @@ Las dos tecnologías clave que hacen esto posible son \textbf{Docker} y \textbf{
 \begin{itemize}
     \item \textbf{Docker para la contenedorización \cite{docker_docs}:} En lugar de lidiar con las diferencias de configuración y dependencias entre servidores, cada componente del sistema (el \textit{frontend} en Next.js (React) y el \textit{backend} en FastAPI) se empaqueta en su propio contenedor Docker utilizando imágenes base estables (como \texttt{node:18-alpine} para el cliente frontend y \texttt{python:3.11-slim-bookworm} para el servidor API backend). Esto encapsula todo lo necesario para la ejecución, aislando las aplicaciones y eliminando por completo el clásico problema del ``en mi máquina funcionaba''.
     
-    \item \textbf{Render para la infraestructura en la nube:} Render es una plataforma en la nube que destaca por su facilidad de uso e integración continua con GitHub. Permite desplegar aplicaciones web a partir de un \texttt{Dockerfile} de forma automatizada: cada vez que se sube un cambio al repositorio de producción, Render descarga el código, construye la imagen de Docker y despliega la nueva versión sin tiempo de caída.
+    \item \textbf{Render para la infraestructura en la nube:} Render es una plataforma en la nube que destaca por su facilidad de uso e integración continua con GitHub. Permite desplegar aplicaciones web a partir de un \texttt{Dockerfile} de forma automatizada: cada vez que se sube un cambio al repositorio de producción, Render descarga el código, construye la imagen de Docker y despliega la nueva versión sin tiempo de caída. La interfaz de usuario (frontend) está publicada en la URL \url{https://agente-us.onrender.com/} y la API (backend) en \url{https://tfg-agente-ayuda-burocracia-us.onrender.com/}. Cabe destacar que, al utilizar la capa de hosting gratuito de Render, el backend entra en suspensión por inactividad. En consecuencia, para acceder con éxito a la aplicación desplegada en la nube, es preciso despertar la instancia realizando una petición previa a la URL del backend (por ejemplo, cargando la documentación interactiva en \url{https://tfg-agente-ayuda-burocracia-us.onrender.com/docs}) y esperando unos 30--60 segundos (arranque en frío) antes de poder iniciar sesión en el frontend.
 \end{itemize}
 
 En el entorno de producción, la arquitectura del sistema se distribuye de manera modular en tres servicios independientes dentro de la nube de Render:
@@ -1113,7 +1110,7 @@ Se utiliza PostgreSQL 15 como sistema de gestión de base de datos relacional. L
 
 \chapter{Pipeline de ingesta de documentos}
 
-La base del éxito de cualquier sistema fundamentado en RAG reside en la calidad de la información alimentada al modelo. La documentación universitaria suele presentarse en formatos PDF complejos que contienen tablas extensas, layouts multicolumna y notas al pie, elementos que representan un obstáculo importante para los extractores de texto convencionales.
+La precisión y efectividad de cualquier sistema basado en la arquitectura RAG depende críticamente de la calidad de la información con la que se alimenta al modelo. La documentación universitaria suele presentarse en formatos PDF complejos que contienen tablas extensas, layouts multicolumna y notas al pie, elementos que representan un obstáculo importante para los extractores de texto convencionales.
 
 Este capítulo detalla la implementación del flujo de ingesta de documentos oficiales de la Universidad de Sevilla. Se profundiza en el proceso de extracción estructural mediante LlamaParse, el diseño de la estrategia de fragmentación semántica para evitar la ruptura de contextos, y la generación de embeddings orientados a textos en castellano para su posterior almacenamiento indexado en la base de datos vectorial.
 
@@ -1300,7 +1297,7 @@ En la tabla de usuarios de PostgreSQL se añadió una columna \texttt{perfil\_me
     \item Guarda estos detalles en \texttt{perfil\_metadata} de forma incremental, sin machacar la información que ya sabíamos del usuario.
 \end{enumerate}
 
-La próxima vez que el usuario abre un chat, el backend recupera estos metadatos y los añade al prompt del sistema. Así, si el asistente ya sabe que el usuario estudia Medicina y este pregunta \"¿cuándo empiezan las clases?\", buscará directamente en el calendario de su facultad, evitando tener que pedirle esos detalles en cada conversación.
+La próxima vez que el usuario abre un chat, el backend recupera estos metadatos y los añade al prompt del sistema. Así, si el asistente ya sabe que el usuario estudia Medicina y este pregunta ``¿cuándo empiezan las clases?'', buscará directamente en el calendario de su facultad, evitando tener que pedirle esos detalles en cada conversación.
 
 \paragraph{Prevención de saturación del contexto en el perfilado.} Al realizar pruebas intensivas sobre el sistema de perfilado, se detectó un problema crítico de acumulación de tokens: el modelo de lenguaje ligero que extraía la información del perfil tendía a alucinar y almacenar en la estructura JSON del usuario un historial redundante de las consultas anteriores o transcripciones completas de los mensajes bajo claves personalizadas (como \texttt{preguntas\_realizadas} o \texttt{conversaciones}). Esto provocaba que, a medida que el usuario interactuaba más con el agente, el tamaño del perfil inyectado en el prompt creciera de forma desmedida, con el consiguiente riesgo de saturar la ventana de contexto.
 
