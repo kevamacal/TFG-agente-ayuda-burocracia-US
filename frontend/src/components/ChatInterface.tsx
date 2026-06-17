@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { MessageSquare, Send, BookOpen, User, Bot, ChevronDown, ChevronUp, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Message } from "../hooks/useChat";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -107,6 +108,7 @@ export function ChatInterface({
                 <div className="leading-relaxed text-textMain">
                   {msg.content ? (
                     <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
                       components={{
                         p: ({ node, ...props }) => <p className="mb-3 last:mb-0" {...props} />,
                         ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-3 pl-2 space-y-1" {...props} />,
@@ -118,6 +120,12 @@ export function ChatInterface({
                         h2: ({ node, ...props }) => <h2 className="text-base font-bold mt-4 mb-2 text-textMain" {...props} />,
                         h3: ({ node, ...props }) => <h3 className="text-sm font-bold mt-3 mb-1 text-textMain" {...props} />,
                         code: ({ node, ...props }) => <code className="bg-background border border-border px-1.5 py-0.5 rounded text-xs font-mono text-accent" {...props} />,
+                        table: ({ node, ...props }) => <div className="overflow-x-auto my-4"><table className="min-w-full divide-y divide-border/60 border border-border/60 rounded-lg text-xs" {...props} /></div>,
+                        thead: ({ node, ...props }) => <thead className="bg-hover/50 text-textMain" {...props} />,
+                        tbody: ({ node, ...props }) => <tbody className="divide-y divide-border/40 text-textMuted" {...props} />,
+                        tr: ({ node, ...props }) => <tr className="hover:bg-hover/30 transition-colors" {...props} />,
+                        th: ({ node, ...props }) => <th className="px-3 py-2 text-left font-semibold border-b border-border/60 text-textMain" {...props} />,
+                        td: ({ node, ...props }) => <td className="px-3 py-2 border-b border-border/40 align-middle text-textMuted" {...props} />,
                       }}
                     >
                       {msg.content + (msg.isStreaming ? " ▎" : "")}

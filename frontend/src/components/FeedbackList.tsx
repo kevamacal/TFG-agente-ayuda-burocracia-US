@@ -3,6 +3,7 @@ import { MessageSquare, Calendar, BookOpen, Frown, RefreshCw } from "lucide-reac
 import Cookies from "js-cookie";
 import { API_URL } from "@/utils/api";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface FeedbackItem {
   mensaje_id: number;
@@ -138,6 +139,7 @@ export function FeedbackList() {
                       </h4>
                       <div className="text-sm text-textMain leading-relaxed">
                         <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
                           components={{
                             p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
                             ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-2 pl-1 space-y-0.5" {...props} />,
@@ -146,6 +148,12 @@ export function FeedbackList() {
                             strong: ({ node, ...props }) => <strong className="font-bold text-textMain" {...props} />,
                             a: ({ node, ...props }) => <a className="text-accent hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
                             code: ({ node, ...props }) => <code className="bg-background border border-border/50 px-1 py-0.5 rounded text-xs font-mono text-accent" {...props} />,
+                            table: ({ node, ...props }) => <div className="overflow-x-auto my-4"><table className="min-w-full divide-y divide-border/60 border border-border/60 rounded-lg text-xs" {...props} /></div>,
+                            thead: ({ node, ...props }) => <thead className="bg-hover/50 text-textMain" {...props} />,
+                            tbody: ({ node, ...props }) => <tbody className="divide-y divide-border/40 text-textMuted" {...props} />,
+                            tr: ({ node, ...props }) => <tr className="hover:bg-hover/30 transition-colors" {...props} />,
+                            th: ({ node, ...props }) => <th className="px-3 py-2 text-left font-semibold border-b border-border/60 text-textMain" {...props} />,
+                            td: ({ node, ...props }) => <td className="px-3 py-2 border-b border-border/40 align-middle text-textMuted" {...props} />,
                           }}
                         >
                           {item.respuesta_asistente}

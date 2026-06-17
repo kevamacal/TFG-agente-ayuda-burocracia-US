@@ -108,7 +108,7 @@ En este primer capítulo se expone el marco conceptual en el que se inscribe el 
 
 \section{Marco conceptual}
 
-En los últimos años, los Modelos de Lenguaje Grandes (LLMs) han revolucionado la forma en que las máquinas entienden y generan texto. Sin embargo, cualquiera que haya trabajado con ellos sabe que tienen un grave problema, las llamadas ``alucinaciones''. Básicamente, el modelo puede generar respuestas que suenan perfectamente razonables pero que, en realidad, se las ha inventado por completo. Esto los convierte en herramientas poco fiables cuando necesitamos precisión, algo imprescindible si hablamos de la gestión de documentación universitaria.
+En los últimos años, los Modelos de Lenguaje Grandes (LLMs) han transformado la forma en que procesamos y generamos texto. Sin embargo, tienen un inconveniente conocido como ``alucinaciones'': el modelo puede generar explicaciones coherentes en apariencia pero que son completamente incorrectas o inventadas. Esto hace que no sean del todo fiables cuando se necesita una precisión absoluta, algo crítico al tratar con reglamentos y trámites universitarios.
 
 Para lidiar con este problema, en este trabajo se optó por implementar un sistema RAG (\textit{Retrieval-Augmented Generation}). La idea es sencilla pero eficaz: en lugar de pedirle al modelo que ``recuerde'' la información, se le proporciona acceso directo a la documentación oficial, previamente procesada y convertida en vectores. De esta manera, cada respuesta que genera combina la fluidez conversacional propia de un LLM con datos reales extraídos de fuentes institucionales verificables.
 
@@ -194,8 +194,8 @@ Si echamos la vista atrás, desde los primeros modelos como GPT-2 en 2019 hasta 
 Dicho todo esto, y a pesar de lo impresionantes que resultan, los LLMs arrastran limitaciones que conviene tener muy presentes:
 
 \begin{itemize}
-    \item \textbf{Alucinaciones:} Quizá el problema más conocido. El modelo puede generar información que suena perfectamente creíble pero que es sencillamente falsa. Al fin y al cabo, lo que hace es predecir el siguiente token en función de patrones estadísticos; no tiene forma de ``saber'' si lo que dice es cierto o no.
-    \item \textbf{Conocimiento congelado:} Todo lo que un LLM sabe quedó fijado en el momento de su entrenamiento. No puede acceder por su cuenta a información nueva ni consultar documentos específicos de un ámbito concreto, a menos que alguien se los proporcione explícitamente.
+    \item \textbf{Alucinaciones:} Consiste en que el modelo genera respuestas coherentes en su redacción pero falsas en su contenido. Como estos sistemas funcionan prediciendo la palabra más probable a partir de patrones estadísticos, no disponen de una forma real de verificar si los datos que devuelven son ciertos.
+    \item \textbf{Conocimiento congelado:} La información que maneja un LLM se limita a lo aprendido durante su entrenamiento. Por tanto, el modelo no puede consultar datos nuevos o específicos de una organización a menos que se le aporten directamente en la propia pregunta.
     \item \textbf{Ventana de contexto limitada:} Aunque las ventanas de contexto han ido creciendo año tras año, el espacio del que dispone el modelo para ``leer'' información dentro de un prompt sigue siendo finito. Esto obliga a ser selectivos con qué le pasamos y cómo.
 \end{itemize}
 
@@ -310,7 +310,7 @@ Este planteamiento ofrece varias ventajas claras frente al esquema clásico de e
 
 \section{Chatbots institucionales: antecedentes}
 
-La idea de poner un chatbot en una universidad no es nueva. Desde hace años, diversas instituciones han implementado asistentes conversacionales basados en motores de Reconocimiento de Lenguaje Natural (NLU) y clasificación de intenciones, recurriendo a plataformas comerciales o de código abierto de gran difusión como Dialogflow \cite{dialogflow_ref} o Rasa \cite{rasa_ref}. Estos sistemas funcionan de forma aceptable cuando el flujo de diálogo está estrictamente acotado, pero muestran limitaciones severas a medida que el volumen de información se incrementa. Esto se debe a su dependencia de árboles de decisión rígidos y reglas estructuradas a mano, lo que impone un mantenimiento constante: cada nueva casuística obliga a incorporar frases de entrenamiento y a diseñar de manera manual cada camino de la interacción.
+La idea de poner un chatbot en una universidad no es nueva. Desde hace años, diversas instituciones han implementado asistentes conversacionales basados en motores de Reconocimiento de Lenguaje Natural (NLU) y clasificación de intenciones, recurriendo a plataformas comerciales o de código abierto de gran difusión como Dialogflow \cite{dialogflow_ref} o Rasa \cite{rasa_ref}. Estos sistemas funcionan de forma aceptable cuando el flujo de diálogo está estrictamente acotado, pero muestran limitaciones severas a medida que el volumen de información se incrementa. Esto se debe a su dependencia de árboles de decisión rígidos y reglas definidas manualmente. Esto requiere un mantenimiento constante, ya que cada nueva situación obliga a añadir más frases de entrenamiento y a configurar a mano los flujos de la conversación.
 
 Lo que diferencia a este trabajo de esos enfoques clásicos es el salto de un modelo basado en intenciones a uno generativo y dinámico. Combinando la flexibilidad de los LLMs con el conocimiento institucional actualizado mediante RAG y una estructura agéntica con distintos nodos especializados, el sistema es capaz de localizar la respuesta en la documentación oficial y presentarla de forma clara, sin necesidad de haber previsto cada posible pregunta de antemano.
 
@@ -1175,7 +1175,7 @@ El diseño final del agente conversacional no surgió de manera inmediata; fue e
     \item \textbf{Nodo Resultor (Generador):} Tomaba la pregunta original junto con los fragmentos recuperados y redactaba la respuesta final que se entregaba al usuario.
 \end{itemize}
 
-Esta estructura inicial (representada en la Figura~\ref{fig:diag_v1}) pecaba de ser extremadamente ingenua. Al no disponer de mecanismos de control, el sistema intentaba responder a cualquier tipo de entrada. Si un usuario saludaba o introducía una consulta completamente ajena al ámbito universitario (por ejemplo, preguntas de cultura general o de ocio), el recuperador igualmente forzaba una búsqueda en la base de datos de normativas de la Universidad de Sevilla. Esto no solo generaba un consumo absurdo de cuota de API, sino que obligaba al modelo generador a alucinar o inventar respuestas para intentar casar textos legales con preguntas fuera de contexto.
+Esta estructura inicial (representada en la Figura~\ref{fig:diag_v1}) era demasiado simple. Al no tener filtros de entrada, el sistema intentaba responder a cualquier consulta. Si el usuario saludaba o preguntaba algo ajeno a la universidad (como ocio o cultura general), el recuperador forzaba igualmente la búsqueda en la base de datos de normativas. Esto provocaba un gasto innecesario de tokens en la API y obligaba al modelo a generar alucinaciones para intentar relacionar leyes universitarias con preguntas fuera de contexto.
 
 \begin{figure}[H]
     \centering
@@ -1276,7 +1276,7 @@ Al enviar el primer mensaje de una conversación con título ``Nueva conversaci�
 
 \section{Corrective RAG (CRAG) y Búsqueda Web Fallback}
 
-El principal inconveniente de usar un RAG clásico es que si la información no está en los PDF de Pinecone (por ejemplo, plazos específicos de la automatrícula del curso actual que aún no se han publicado oficialmente en los reglamentos cargados), el asistente responde que no sabe nada o, peor aún, se inventa la respuesta.
+El principal problema de usar un RAG clásico es que si la información no está guardada en la base vectorial (por ejemplo, los plazos de matrícula del año en curso que aún no se han publicado en los PDF normativos), el asistente no sabrá qué responder o, en el peor de los casos, terminará alucinando la respuesta.
 
 Para resolver esto, se implementó una arquitectura Corrective RAG (CRAG) en LangGraph. Justo después de recuperar los fragmentos, la arista condicional evalúa la relevancia y suficiencia de la información recuperada de Pinecone usando el modelo de lenguaje ligero, dividiendo el flujo en tres caminos posibles:
 \begin{itemize}
@@ -1300,7 +1300,7 @@ En la tabla de usuarios de PostgreSQL se añadió una columna \texttt{perfil\_me
     \item Guarda estos detalles en \texttt{perfil\_metadata} de forma incremental, sin machacar la información que ya sabíamos del usuario.
 \end{enumerate}
 
-La siguiente vez que el usuario abre un chat, el backend recupera estos metadatos y los inyecta en el prompt del sistema. De esta forma, si el asistente ya sabe que el usuario estudia Medicina y este le pregunta "¿cuándo empiezan las clases?", el RAG buscará el calendario específico de esa facultad directamente, ahorrándole al usuario tener que dar explicaciones extra en cada conversación.
+La próxima vez que el usuario abre un chat, el backend recupera estos metadatos y los añade al prompt del sistema. Así, si el asistente ya sabe que el usuario estudia Medicina y este pregunta \"¿cuándo empiezan las clases?\", buscará directamente en el calendario de su facultad, evitando tener que pedirle esos detalles en cada conversación.
 
 \paragraph{Prevención de saturación del contexto en el perfilado.} Al realizar pruebas intensivas sobre el sistema de perfilado, se detectó un problema crítico de acumulación de tokens: el modelo de lenguaje ligero que extraía la información del perfil tendía a alucinar y almacenar en la estructura JSON del usuario un historial redundante de las consultas anteriores o transcripciones completas de los mensajes bajo claves personalizadas (como \texttt{preguntas\_realizadas} o \texttt{conversaciones}). Esto provocaba que, a medida que el usuario interactuaba más con el agente, el tamaño del perfil inyectado en el prompt creciera de forma desmedida, con el consiguiente riesgo de saturar la ventana de contexto.
 
@@ -1392,9 +1392,9 @@ El rendimiento global y la calidad de las respuestas de un asistente conversacio
 Este capítulo analiza las decisiones relativas a la selección y configuración de los modelos de lenguaje que actúan como motor del asistente. Se repasa la evolución y optimización de la infraestructura de inferencia —desde las pruebas locales hasta el uso de procesadores especializados LPUs en la nube—, y se detallan la estrategia multi-modelo implementada para equilibrar costes y latencia, y el ajuste de hiperparámetros clave como la temperatura del sistema.
 
 \section{Evolución de la infraestructura de inferencia}
-\paragraph{Fase 1: Modelos locales (Llama 3.1 8B).} Al principio del proyecto, la idea era ejecutar todo en local usando Llama 3.1 8B a través de Ollama. El modelo cumplía bastante bien con las tareas de clasificación, pero los tiempos de inferencia eran completamente inaceptables: entre 30 y 60 segundos por cada llamada al modelo. Para un asistente que se supone que debe responder en tiempo real, esto era inviable. Además, la ejecución local hacía imposible cualquier tipo de despliegue más allá del entorno local de desarrollo.
+\paragraph{Fase 1: Modelos locales (Llama 3.1 8B).} Al comenzar el proyecto, se intentó ejecutar el modelo Llama 3.1 8B de forma local mediante Ollama. Aunque clasificaba correctamente las intenciones, los tiempos de respuesta eran demasiado elevados, tardando entre 30 y 60 segundos por cada pregunta. Para un asistente web que debe contestar en tiempo real, esto era inaceptable. Además, la ejecución local impedía desplegar la aplicación en la nube para que otros usuarios la probaran.
 
-\paragraph{Fase 2: API de HuggingFace.} El siguiente paso fue migrar a los endpoints de inferencia de HuggingFace, lo que mejoró bastante los tiempos. Pero apareció otro problema que no se había previsto: el \textit{cold start}. La primera solicitud tras un periodo de inactividad podía tardar hasta 30 segundos mientras la instancia se aprovisionaba. Esto afectaba negativamente a la experiencia del usuario, ya que la primera respuesta tras pausas en el uso presentaba una latencia elevada.
+\paragraph{Fase 2: API de HuggingFace.} El siguiente paso fue usar las APIs de inferencia de HuggingFace, lo que mejoró bastante los tiempos. Sin embargo, surgió un problema con el que no contábamos: el arranque en frío (\textit{cold start}). Tras un tiempo sin uso, la primera consulta podía tardar unos 30 segundos mientras el servidor web se levantaba. Esto afectaba a la experiencia de usuario, ya que la primera respuesta del día iba muy lenta.
 
 \paragraph{Fase 3: API de Groq.} La solución definitiva llegó con la API de Groq, que utiliza un hardware especializado llamado LPU (\textit{Language Processing Units}) diseñado específicamente para ejecutar modelos de lenguaje. El cambio fue drástico: los tiempos de respuesta bajaron a fracciones de segundo por invocación, sin ningún problema de inicio en frío. La única pega es que la capa gratuita tiene límites de tokens por minuto y por día, pero para el ámbito de este proyecto fue más que suficiente.
 
