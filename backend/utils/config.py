@@ -19,7 +19,7 @@ def config_classifier_llm():
     """LLM ultra-ligero para cadenas de clasificación que solo devuelven 1 palabra."""
     llm = ChatGroq(
         temperature=0.0, 
-        model_name="llama-3.1-8b-instant", 
+        model_name="openai/gpt-oss-20b", 
         api_key=settings.GROQ_API_KEY,
         max_tokens=15,
         max_retries=3
@@ -30,7 +30,7 @@ def config_light_llm():
     """LLM ligero para reformulación, consulta al usuario y rechazo amable."""
     llm = ChatGroq(
         temperature=0.1, 
-        model_name="llama-3.1-8b-instant", 
+        model_name="openai/gpt-oss-20b", 
         api_key=settings.GROQ_API_KEY,
         max_tokens=1000,
         max_retries=3
@@ -41,7 +41,7 @@ def config_llm():
     """LLM principal para los nodos resolutores (baremo, normativo, etc.)."""
     llm = ChatGroq(
         temperature=0.1, 
-        model_name="llama-3.3-70b-versatile",
+        model_name="penai/gpt-oss-120b",
         api_key=settings.GROQ_API_KEY,
         max_tokens=1500,
         max_retries=10
