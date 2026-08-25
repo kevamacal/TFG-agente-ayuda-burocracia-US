@@ -507,9 +507,3 @@ La memoria aborda, entre otros aspectos:
 | **Fecha de lectura** | 6 de julio de 2026                                        |
 
 ---
-
-## 📄 Licencia
-
-Este proyecto se distribuye bajo la licencia **MIT**.
-
-Consulta el archivo [`LICENSE`](LICENSE) para obtener más información.
