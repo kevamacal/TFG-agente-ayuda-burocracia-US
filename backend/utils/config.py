@@ -41,7 +41,7 @@ def config_llm():
     """LLM principal para los nodos resolutores (baremo, normativo, etc.)."""
     llm = ChatGroq(
         temperature=0.1, 
-        model_name="penai/gpt-oss-120b",
+        model_name="openai/gpt-oss-120b",
         api_key=settings.GROQ_API_KEY,
         max_tokens=1500,
         max_retries=10
